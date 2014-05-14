@@ -69,7 +69,8 @@ class Zparam(object):
 
 def zdot(x, z, f, params):
     """
-    Single neural oscillator, as described in equation 15 the paper referenced above
+    Dynamics of a neural oscillator, as described in equation 15 the paper referenced above.
+    Can work with vectors, to simultaneously compute different oscillators
 
     :param x: input signal
     :type x: complex numpy array
