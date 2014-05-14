@@ -9,9 +9,13 @@ Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
 """
 
 import numpy as np
+from utils import nl
 
 PI = np.pi
-
+TWO_PI = 2*PI
+abs = np.abs
+sqrt = np.sqrt
+conj = np.conj
 
 class Zparam(object):
     """
@@ -63,14 +67,6 @@ class Zparam(object):
 
 
 
-def nl(x,gamma):
-    """
-    Basic nonlinearity of the form :math:`\\frac{1}{1-\\gamma x}`
-    """
-    return 1/(1-gamma*x)
-
-
-
 def zdot(x, z, f, params):
     """
     Single neural oscillator, as described in equation 15 the paper referenced above
@@ -87,12 +83,13 @@ def zdot(x, z, f, params):
     :rtype: complex numpy array
     """
 
-    lin = params.a + 1j*2*PI*f
-    nonlin1 = params.b1*np.abs(z)**2
-    nonlin2 = params.b2*params.e*np.abs(z)**4*nl(np.abs(z)**2, params.e)
-    RT = x*nl(x, np.sqrt(params.e))             # passive part of the Resonant Terms
-    RT = RT * nl(np.conj(z), np.sqrt(params.e))  # time the active part
+    lin = params.a + 1j*TWO_PI*f
+    nonlin1 = params.b1*abs(z)**2
+    nonlin2 = params.b2*params.e*abs(z)**4*nl(abs(z)**2, params.e)
+    RT = x*nl(x, sqrt(params.e))              # passive part of the Resonant Terms (RT)
+    RT = RT * nl(conj(z), sqrt(params.e))  # times the active part of RT
 
     return z * (lin + nonlin1 + nonlin2) + RT
+
 
 

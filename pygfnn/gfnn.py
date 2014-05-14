@@ -1,4 +1,5 @@
 import numpy as np
+from network import make_connections
 
 class GFNN(object):
     """
@@ -16,14 +17,24 @@ class GFNN(object):
         :param oscs_per_octave: number of oscillators per octave
         :type oscs_per_octave: int
         """
-        self.fc = fc
-        # array of oscillators' frequencies (in Hz)
+        #: array of oscillators' frequencies (in Hz)
         self.f = fc*np.logspace(-octaves_per_side,
                                 octaves_per_side,
                                 base=2.0,
                                 num=2*oscs_per_octave*octaves_per_side+1)
+        #: total number of oscillator in the network
         self.size = self.f.size
 
-        print "GFNN size:", self.size
-        print "GFNN range: %.3f (%.3f, %.3f)" % (np.ptp(self.f), np.min(self.f), np.max(self.f))
+        # TODO: parametrize strength
+        strength = 0.5
+        #: matrix of internal connections
+        self.internal_conns = strength * make_connections(self.f, self.f, [1./3, 1./2, 1., 2., 3.], 0.5)
+
+
+
+    def process_input(self, input, t, dt):
+        # TODO: implement
+        pass
+
+
 
