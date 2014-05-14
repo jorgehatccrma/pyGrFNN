@@ -1,0 +1,13 @@
+# virtualenv folder
+vEnv/
+
+# sphinx build folder
+pygfnn_docs/_build/
+
+# random test files
+test.py
+plotTest.py
+
+
+# python compiled files
+*.pyc
