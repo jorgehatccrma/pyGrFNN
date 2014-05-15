@@ -2,9 +2,10 @@ import numpy as np
 
 
 PI = np.pi
-TWO_PI = 2*PI
+TWO_PI = 2.0*PI
 exp = np.exp
 sqrt = np.sqrt
+
 
 def nl(x,gamma):
     """
@@ -47,10 +48,21 @@ def RK4(x, x_1, z_1, dt, diffeq):
     return z_1 + (dt/6.0)*(k1 + 2.0*k2 + 2.0*k3 + k4)
 
 
-def gaussPDF(x, mu, sigma):
+def normalPDF(x, mu, sigma):
     """
-    Gaussian (normal) Probability Density Function:
+    Normal (Gaussian) Probability Density Function:
 
-    :math:`f(x, \\mu, \\sigma) = \\frac{1}{\\sqrt{2 \\pi \\sigma^2}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}`
+    :math:`f(x, \\mu, \\sigma) = \\frac{1}{\\sigma\\sqrt{2 \\pi}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}`
     """
     return exp(-0.5 * ((x - mu)/sigma)**2) / (sqrt(TWO_PI) * sigma)
+
+
+def normalCDF(x, mu, sigma):
+    """
+    Normal (Gaussian) Cumulative Density Function:
+
+    :math:`F(x, \\mu, \\sigma) = \\frac{1}{2\\pi}\\int_{-\\infty}^{\\frac{x-\\mu}{\\sigma}} e^{-t^2/2} dt = \\Phi(\\frac{x-\\mu}{\\sigma}) = \\frac{1}{2}\\left ( 1 + \\mathrm{erf} \\big ( \\frac{x - \\mu}{\\sigma \\sqrt{2}} \\big )  \\right )`
+    """
+    z = (x-mu) / sigma;
+    return 0.5 * (1 + np.erf(z/sqrt(2)))
+
