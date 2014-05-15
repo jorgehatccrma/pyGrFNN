@@ -95,10 +95,10 @@ class GFNN(object):
             return m*np.tanh(g*(np.abs(x)+eps))*x/(np.abs(x)+eps)
 
         # compute overall input (external signal + internal connections + eff/aff connections)
-        # TODO: implement afferent/efferent connections
-
-        # input pre-processing from NLTFT
+        # For reference: input pre-processing from NLTFT
         # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
+
+        # TODO: implement afferent/efferent connections
 
         x = f(x_stim, self.params.e)            # process external signal (stimulus)
         x_int = self.z.dot(self.internal_conns) # get internal signal (via internal connections)

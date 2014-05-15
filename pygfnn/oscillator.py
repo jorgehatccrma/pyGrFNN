@@ -10,12 +10,7 @@ Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
 
 import numpy as np
 from utils import nl
-
-PI = np.pi
-TWO_PI = 2*PI
-abs = np.abs
-sqrt = np.sqrt
-conj = np.conj
+from defines import TWO_PI
 
 class Zparam(object):
     """
@@ -69,8 +64,19 @@ class Zparam(object):
 
 def zdot(x, z, f, params):
     """
-    Dynamics of a neural oscillator, as described in equation 15 the paper referenced above.
-    Can work with vectors, to simultaneously compute different oscillators
+    Dynamics of a neural oscillator, as described in equation 15 of the paper referenced above.
+    Can work with vectors, to simultaneously compute different oscillators:
+
+    .. math::
+
+        \\dot{z} = z \\Bigg(\\alpha + j\\omega + b_1 |z|^2 + \\frac{b_2\\varepsilon |z|^4}{1-\\varepsilon |z|^2} \\Bigg) + \\frac{x}{1-\\sqrt{\\varepsilon} x} \\frac{1}{1-\\sqrt{\\varepsilon} \\bar{z}}
+
+    where
+
+    .. math::
+
+        b_1 &= \\beta_1 + j \\delta_1 \\\\
+        b_2 &= \\beta_2 + j \\delta_2 \\\\
 
     :param x: input signal
     :type x: complex numpy array
@@ -86,10 +92,10 @@ def zdot(x, z, f, params):
     """
 
     lin = params.a + 1j*TWO_PI*f
-    nonlin1 = params.b1*abs(z)**2
-    nonlin2 = params.b2*params.e*abs(z)**4*nl(abs(z)**2, params.e)
-    RT = x*nl(x, sqrt(params.e))              # passive part of the Resonant Terms (RT)
-    RT = RT * nl(conj(z), sqrt(params.e))  # times the active part of RT
+    nonlin1 = params.b1*np.abs(z)**2
+    nonlin2 = params.b2*params.e*np.abs(z)**4*nl(np.abs(z)**2, params.e)
+    RT = x*nl(x, np.sqrt(params.e))              # passive part of the Resonant Terms (RT)
+    RT = RT * nl(np.conj(z), np.sqrt(params.e))  # times the active part of RT
 
     return z * (lin + nonlin1 + nonlin2) + RT
 

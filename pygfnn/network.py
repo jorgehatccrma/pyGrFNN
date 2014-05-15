@@ -61,3 +61,122 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
     conns = (conns.T/tmp).T
 
     return conns
+
+
+class DuplicatedLayer(Exception):
+    """
+    Raised when attempting to add a previously added layer to a network
+
+    Attribute:
+        layer -- duplicated layer
+    """
+
+    def __init__(self, layer):
+        self.layer = layer
+
+
+class UnknownLayer(Exception):
+    """
+    Raised when attempting to use a layer unknown to the network
+
+    Attribute:
+        layer -- unknown layer
+    """
+
+    def __init__(self, layer):
+        self.layer = layer
+
+    def __str__(self):
+        return "Unknown layer %s. Maybe you forgot to call 'add_layer(layer)'?" % (repr(self.layer))
+
+
+
+class Model(object):
+    """
+    A network of GFNNs. Different GFNNs will be referred to as layers.
+    """
+
+    def __init__(self):
+        """
+        TODO: describe stuff (specially self.connections)
+        """
+
+        #: Visible GFNN: list of GFNN layers that will receive the external signal
+        self.visible_layers = []
+
+        #: Hidden GFNNs: list of GFNN layers that won't receive the external signal
+        self.hidden_layers = []
+
+        # connections
+        self.connections = {}
+
+        pass
+
+
+    def add_layer(self, layer, visible=False):
+        """
+        Add a GFNN layer.
+
+        :param layer: the GFNN to add to the model
+        :type layer: :class:`.GFNN`
+
+        :param visible: If *True*, the external signal (stimulus) will be fed into this layer
+        :type visible: Boolean
+
+        :raises DuplicatedLayer: see :class:`.DuplicatedLayer`
+        """
+
+        # TODO: add sanity check
+
+        if layer not in self.layers:
+            if visible:
+                self.visible_layers.append(layer)
+            else:
+                self.hidden_layers.append(layer)
+
+            self.connections[layer] = []    # list of connected layers. List elements
+                                            # should be tuples of the form
+                                            # (destination_layer, connextion_matrix)
+
+        else:
+            raise DuplicatedLayer(layer)
+
+
+
+    def connect_layers(self, source, destination, connections):
+        """
+        Connect two layers.
+
+        :param source: Source layer (connections will be made from this layer to *destination*)
+        :type source: :class:`.GFNN`
+        :param destination: Destination layer (connections will be made from *source* layer to this layer)
+        :type destination: :class:`.GFNN`
+        :param connections: Matrix of connection weights
+        :type connections: numpy complex array. It's shape must be (source.f.size, destination.f.size)
+        """
+
+        # TODO: add sanity check
+        # TODO: add another method (or use duck typing) to pass harmonics or connection_type in connections
+
+        if source not in self.layers:
+            raise UnknownLayer(source)
+
+        if destination not in self.layers:
+            raise UnknownLayer(destination)
+
+        self.connections[source].append((destination, connections))
+
+
+
+
+    def process_signal(self, signal, t, dt):
+        """
+        Compute the TF representation of an input signal
+        """
+
+        for (i, x_stim) in enumerate(signal):
+            pass
+
+
+
+
