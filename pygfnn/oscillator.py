@@ -78,7 +78,8 @@ def zdot(x, z, f, params):
     :type z: complex numpy array
     :param f: natural frequency of the oscillator
     :type f: numpy float array
-    :param params: oscillator parameters: (:math:`\\alpha, \\beta_1, \\delta_1, \\beta_2, \\delta_2` and :math:`\\varepsilon)`
+    :param params: oscillator parameters: :math:`\\alpha, \\beta_1, \\delta_1,
+                                                \\beta_2, \\delta_2` and :math:`\\varepsilon`
     :type params: Zparam
 
     :rtype: complex numpy array
