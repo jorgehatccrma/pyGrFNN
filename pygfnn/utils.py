@@ -66,3 +66,6 @@ def normalCDF(x, mu, sigma):
     z = (x-mu) / sigma;
     return 0.5 * (1 + np.erf(z/sqrt(2)))
 
+
+def pattern2odf(pattern, fs_odf):
+    pass
