@@ -1,9 +1,11 @@
 import numpy as np
-from utils import normalPDF, normalCDF
+from utils import normalPDF
+from utils import normalCDF
+from utils import f, nml
 from defines import COMPLEX
 
 
-def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, complex_kernel=False):
+def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, complex_kernel=False, self_connect=True):
     """
     Create a connection matrix from source to destination.
 
@@ -16,8 +18,11 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
     :param stdev: standard deviation to use in the connections (to "spread" them with neighbors)
     :type stdev: float
     :param complex_kernel: If *True*, the connections will be complex (i.e. include phase information).
-                           Otherwise, the connections will be real-valued weights.
-    :type complex_kernel: Boolean
+        Otherwise, the connections will be real-valued weights.
+    :type complex_kernel: bool
+    :param self_connect: if *False*, the connection from source_f[i] to dest_f[j]
+        (where source_f[i] == dest_f[j]) will be set to 0
+    :type self_connect: bool
 
 
     :return: Connection matrix. Rows index source and Columns index destination
@@ -42,6 +47,9 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
                                             # but I don't get it (seems to relate to pitches, but then
                                             # this is not the place!)
 
+        if not self_connect:
+            R[RF==1] = 0
+
         # In the original implementation, R was divided by the number of oscillators per octave.
         # Why? I think it should be either be divided by cumsum(R(row,:)) [preserve energy] or
         # max(R(row,:)) [full self-feedback]
@@ -50,15 +58,15 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
             # TODO: implement
             # (from NLTFT:)
             # pi*(2*normcdf(log2(RF), log2(harms(nn)), log2(1+sd(nn)))-1);
-            pass
+            Q = np.zeros(R.shape)  # TODO: compute
+            conns = conns + R * np.exp(1j*Q)
         else:
-            Q = np.zeros(R.shape)
-        conns = conns + R * np.exp(1j*Q)
+            conns = conns + R
 
-    # normalization
-    # TODO: verify correctness
-    tmp = np.max(np.abs(conns.T),axis=0)
-    conns = (conns.T/tmp).T
+    # # normalization
+    # # TODO: verify correctness
+    # tmp = np.max(np.abs(conns.T),axis=0)
+    # conns = (conns.T/tmp).T
 
     return conns
 
@@ -113,7 +121,7 @@ class Model(object):
         pass
 
 
-    def add_layer(self, layer, visible=False):
+    def add_layer(self, layer, visible=True):
         """
         Add a GFNN layer.
 
@@ -121,14 +129,14 @@ class Model(object):
         :type layer: :class:`.GFNN`
 
         :param visible: If *True*, the external signal (stimulus) will be fed into this layer
-        :type visible: Boolean
+        :type visible: bool
 
         :raises DuplicatedLayer: see :class:`.DuplicatedLayer`
         """
 
         # TODO: add sanity check
 
-        if layer not in self.layers:
+        if layer not in self.visible_layers + self.hidden_layers:
             if visible:
                 self.visible_layers.append(layer)
             else:
@@ -158,13 +166,13 @@ class Model(object):
         # TODO: add sanity check
         # TODO: add another method (or use duck typing) to pass harmonics or connection_type in connections
 
-        if source not in self.layers:
+        if source not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(source)
 
-        if destination not in self.layers:
+        if destination not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(destination)
 
-        self.connections[source].append((destination, connections))
+        self.connections[destination].append((source, connections))
 
 
 
@@ -174,8 +182,49 @@ class Model(object):
         Compute the TF representation of an input signal
         """
 
+        def compute_input(layer, external_conns, x_stim=0):
+            """
+            external_conns is a list of tuples of the form (source_layer, connectioc_matrix)
+            """
+            # compute overall input (external signal + internal connections + eff/aff connections)
+            # For reference: input pre-processing from NLTFT
+            # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
+
+            # process external signal (stimulus)
+            x = f(x_stim, layer.params.e)
+            if layer.internal_conns is not None:
+                # process internal signal (via internal connections)
+                x_int = layer.z.dot(layer.internal_conns)
+                x = x + f(nml(x_int), layer.params.e)
+            # process other external inputs (afferent / efferent)
+            for (source, conns) in external_conns:
+                x_ext = source.z.dot(conns)
+                # print np.sum(x_ext)
+                x = x + f(nml(x_ext), layer.params.e)
+                # print x_ext
+            return x
+
+
+        for layer in self.visible_layers + self.hidden_layers:
+            layer.reset()
+            layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
+
+
         for (i, x_stim) in enumerate(signal):
-            pass
+            # 1. compute the inputs for all layers
+            input_processed = []
+            for layer in self.visible_layers:
+                x = compute_input(layer, self.connections[layer], x_stim)
+                input_processed.append((layer, x))
+            for layer in self.hidden_layers:
+                x = compute_input(layer, self.connections[layer])
+                input_processed.append((layer, x))
+                # print layer, np.sum(x)
+
+            # 2. "run" all the layers
+            for layer, x in input_processed:
+                layer.process_time_step(dt, x)
+                layer.TF[:,i] = layer.z
 
 
 

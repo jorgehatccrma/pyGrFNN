@@ -5,13 +5,18 @@ from utils import nl, RK4
 from functools import partial
 from oscillator import zdot
 
+import pdb
 
 class GFNN(object):
     """
     GFNN. Currenlty only log-frequency spacing implemented
     """
 
-    def __init__(self, params, fc=1.0, octaves_per_side=2.0, oscs_per_octave=64):
+    def __init__(self, params, fc=1.0,
+                 octaves_per_side=2.0,
+                 oscs_per_octave=64,
+                 internal_strength=0.5,
+                 internal_stdev=0.5):
         """
         :param params: oscillator parameters
         :type params: Zparam
@@ -21,6 +26,12 @@ class GFNN(object):
         :type octaves_per_side: float
         :param oscs_per_octave: number of oscillators per octave
         :type oscs_per_octave: int
+        :param internal_strength: weight of the internal connection.
+            If 0.0, not connections will be created
+        :type internal_strength: float
+        :param internal_stdev: internal connections standard deviation.
+            If *internal_strength==0.0*, this will be ignored.
+        :type internal_stdev: float
         """
         #: array of oscillators' frequencies (in Hz)
         self.f = fc*np.logspace(-octaves_per_side,
@@ -33,21 +44,36 @@ class GFNN(object):
         #: oscillator parameters
         self.params = params
 
-        strength = 1.0 # TODO: parametrize strength
         #: matrix of internal connections
-        self.internal_conns = strength * make_connections(self.f,
-                                                          self.f,
-                                                          [1./3, 1./2, 1., 2., 3.],
-                                                          0.5)
+        self.internal_conns = None
 
-        # initial oscillators states
-        self.z = np.zeros(self.f.shape, dtype=COMPLEX)
+        if internal_strength > 0:
+            self.internal_conns = internal_strength * \
+                                  make_connections(self.f,
+                                                   self.f,
+                                                   [1./3, 1./2, 1., 2., 3.],
+                                                   internal_stdev,
+                                                   self_connect=False) / oscs_per_octave    # TODO: why /oscs_per_octave?
 
+        #: initial oscillators states
+        self.z = 1e-10*(1+1j)*np.ones(self.f.shape, dtype=COMPLEX)
+
+        #: last processed input
+        self.x_1 = 0
+
+        #: oscillator differential equation
+        self.dzdt = partial(zdot, f=self.f, params=self.params)
+
+
+    def reset(self):
+        self.x_1 = 0;
+        self.z = 1e-10*(1+1j)*np.ones(self.f.shape, dtype=COMPLEX)
 
 
     def process_signal(self, input, t, dt):
         """
-        Run the GFNN for an external input.
+        Run the GFNN for an external input. It runs isolated, not as part of a network
+        (doesn't consider other inputs such as efferent or afferent).
 
         :param input: input signal (stimulus)
         :type input: numpy complex array
@@ -59,51 +85,46 @@ class GFNN(object):
         :return: Time-frequency representation of the input signal
         :rtype: numpy 2D array (rows index frequency and columns index time)
         """
-        x_1 = 0 # initial last input
-        dzdt = partial(zdot, f=self.f, params=self.params)
+
+        def f(x, e):
+            sq = np.sqrt(e)
+            return x * nl(x, sq) * nl(np.conj(x), sq)
+
+        def nml(x, m=0.4, g=1.0):
+            # return m * np.tanh(g*x)
+            eps = np.spacing(1)
+            return m*np.tanh(g*(np.abs(x)+eps))*x/(np.abs(x)+eps)
+
+
         self.TF = np.zeros((self.f.size, input.size), dtype=COMPLEX)
         for (i, x_stim) in enumerate(input):
-            x_1 = self.process_time_step(dzdt, x_1, dt, x_stim)
+            # process external signal (stimulus)
+            x = f(x_stim, self.params.e)
+            # print "-"*20
+            # print x
+
+            # pdb.set_trace()
+
+            if self.internal_conns is not None:
+                # process internal signal (via internal connections)
+                x_int = self.z.dot(self.internal_conns)
+                x = x + f(nml(x_int), self.params.e)
+            # print x
+
+
+            self.process_time_step(dt, x)
             self.TF[:,i] = self.z
 
         return self.TF
 
 
-    def process_time_step(self, dzdt, x_1, dt, x_stim=0):
+    def process_time_step(self, dt, x):
         """
-        :param dzdt: differential equation to solve using RK4. Must be of the form
-                    *f(x, z)*, where *x* is the input and *z* the state; it must return dz/dt
-        :type dzdt: function
-        :param x_1: previous processed input (after combining all sources and nonlinearities)
-        :type x_1: numpy complex array
         :param dt: time step
         :type dt: float
-        :param x_stim: external signal (stimulus)
-        :type x_stim: complex
-
-        :return: the processed input, combining all sources (external, internal, afferent and
-                 efferent) processed via nonlinearities
-        :rtype: numpy complex array
+        :param x: input
+        :type x: numpy complex array
         """
-        def f(x, e):
-            sq = np.sqrt(e)
-            return x * nl(x, sq) * nl(np.conj(x), sq)
-
-        def nml(x, m=0.4, g=.0):
-            # return m * np.tanh(g*x)
-            eps = np.spacing(1)
-            return m*np.tanh(g*(np.abs(x)+eps))*x/(np.abs(x)+eps)
-
-        # compute overall input (external signal + internal connections + eff/aff connections)
-        # For reference: input pre-processing from NLTFT
-        # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
-
-        # TODO: implement afferent/efferent connections
-
-        x = f(x_stim, self.params.e)            # process external signal (stimulus)
-        x_int = self.z.dot(self.internal_conns) # get internal signal (via internal connections)
-        x = x + f(nml(x_int), self.params.e)    # process internal signal
-        self.z = RK4(x, x_1, self.z, dt, dzdt)  # integrate the diffeq
-
-        return x    # return the computed input (will be used in the next time step as x_1)
+        self.z = RK4(x, self.x_1, self.z, dt, self.dzdt)    # integrate the diffeq
+        self.x_1 = x    # store the computed input (will be used in the next time step as x_1)
 

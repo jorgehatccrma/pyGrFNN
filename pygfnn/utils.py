@@ -1,10 +1,11 @@
 import numpy as np
 from defines import TWO_PI
+from defines import EPS
 
 
 def nl(x,gamma):
     """
-    Basic nonlinearity of the form
+    Nonlinearity of the form
 
     .. math::
 
@@ -12,6 +13,33 @@ def nl(x,gamma):
 
     """
     return 1/(1-gamma*x)
+
+
+def f(x, gamma):
+    """
+    Nonlinearity of the form
+
+    .. math::
+
+        f_{\\gamma}(x) = \\frac{x}{1-\\sqrt{\\gamma} x} \\frac{1}{1-\\sqrt{\\gamma} \\bar{x}}
+
+    """
+    sq = np.sqrt(gamma)
+    return x * nl(x, sq) * nl(np.conj(x), sq)
+
+
+
+def nml(x, m=0.4, g=1.0):
+    """
+    Nonlinearity of the form
+
+    .. math::
+
+        f_{m,g}(x) = m\\;\\mathrm{tanh}\\left(g |x|\\right) \\frac{x}{|x|}
+
+    """
+    # return m * np.tanh(g*x)
+    return m*np.tanh(g*(np.abs(x)+EPS))*x/(np.abs(x)+EPS)
 
 
 
