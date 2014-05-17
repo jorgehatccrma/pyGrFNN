@@ -5,8 +5,6 @@ from utils import nl, RK4
 from functools import partial
 from oscillator import zdot
 
-import pdb
-
 class GFNN(object):
     """
     GFNN. Currenlty only log-frequency spacing implemented
@@ -102,8 +100,6 @@ class GFNN(object):
             x = f(x_stim, self.params.e)
             # print "-"*20
             # print x
-
-            # pdb.set_trace()
 
             if self.internal_conns is not None:
                 # process internal signal (via internal connections)

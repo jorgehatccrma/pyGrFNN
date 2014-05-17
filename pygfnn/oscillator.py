@@ -94,10 +94,12 @@ def zdot(x, z, f, params):
     lin = params.a + 1j*TWO_PI*f
     nonlin1 = params.b1*np.abs(z)**2
     nonlin2 = params.b2*params.e*np.abs(z)**4*nl(np.abs(z)**2, params.e)
-    RT = x*nl(x, np.sqrt(params.e))              # passive part of the Resonant Terms (RT)
-    RT = RT * nl(np.conj(z), np.sqrt(params.e))  # times the active part of RT
+    # RT = x*nl(x, np.sqrt(params.e))              # passive part of the Resonant Terms (RT)
+    # RT = RT * nl(np.conj(z), np.sqrt(params.e))  # times the active part of RT
+    RT = x * nl(np.conj(z), np.sqrt(params.e))     # Resonant Terms
 
     return z * (lin + nonlin1 + nonlin2) + RT
+
 
 
 

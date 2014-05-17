@@ -43,9 +43,20 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
     # Make self connections using a Gaussian distribution
     # TODO: optimize
     for h in harmonics:
-        R = normalPDF(RF/h, 1, stdev/12.0)  # FIXME: what/why this x/12 factor? It was in the matlab code,
+        # R = normalPDF(RF/h, 1, stdev/12.0)  # FIXME: what/why this x/12 factor? It was in the matlab code,
+        #                                     # but I don't get it (seems to relate to pitches, but then
+        #                                     # this is not the place!)
+
+        # R = normalPDF(np.log2(RF/h), np.log2(1), stdev/12.0)  # FIXME: what/why this x/12 factor? It was in the matlab code,
+        #                                     # but I don't get it (seems to relate to pitches, but then
+        #                                     # this is not the place!)
+
+        R = normalPDF(np.log2(RF), np.log2(h), stdev/12.0)  # FIXME: what/why this x/12 factor? It was in the matlab code,
                                             # but I don't get it (seems to relate to pitches, but then
                                             # this is not the place!)
+
+        # import pdb
+        # pdb.set_trace()
 
         if not self_connect:
             R[RF==1] = 0
@@ -204,12 +215,12 @@ class Model(object):
                 # print x_ext
             return x
 
-
+        # 1. reset / prepare all the layers
         for layer in self.visible_layers + self.hidden_layers:
             layer.reset()
             layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
 
-
+        # 2. run it one sample at a time
         for (i, x_stim) in enumerate(signal):
             # 1. compute the inputs for all layers
             input_processed = []

@@ -63,7 +63,7 @@ def RK4(x, x_1, z_1, dt, diffeq):
     TODO:  this assumes a fixed time step between x and x_1
     """
 
-    xh = 0.5*(x+x_1)   # linear interpolation
+    xh = 0.5*(x+x_1)   # for now, linear interpolation
     dth = 0.5*dt
 
     k1 = diffeq(x_1, z_1)
@@ -104,3 +104,12 @@ def normalCDF(x, mu, sigma):
 
 def pattern2odf(pattern, fs_odf):
     pass
+
+
+def nextpow2(n):
+    """
+    TODO: document
+    """
+    m_f = np.log2(n)
+    m_i = np.ceil(m_f)
+    return 2**m_i
