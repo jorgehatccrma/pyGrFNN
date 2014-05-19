@@ -62,10 +62,10 @@ class Zparam(object):
 
 
 
-def zdot(x, z, f, params):
+def zdot(x, z, f, zparams):
     """
     Dynamics of a neural oscillator, as described in equation 15 of the paper referenced above.
-    Can work with vectors, to simultaneously compute different oscillators:
+    Can work with vectors (i.e. simultaneously compute different oscillators):
 
     .. math::
 
@@ -84,19 +84,19 @@ def zdot(x, z, f, params):
     :type z: complex numpy array
     :param f: natural frequency of the oscillator
     :type f: numpy float array
-    :param params: oscillator parameters: :math:`\\alpha, \\beta_1, \\delta_1,
+    :param zparams: oscillator parameters: :math:`\\alpha, \\beta_1, \\delta_1,
                                                 \\beta_2, \\delta_2` and :math:`\\varepsilon`
-    :type params: Zparam
+    :type zparams: Zparam
 
     :rtype: complex numpy array
     """
 
-    lin = params.a + 1j*TWO_PI*f
-    nonlin1 = params.b1*np.abs(z)**2
-    nonlin2 = params.b2*params.e*np.abs(z)**4*nl(np.abs(z)**2, params.e)
-    # RT = x*nl(x, np.sqrt(params.e))              # passive part of the Resonant Terms (RT)
-    # RT = RT * nl(np.conj(z), np.sqrt(params.e))  # times the active part of RT
-    RT = x * nl(np.conj(z), np.sqrt(params.e))     # Resonant Terms
+    lin = zparams.a + 1j*TWO_PI*f
+    nonlin1 = zparams.b1*np.abs(z)**2
+    nonlin2 = zparams.b2*zparams.e*np.abs(z)**4*nl(np.abs(z)**2, zparams.e)
+    # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
+    # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
+    RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
 
     return z * (lin + nonlin1 + nonlin2) + RT
 

@@ -2,6 +2,7 @@ import numpy as np
 from defines import TWO_PI
 from defines import EPS
 
+from scipy.special import erf
 
 def nl(x,gamma):
     """
@@ -99,7 +100,7 @@ def normalCDF(x, mu, sigma):
 
     """
     z = (x-mu) / sigma;
-    return 0.5 * (1 + np.erf(z/np.sqrt(2)))
+    return 0.5 * (1 + erf(z/np.sqrt(2)))
 
 
 def pattern2odf(pattern, fs_odf):

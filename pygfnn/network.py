@@ -2,7 +2,7 @@ import numpy as np
 from utils import normalPDF
 from utils import normalCDF
 from utils import f, nml
-from defines import COMPLEX
+from defines import COMPLEX, PI
 
 
 def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, complex_kernel=False, self_connect=True):
@@ -69,8 +69,9 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
             # TODO: implement
             # (from NLTFT:)
             # pi*(2*normcdf(log2(RF), log2(harms(nn)), log2(1+sd(nn)))-1);
-            Q = np.zeros(R.shape)  # TODO: compute
-            conns = conns + R * np.exp(1j*Q)
+            Q = PI*(2.0*normalCDF(np.log2(RF), np.log2(h), np.log2(1+stdev))-1);
+            Q[R<=np.abs(conns)] = 0
+            conns = conns + R * np.exp(1j*Q) # FIXME: This whole complex kernel business seems odd
         else:
             conns = conns + R
 
@@ -202,16 +203,16 @@ class Model(object):
             # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
 
             # process external signal (stimulus)
-            x = f(x_stim, layer.params.e)
+            x = f(x_stim, layer.zparams.e)
             if layer.internal_conns is not None:
                 # process internal signal (via internal connections)
                 x_int = layer.z.dot(layer.internal_conns)
-                x = x + f(nml(x_int), layer.params.e)
+                x = x + f(nml(x_int), layer.zparams.e)
             # process other external inputs (afferent / efferent)
             for (source, conns) in external_conns:
                 x_ext = source.z.dot(conns)
                 # print np.sum(x_ext)
-                x = x + f(nml(x_ext), layer.params.e)
+                x = x + f(nml(x_ext), layer.zparams.e)
                 # print x_ext
             return x
 

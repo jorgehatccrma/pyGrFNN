@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.napoleon',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -108,6 +109,7 @@ pygments_style = 'sphinx'
 # html_theme = 'scrolls'
 # html_theme = 'pyramid'
 # html_theme = 'nature'
+# html_theme = 'epub'
 
 
 
@@ -277,3 +279,10 @@ autoclass_content = 'both'
 import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+# import sphinx_bootstrap_theme
+# html_theme = 'bootstrap'
+# html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+
+
+# html_style = 'default.css'

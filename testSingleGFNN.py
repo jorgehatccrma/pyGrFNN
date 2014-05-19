@@ -9,11 +9,12 @@ import matplotlib.pyplot as plt
 
 
 plot_onset_signal = False
-plot_internal_conns = False
+plot_internal_conns = True
 plot_tf_output = True
 
 
 # load onset signal
+# odf = np.loadtxt('sampleOnsets/bossa.onset.txt')
 odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
 fs_odf = odf[0]
 odf = odf[1:]
@@ -38,20 +39,24 @@ center_freq = 2.0
 half_range =  2
 oscs_per_octave = 64
 
-
+complex_kernel = True
 layer = gfnn.GFNN(params,
                   fc=center_freq,
                   octaves_per_side=half_range,
-                  oscs_per_octave=oscs_per_octave,
-                  internal_strength=internal_strength,
-                  internal_stdev=internal_stdev)
+                  oscs_per_octave=oscs_per_octave)
+
+layer.connect_internally(internal_strength=internal_strength,
+                         internal_stdev=internal_stdev,
+                         complex_kernel=complex_kernel)
 
 net = net.Model()
 net.add_layer(layer)
 
 
-# plot internal conns
+# plot internal conns (for the center frequency)
 conn = layer.internal_conns[np.round(layer.f.size/2.0)]
+f = layer.f
+T = 1.0/f
 
 
 
@@ -61,12 +66,17 @@ if plot_internal_conns:
     ax1.semilogx(layer.f, np.abs(conn))
     ax1b = ax1.twinx()
     ax1b.semilogx(layer.f, np.angle(conn), color='r')
+    ax1b.set_xticks(2**np.arange(np.log2(nextpow2(np.min(layer.f))), 1+np.log2(nextpow2(np.max(layer.f)))))
+    ax1b.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    ax1b.set_ylim([-np.pi, np.pi])
     ax1.axis('tight')
 
 
     ax2.semilogx(layer.f, np.real(conn))
     ax2b = ax2.twinx()
     ax2b.semilogx(layer.f, np.imag(conn), color='r')
+    ax2b.set_xticks(2**np.arange(np.log2(nextpow2(np.min(layer.f))), 1+np.log2(nextpow2(np.max(layer.f)))))
+    ax2b.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     ax2.axis('tight')
 
     plt.show()
@@ -75,14 +85,12 @@ if plot_internal_conns:
 
 # run the model
 
-# # temporal hack
-# odf = np.insert(odf, 0, 0)
-# odf = odf[:-1]
+# temporal hack
+odf = np.insert(odf, 0, 0)
+odf = odf[:-1]
 
 net.process_signal(odf*0.5, t_odf, 1.0/fs_odf)
 TF = layer.TF
-f = layer.f
-T = 1.0/f
 
 
 if plot_tf_output:
