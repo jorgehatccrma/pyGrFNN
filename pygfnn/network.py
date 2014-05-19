@@ -64,7 +64,7 @@ def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, compl
             # (from NLTFT:)
             # pi*(2*normcdf(log2(RF), log2(harms(nn)), log2(1+sd(nn)))-1);
             Q = PI*(2.0*normalCDF(np.log2(RF), np.log2(h), np.log2(1+stdev))-1);
-            Q[R<=np.abs(conns)] = 0
+            # Q[R<=np.abs(conns)] = 0
             conns = conns + R * np.exp(1j*Q) # FIXME: This whole complex kernel business seems odd
         else:
             conns = conns + R
@@ -116,12 +116,15 @@ class Model(object):
     Attributes:
         visible_layers: list of GFNN layers that will receive the external signal
         hidden_layers: list of GFNN layers that won't receive the external signal
+        connections: dictionary of connection matrices. Keys correspond to destination layers.
+            Values are tuples identifying the source layer and connection matrix. In other words
+            ``connections[layerTo] = (layerFrom, conn_matrix)``
 
     """
 
     def __init__(self):
         """
-        TODO: describe stuff (specially self._connections)
+        TODO: describe stuff (specially self.connections)
         """
 
         # Visible GFNN: list of GFNN layers that will receive the external signal
@@ -131,7 +134,7 @@ class Model(object):
         self.hidden_layers = []
 
         # connections
-        self._connections = {}
+        self.connections = {}
 
         pass
 
@@ -157,9 +160,9 @@ class Model(object):
             else:
                 self.hidden_layers.append(layer)
 
-            self._connections[layer] = []   # list of connected layers. List elements
+            self.connections[layer] = []    # list of connected layers. List elements
                                             # should be tuples of the form
-                                            # (destination_layer, connextion_matrix)
+                                            # (source_layer, connextion_matrix)
 
         else:
             raise DuplicatedLayer(layer)
@@ -167,18 +170,15 @@ class Model(object):
 
 
     def connect_layers(self, source, destination, matrix):
-        """
-        Connect two layers.
+        """Connect two layers.
 
-        :param source: Source layer (connections will be made from this layer to *destination*)
-        :type source: :class:`.GFNN`
-        :param destination: Destination layer (connections will be made from *source* layer to this layer)
-        :type destination: :class:`.GFNN`
-        :param matrix: Matrix of connection weights
-        :type matrix: numpy complex array. It's shape must be (source.f.size, destination.f.size)
+        Args:
+            source (:class:`.GFNN`): source layer (connections will be made from this layer to *destination*)
+            destination (:class:`.GFNN`): destination layer (connections will be made from *source* layer to this layer)
+            matrix (:class:`numpy.array`): Matrix of connection weights
         """
 
-        # TODO: add sanity check
+        # TODO: add sanity check?
         # TODO: add another method (or use duck typing) to pass harmonics or connection_type in matrix
 
         if source not in self.visible_layers+self.hidden_layers:
@@ -187,7 +187,7 @@ class Model(object):
         if destination not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(destination)
 
-        self._connections[destination].append((source, matrix))
+        self.connections[destination].append((source, matrix))
 
 
 
@@ -196,22 +196,21 @@ class Model(object):
         """Compute the TF representation of an input signal
 
         Note:
-            TODO: raise exception when shapes of **signal** and **t** mismatch
+            TODO: raise exception when shapes of **signal** and **t** mismatch?
 
         Args:
             signal (numpy complex array): input signal (stimulus)
             t (numpy float array): time vector (must have the same shape as *signal*)
             dt (float): input signal's sample period (inverse of the sample rate)
 
-        Returns:
-            :class:`numpy.array` Time-frequency representation of the input signal.
-                Rows index frequency and columns index time
+
+
 
         """
 
         def compute_input(layer, external_conns, x_stim=0):
             """
-            external_conns is a list of tuples of the form (source_layer, connectioc_matrix)
+            external_conns is a list of tuples of the form (source_layer, connection_matrix)
             """
             # compute overall input (external signal + internal connections + eff/aff connections)
             # For reference: input pre-processing from NLTFT
@@ -231,6 +230,7 @@ class Model(object):
                 # print x_ext
             return x
 
+
         # 1. reset / prepare all the layers
         for layer in self.visible_layers + self.hidden_layers:
             layer.reset()
@@ -241,10 +241,10 @@ class Model(object):
             # 1. compute the inputs for all layers
             input_processed = []
             for layer in self.visible_layers:
-                x = compute_input(layer, self._connections[layer], x_stim)
+                x = compute_input(layer, self.connections[layer], x_stim)
                 input_processed.append((layer, x))
             for layer in self.hidden_layers:
-                x = compute_input(layer, self._connections[layer])
+                x = compute_input(layer, self.connections[layer])
                 input_processed.append((layer, x))
                 # print layer, np.sum(x)
 

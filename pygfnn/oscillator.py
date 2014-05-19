@@ -13,45 +13,26 @@ from utils import nl
 from defines import TWO_PI
 
 class Zparam(object):
-    """
-    Convenience class to encapsulate oscillator parameters.
+    """Convenience class to encapsulate oscillator parameters.
+
+    Attributes:
+         a (float): Dampening parameter :math:`\\alpha`
+         b1 (COMPLEX): :math:`b_1 = \\beta_1 + j\\delta_1`
+         b2 (COMPLEX): :math:`b_2 = \\beta_2 + j\\delta_2`
+         e (float): Coupling strength :math:`\\varepsilon`
+
     """
 
     def __init__(self, alpha=0.0, beta1=-1.0, delta1=0.0, beta2=-0.25, delta2=0.0, epsilon=1.0):
-        """
-        The constructor takes an optional list of named oscillator parameters:
-        For example:
-        ::
+        """Constructor.
 
-            params = Zparam(alpha=0.5,
-                            beta1=-10.0,
-                            beta2=-3.0,
-                            delta1=0.0,
-                            delta2=0.0,
-                            epsilon=0.6)
-
-
-        All parameters are optional (see default values in the class description)
-
-        :param alpha: :math:`\\alpha` (defaults to: 0.0)
-        :param beta1: :math:`\\beta_1` (defaults to: -1.0)
-        :param beta2: :math:`\\beta_2` (defaults to: -0.25)
-        :param delta1: :math:`\\delta_1` (defaults to: 0.0)
-        :param delta2: :math:`\\delta_2` (defaults to: 0.0)
-        :param epsilon: :math:`\\varepsilon` (defaults to: 1.0)
-
-        :type alpha: float
-        :type beta1: float
-        :type beta2: float
-        :type delta1: float
-        :type delta2: float
-        :type epsilon: float
-
-        **Instance attributes**:
-         - **a** (*float*) - Dampening parameter :math:`\\alpha`
-         - **b1** (*complex*) - :math:`b_1 = \\beta_1 + j\\delta_1`
-         - **b2** (*complex*) - :math:`b_2 = \\beta_2 + j\\delta_2`
-         - **e** (*float*) - Coupling strength :math:`\\varepsilon`
+        Args:
+            alpha (float): :math:`\\alpha` (defaults to: 0.0)
+            beta1 (float): :math:`\\beta_1` (defaults to: -1.0)
+            beta2 (float): :math:`\\beta_2` (defaults to: -0.25)
+            delta1 (float): :math:`\\delta_1` (defaults to: 0.0)
+            delta2 (float): :math:`\\delta_2` (defaults to: 0.0)
+            epsilon (float): :math:`\\varepsilon` (defaults to: 1.0)
 
         """
 
@@ -78,17 +59,16 @@ def zdot(x, z, f, zparams):
         b_1 &= \\beta_1 + j \\delta_1 \\\\
         b_2 &= \\beta_2 + j \\delta_2 \\\\
 
-    :param x: input signal
-    :type x: complex numpy array
-    :param z: oscillator state
-    :type z: complex numpy array
-    :param f: natural frequency of the oscillator
-    :type f: numpy float array
-    :param zparams: oscillator parameters: :math:`\\alpha, \\beta_1, \\delta_1,
-                                                \\beta_2, \\delta_2` and :math:`\\varepsilon`
-    :type zparams: Zparam
+    Args:
+        x (:class:`numpy.array`): input signal
+        z (:class:`numpy.array`): oscillator state
+        f (:class:`numpy.array`): natural frequency of the oscillator
+        zparams (:class:`.Zparam`): oscillator parameters: :math:`\\alpha, \\beta_1, \\delta_1,
+            \\beta_2, \\delta_2` and :math:`\\varepsilon`
 
-    :rtype: complex numpy array
+    Returns:
+         (:class:`numpy.array`): The evaluated time derivative (:math:`\\dot{z}`)
+
     """
 
     lin = zparams.a + 1j*TWO_PI*f

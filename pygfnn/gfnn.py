@@ -118,7 +118,7 @@ class GFNN(object):
         (doesn't consider other inputs such as efferent or afferent).
 
         Note:
-            TODO: raise exception when shapes of **input** and **t** mismatch
+            TODO: raise exception when shapes of **input** and **t** mismatch?
 
         Args:
             input (numpy complex array): input signal (stimulus)

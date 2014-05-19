@@ -12,6 +12,10 @@ def nl(x,gamma):
 
         f_{\\gamma}(x) = \\frac{1}{1-\\gamma x}
 
+    Args:
+        x (:class:`numpy.array`): signal
+        gamma (float): Nonlinearity parameter
+
     """
     return 1/(1-gamma*x)
 
@@ -24,44 +28,49 @@ def f(x, gamma):
 
         f_{\\gamma}(x) = \\frac{x}{1-\\sqrt{\\gamma} x} \\frac{1}{1-\\sqrt{\\gamma} \\bar{x}}
 
+    Args:
+        x (:class:`numpy.array`): signal
+        gamma (float): Nonlinearity parameter
+
     """
     sq = np.sqrt(gamma)
     return x * nl(x, sq) * nl(np.conj(x), sq)
 
 
 
-def nml(x, m=0.4, g=1.0):
+def nml(x, m=0.4, gamma=1.0):
     """
     Nonlinearity of the form
 
     .. math::
 
-        f_{m,g}(x) = m\\;\\mathrm{tanh}\\left(g |x|\\right) \\frac{x}{|x|}
+        f_{m,\\gamma}(x) = m\\;\\mathrm{tanh}\\left(\\gamma |x|\\right) \\frac{x}{|x|}
 
+    Args:
+        x (:class:`numpy.array`): signal
+        m (float): gain
+        gamma (float): Nonlinearity parameter
     """
     # return m * np.tanh(g*x)
-    return m*np.tanh(g*(np.abs(x)+EPS))*x/(np.abs(x)+EPS)
+    return m*np.tanh(gamma*(np.abs(x)+EPS))*x/(np.abs(x)+EPS)
 
 
 
 def RK4(x, x_1, z_1, dt, diffeq):
-    """
-    Fourth-order Runge Kutta integration
+    """Fourth-order Runge Kutta integration
 
-    :param x:   current value of the input
-    :type x: complex numpy array
-    :param x_1:   last value of the input
-    :type x_1: complex numpy array
-    :param z_1:   last state of the system (oscillator)
-    :type z_1: complex numpy array
-    :param dt:   time step (fixed)
-    :type dt: float
-    :param diffeq: differential equation to be solved (should return dz/dt = f(x,t))
-    :type diffeq: function
+    Args:
+        x (:class:`numpy.array`): current value of the input
+        x_1 (:class:`numpy.array`): last value of the input
+        z_1 (:class:`numpy.array`): last state of the system (oscillator)
+        dt (float): time step (fixed)
+        diffeq (function): differential equation to be solved (should return dz/dt = f(x,t))
 
-    :rtype: complex numpy array
+    Returns:
+        (:class:`numpy.array`): updated states
 
-    TODO:  this assumes a fixed time step between x and x_1
+    ToDo:
+        this assumes a fixed time step between x and x_1
     """
 
     xh = 0.5*(x+x_1)   # for now, linear interpolation
@@ -108,8 +117,7 @@ def pattern2odf(pattern, fs_odf):
 
 
 def nextpow2(n):
-    """
-    TODO: document
+    """Similarly to Matlab's ``nextpow2``, returns the power of 2 ``>= n``
     """
     m_f = np.log2(n)
     m_i = np.ceil(m_f)
