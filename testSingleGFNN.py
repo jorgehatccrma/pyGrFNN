@@ -8,8 +8,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
+
 plot_onset_signal = False
-plot_internal_conns = True
+plot_internal_conns = False
 plot_tf_output = True
 
 
@@ -20,12 +21,6 @@ fs_odf = odf[0]
 odf = odf[1:]
 t_odf = np.arange(0, odf.size)
 t_odf = t_odf/fs_odf
-
-
-if plot_onset_signal:
-    plt.plot(t_odf, odf)
-    plt.show()
-
 
 
 # create single gfnn model
@@ -45,7 +40,10 @@ layer = gfnn.GFNN(params,
                   octaves_per_side=half_range,
                   oscs_per_octave=oscs_per_octave)
 
-layer.connect_internally(internal_strength=internal_strength,
+rels = [1./3., 1./2., 1., 2., 3.]
+# rels = [1]
+layer.connect_internally(relations=rels,
+                         internal_strength=internal_strength,
                          internal_stdev=internal_stdev,
                          complex_kernel=complex_kernel)
 
@@ -57,6 +55,33 @@ net.add_layer(layer)
 conn = layer.internal_conns[np.round(layer.f.size/2.0)]
 f = layer.f
 T = 1.0/f
+
+
+
+
+# run the model
+
+# temporary hack
+# odf = np.insert(odf, 0, 0)
+# odf = odf[:-1]
+
+# seed = odf[0]
+# seed_x = net.compute_input(layer, None, seed)
+# odf = odf[1:]
+# odf = np.insert(odf, -1, 0)
+# layer.reset(x_1=seed_x)
+
+
+net.process_signal(odf*0.5, t_odf, 1.0/fs_odf)
+TF = layer.TF
+
+
+
+# PLOTS
+
+if plot_onset_signal:
+    plt.plot(t_odf, odf)
+    plt.show()
 
 
 
@@ -83,24 +108,8 @@ if plot_internal_conns:
 
 
 
-# run the model
-
-# temporal hack
-odf = np.insert(odf, 0, 0)
-odf = odf[:-1]
-
-net.process_signal(odf*0.5, t_odf, 1.0/fs_odf)
-TF = layer.TF
-
-
 if plot_tf_output:
-    fig, axTF = plt.subplots(1)
-    im = axTF.pcolormesh(t_odf, T, np.abs(TF), cmap='gray_r')
-    axTF.set_yscale('log')
-    # axTF.set_yticks(np.min(T)*(2**np.arange(2*oscs_per_octave+1)))
-    axTF.set_yticks(2**np.arange(np.log2(nextpow2(np.min(T))), 1+np.log2(nextpow2(np.max(T)))))
-    axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    # axTF.set_xticklabels([])
-    axTF.axis('tight')
-
-    plt.show()
+    from pygfnn.vis import tf_simple, tf_detail
+    # tf_simple(TF, t_odf, T, odf, np.abs)
+    # tf_simple(TF, t_odf, T, None, np.abs)
+    tf_detail(TF, t_odf, T, np.mean(t_odf), odf, np.abs)

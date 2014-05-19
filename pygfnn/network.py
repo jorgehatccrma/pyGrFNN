@@ -1,3 +1,6 @@
+"""Network of GFNNs related code
+"""
+
 import numpy as np
 from utils import normalPDF
 from utils import normalCDF
@@ -191,6 +194,30 @@ class Model(object):
 
 
 
+    def compute_input(self, layer, external_conns, x_stim=0):
+        """TODO: document properly
+
+        external_conns is a list of tuples of the form (source_layer, connection_matrix)
+        """
+        # compute overall input (external signal + internal connections + eff/aff connections)
+        # For reference: input pre-processing from NLTFT
+        # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
+
+        # process external signal (stimulus)
+        x = f(x_stim, layer.zparams.e)
+        if layer.internal_conns is not None:
+            # process internal signal (via internal connections)
+            x_int = layer.z.dot(layer.internal_conns)
+            x = x + f(nml(x_int), layer.zparams.e)
+        # process other external inputs (afferent / efferent)
+        if external_conns is not None:
+            for (source, conns) in external_conns:
+                x_ext = source.z.dot(conns)
+                # print np.sum(x_ext)
+                x = x + f(nml(x_ext), layer.zparams.e)
+                # print x_ext
+        return x
+
 
     def process_signal(self, signal, t, dt):
         """Compute the TF representation of an input signal
@@ -208,32 +235,8 @@ class Model(object):
 
         """
 
-        def compute_input(layer, external_conns, x_stim=0):
-            """
-            external_conns is a list of tuples of the form (source_layer, connection_matrix)
-            """
-            # compute overall input (external signal + internal connections + eff/aff connections)
-            # For reference: input pre-processing from NLTFT
-            # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
-
-            # process external signal (stimulus)
-            x = f(x_stim, layer.zparams.e)
-            if layer.internal_conns is not None:
-                # process internal signal (via internal connections)
-                x_int = layer.z.dot(layer.internal_conns)
-                x = x + f(nml(x_int), layer.zparams.e)
-            # process other external inputs (afferent / efferent)
-            for (source, conns) in external_conns:
-                x_ext = source.z.dot(conns)
-                # print np.sum(x_ext)
-                x = x + f(nml(x_ext), layer.zparams.e)
-                # print x_ext
-            return x
-
-
-        # 1. reset / prepare all the layers
+        # 1. prepare all the layers
         for layer in self.visible_layers + self.hidden_layers:
-            layer.reset()
             layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
 
         # 2. run it one sample at a time
@@ -241,10 +244,10 @@ class Model(object):
             # 1. compute the inputs for all layers
             input_processed = []
             for layer in self.visible_layers:
-                x = compute_input(layer, self.connections[layer], x_stim)
+                x = self.compute_input(layer, self.connections[layer], x_stim)
                 input_processed.append((layer, x))
             for layer in self.hidden_layers:
-                x = compute_input(layer, self.connections[layer])
+                x = self.compute_input(layer, self.connections[layer])
                 input_processed.append((layer, x))
                 # print layer, np.sum(x)
 

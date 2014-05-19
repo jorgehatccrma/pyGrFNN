@@ -29,6 +29,7 @@ Modules
    oscillator
    gfnn
    network
+   vis
    utils
 
 

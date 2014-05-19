@@ -1,3 +1,10 @@
+"""GFNN related code, as described in
+
+Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
+A canonical model for gradient frequency neural networks.
+Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
+"""
+
 import numpy as np
 from network import make_connections
 from defines import COMPLEX
@@ -69,15 +76,16 @@ class GFNN(object):
 
 
     def connect_internally(self,
+                           relations=[1],
                            internal_strength=0.5,
                            internal_stdev=0.5,
                            complex_kernel=False):
         """ Creates internal connections
 
-        Note:
-            Currently only "rhythmic" connections (i.e. [1/3, 1/2, 1, 2, 3]) are implemented
-
         Args:
+            relations (list): list of connection relations to be established. For example,
+                ``relations = [0.5, 1., 3.]`` will establish the following connections:
+                :math:`f_{dest} == 0.5f_{src};\\quad f_{dest} == f_{src};\\quad f_{dest} == 3f_{src}`
             internal_strength (float): weight of the internal connection.
                 If 0.0, not connections will be created
             internal_stdev (float): internal connections standard deviation.
@@ -89,7 +97,7 @@ class GFNN(object):
             self.internal_conns = internal_strength * \
                                   make_connections(self.f,
                                                    self.f,
-                                                   [1./3, 1./2, 1., 2., 3.],
+                                                   relations,
                                                    internal_stdev,
                                                    complex_kernel=complex_kernel,
                                                    self_connect=False) / self.oscs_per_octave    # TODO: why /oscs_per_octave?

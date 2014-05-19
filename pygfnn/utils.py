@@ -1,8 +1,19 @@
+"""Utility functions
+"""
+
 import numpy as np
 from defines import TWO_PI
 from defines import EPS
 
 from scipy.special import erf
+
+import time
+import logging
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+
+
 
 def nl(x,gamma):
     """
@@ -122,3 +133,71 @@ def nextpow2(n):
     m_f = np.log2(n)
     m_i = np.ceil(m_f)
     return 2**m_i
+
+
+# execution time decorator
+def time_log(fun):
+    """Decorator to measure execution time of a function
+
+    Args:
+        fun (function): Function to be timed
+
+    Returns:
+        (function): decorated function
+
+    Example: ::
+
+            import time
+            from pygfnn.utils import time_log
+
+            # decorate a function
+            @time_log
+            def my_func(N, st=0.01):
+                for i in range(N):
+                    time.sleep(st)
+
+
+            # use it as you would normally would
+            my_func(100)
+
+
+    """
+    def log_wrapper(*args, **kwargs):
+        t0 = time.time()
+        output = fun(*args, **kwargs)
+        elapsed = time.time() - t0
+        if elapsed < 60:
+            elapsed_str = '%.2f seconds' % (elapsed)
+        else:
+            elapsed_str = time.strftime('%H:%M:%S', time.gmtime(elapsed))
+        logging.info('%s took %s' % (fun.__name__, elapsed_str, ))
+        return output
+    return log_wrapper
+
+
+def find_nearest(array, value):
+    """Finds the nearest element (and its index)
+
+    Args:
+        array (:class:`numpy.array`): array to be searched
+        value (dtype): value being searched
+
+    Returns:
+        (dtype, int): tuple (nearest value, nearest value index)
+    """
+    idx = (np.abs(array-value)).argmin()
+    return (array[idx], idx)
+
+
+
+def nice_log_values(array):
+    """Returns an array of logarithmically spaced values covering the range in *array*
+
+    Args:
+        array (:class:`numpy.array`): source array
+
+    Returns:
+        :class:`numpy.array`: log spaced nice values
+    """
+    nice = 2**np.arange(np.log2(nextpow2(np.min(array))), 1+np.log2(nextpow2(np.max(array))))
+    return nice[(nice >= np.min(array)) & (nice <= np.max(array))]
