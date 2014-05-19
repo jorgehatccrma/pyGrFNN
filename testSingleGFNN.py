@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 plot_onset_signal = False
-plot_internal_conns = False
+plot_internal_conns = True
 plot_tf_output = True
 
 
@@ -52,7 +52,7 @@ net.add_layer(layer)
 
 
 # plot internal conns (for the center frequency)
-conn = layer.internal_conns[np.round(layer.f.size/2.0)]
+# conn = layer.internal_conns[np.round(layer.f.size/2.0)]
 f = layer.f
 T = 1.0/f
 
@@ -86,30 +86,12 @@ if plot_onset_signal:
 
 
 if plot_internal_conns:
-    fig, (ax1, ax2) = plt.subplots(2,1,sharex=True)
-
-    ax1.semilogx(layer.f, np.abs(conn))
-    ax1b = ax1.twinx()
-    ax1b.semilogx(layer.f, np.angle(conn), color='r')
-    ax1b.set_xticks(2**np.arange(np.log2(nextpow2(np.min(layer.f))), 1+np.log2(nextpow2(np.max(layer.f)))))
-    ax1b.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    ax1b.set_ylim([-np.pi, np.pi])
-    ax1.axis('tight')
-
-
-    ax2.semilogx(layer.f, np.real(conn))
-    ax2b = ax2.twinx()
-    ax2b.semilogx(layer.f, np.imag(conn), color='r')
-    ax2b.set_xticks(2**np.arange(np.log2(nextpow2(np.min(layer.f))), 1+np.log2(nextpow2(np.max(layer.f)))))
-    ax2b.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    ax2.axis('tight')
-
-    plt.show()
-
+    from pygfnn.vis import plot_connections
+    plot_connections(layer.internal_conns, layer.f, layer.f)
 
 
 if plot_tf_output:
     from pygfnn.vis import tf_simple, tf_detail
     # tf_simple(TF, t_odf, T, odf, np.abs)
     # tf_simple(TF, t_odf, T, None, np.abs)
-    tf_detail(TF, t_odf, T, np.mean(t_odf), odf, np.abs)
+    tf_detail(TF, t_odf, T, np.max(t_odf), odf, np.abs)

@@ -62,7 +62,7 @@ def check_mpl(fun):
 
 
 @check_mpl
-def tf_simple(TF, t, f, x=None, display_op=None):
+def tf_simple(TF, t, f, x=None, display_op=np.abs):
     """tf_simple(TF, t, f, x=None, display_op=None)
 
     Simple time-frequency representation. It shows the TF in the top plot and the original time signal
@@ -91,10 +91,7 @@ def tf_simple(TF, t, f, x=None, display_op=None):
         axOnset = fig.add_subplot(gs[1], sharex=axTF)
 
 
-    if display_op is not None:
-        axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
-    else:
-        axTF.pcolormesh(t, f, TF, cmap='binary')
+    axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
 
     axTF.set_yscale('log')
     axTF.set_yticks(nice_log_values(f))
@@ -113,7 +110,7 @@ def tf_simple(TF, t, f, x=None, display_op=None):
 
 
 @check_mpl
-def tf_detail(TF, t, f, t_detail=None, x=None, display_op=None):
+def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=None)
 
     Detailed time-frequency representation. It shows the TF in the top plot. It also shows the
@@ -121,7 +118,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=None):
     If specified, the original time signal is shown the bottom plot.
 
     Args:
-        TF  (:class:`numpy.array`): time-frequency representation
+        TF (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
         t_detail (float): time instant to be detailed
@@ -144,11 +141,11 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=None):
                            height_ratios=[3,1]
                            )
         gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
-        axOnset = plt.subplot(gs[6])
+        axOnset = fig.add_subplot(gs[6])
 
-    axCB = plt.subplot(gs[0])
-    axTF = plt.subplot(gs[2])
-    axF = plt.subplot(gs[3])
+    axCB = fig.add_subplot(gs[0])
+    axTF = fig.add_subplot(gs[2])
+    axF = fig.add_subplot(gs[3])
 
     # find detail index
     if t_detail is None:
@@ -159,10 +156,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=None):
     nice_freqs = nice_log_values(f)
 
     # TF image
-    if display_op is not None:
-        im = axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
-    else:
-        im = axTF.pcolormesh(t, f, TF, cmap='binary')
+    im = axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
     axTF.set_yscale('log')
     axTF.set_yticks(nice_freqs)
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
@@ -192,4 +186,65 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=None):
 
 
     plt.show()
+
+
+
+@check_mpl
+def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs, detail_type='polar'):
+    """plot_connections(matrix, t_detail=None, display_op=np.abs)
+
+    Args:
+        matrix (:class:`numpy.array`): connection matrix
+        f_source (:class:`numpy.array`): source frequency vector
+        f_dest (:class:`numpy.array`): destination frequency vector
+        f_detail (float): frequency of the detail plot
+        display_op (function): operator to apply to the connection matrix (e.g. `numpy.abs`)
+        detail_type (string): detail complex display type ('polar' or 'cartesian')
+    """
+    fig = plt.figure()
+
+    gs = gridspec.GridSpec(2, 1,
+                   width_ratios=[1],
+                   height_ratios=[3,1]
+                   )
+    gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
+    axConn = fig.add_subplot(gs[0])
+    axDetail = fig.add_subplot(gs[1])
+
+    if f_detail is None:
+        idx = np.round(f_source.size/2.0)
+        f_detail = f_source[idx]
+    else:
+        (f_detail, idx) = find_nearest(f_source, f_detail)
+    conn = matrix[idx, :]
+
+
+    axConn.pcolormesh(f_dest, f_source, display_op(matrix), cmap='binary')
+    axConn.set_xscale('log')
+    axConn.set_xticks(nice_log_values(f_dest))
+    axConn.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    axConn.set_yscale('log')
+    axConn.set_yticks(nice_log_values(f_source))
+    axConn.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    axConn.plot([np.min(f_dest), np.max(f_dest)], [f_detail, f_detail], color='r')
+    axConn.axis('tight')
+
+
+    if detail_type is not 'cartesian':
+        axDetail.semilogx(f_dest, np.abs(conn))
+        axDetailb = axDetail.twinx()
+        axDetailb.semilogx(f_dest, np.angle(conn), color='r')
+        axDetailb.set_xticks(nice_log_values(f_dest))
+        axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+        axDetailb.set_ylim([-np.pi, np.pi])
+    else:
+        axDetail.semilogx(f_dest, np.real(conn))
+        axDetailb = axDetail.twinx()
+        axDetailb.semilogx(f_dest, np.imag(conn), color='r')
+        axDetailb.set_xticks(nice_log_values(f_dest))
+        axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    axDetail.axis('tight')
+
+    plt.show()
+
 
