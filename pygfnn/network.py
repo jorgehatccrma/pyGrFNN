@@ -6,27 +6,21 @@ from defines import COMPLEX, PI
 
 
 def make_connections(source_f, dest_f, harmonics=np.array([1]), stdev=0.5, complex_kernel=False, self_connect=True):
-    """
-    Create a connection matrix from source to destination.
+    """Creates a connection matrix from source to destination.
 
-    :param source_f: ordered array of source frequencies
-    :type source_f: numpy array of floats
-    :param dest_f: ordered array of destination frequencies
-    :type dest_f: numpy array of floats
-    :param harmonics: frequency harmonics to connect (e.g. [1/3, 1/2, 1, 2, 3])
-    :type harmonics: numpy array of floats
-    :param stdev: standard deviation to use in the connections (to "spread" them with neighbors)
-    :type stdev: float
-    :param complex_kernel: If *True*, the connections will be complex (i.e. include phase information).
-        Otherwise, the connections will be real-valued weights.
-    :type complex_kernel: bool
-    :param self_connect: if *False*, the connection from source_f[i] to dest_f[j]
-        (where source_f[i] == dest_f[j]) will be set to 0
-    :type self_connect: bool
+    Args:
+        source_f (:class:`numpy.array`): ordered array of source frequencies
+        dest_f (:class:`numpy.array`): ordered array of destination frequencies
+        harmonics (:class:`numpy.array`): frequency harmonics to connect (e.g. [1/3, 1/2, 1, 2, 3])
+        stdev (float): standard deviation to use in the connections (to "spread" them with neighbors)
+        complex_kernel (bool): If *True*, the connections will be complex (i.e. include phase information).
+            Otherwise, the connections will be real-valued weights.
+        self_connect (bool): if *False*, the connection from source_f[i] to dest_f[j]
+            (where source_f[i] == dest_f[j]) will be set to 0
 
+    Returns:
+        :class:`numpy.array`: Connection matrix (rows index source and columns index destination)
 
-    :return: Connection matrix. Rows index source and Columns index destination
-    :rtype: numpy complex array (2D)
     """
 
     # matrix (2D arrray) of relative frequencies
@@ -88,7 +82,7 @@ class DuplicatedLayer(Exception):
     Raised when attempting to add a previously added layer to a network
 
     Attribute:
-        layer -- duplicated layer
+        layer (:class:`.GFNN`): duplicated layer
     """
 
     def __init__(self, layer):
@@ -100,7 +94,7 @@ class UnknownLayer(Exception):
     Raised when attempting to use a layer unknown to the network
 
     Attribute:
-        layer -- unknown layer
+        layer (:class:`.GFNN`): unknown layer
     """
 
     def __init__(self, layer):
@@ -113,22 +107,31 @@ class UnknownLayer(Exception):
 
 class Model(object):
     """
-    A network of GFNNs. Different GFNNs will be referred to as layers.
+    A network of GFNNs
+
+    Different GFNNs are referred to as layers. Layers can be added as visible or hidden; the former
+    means that it will directly receive external stimulus, while the later implies that the inputs will
+    consist only of internal connections (internal to the layer or from other layers in the network).
+
+    Attributes:
+        visible_layers: list of GFNN layers that will receive the external signal
+        hidden_layers: list of GFNN layers that won't receive the external signal
+
     """
 
     def __init__(self):
         """
-        TODO: describe stuff (specially self.connections)
+        TODO: describe stuff (specially self._connections)
         """
 
-        #: Visible GFNN: list of GFNN layers that will receive the external signal
+        # Visible GFNN: list of GFNN layers that will receive the external signal
         self.visible_layers = []
 
-        #: Hidden GFNNs: list of GFNN layers that won't receive the external signal
+        # Hidden GFNNs: list of GFNN layers that won't receive the external signal
         self.hidden_layers = []
 
         # connections
-        self.connections = {}
+        self._connections = {}
 
         pass
 
@@ -154,7 +157,7 @@ class Model(object):
             else:
                 self.hidden_layers.append(layer)
 
-            self.connections[layer] = []    # list of connected layers. List elements
+            self._connections[layer] = []   # list of connected layers. List elements
                                             # should be tuples of the form
                                             # (destination_layer, connextion_matrix)
 
@@ -163,7 +166,7 @@ class Model(object):
 
 
 
-    def connect_layers(self, source, destination, connections):
+    def connect_layers(self, source, destination, matrix):
         """
         Connect two layers.
 
@@ -171,12 +174,12 @@ class Model(object):
         :type source: :class:`.GFNN`
         :param destination: Destination layer (connections will be made from *source* layer to this layer)
         :type destination: :class:`.GFNN`
-        :param connections: Matrix of connection weights
-        :type connections: numpy complex array. It's shape must be (source.f.size, destination.f.size)
+        :param matrix: Matrix of connection weights
+        :type matrix: numpy complex array. It's shape must be (source.f.size, destination.f.size)
         """
 
         # TODO: add sanity check
-        # TODO: add another method (or use duck typing) to pass harmonics or connection_type in connections
+        # TODO: add another method (or use duck typing) to pass harmonics or connection_type in matrix
 
         if source not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(source)
@@ -184,14 +187,26 @@ class Model(object):
         if destination not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(destination)
 
-        self.connections[destination].append((source, connections))
+        self._connections[destination].append((source, matrix))
 
 
 
 
     def process_signal(self, signal, t, dt):
-        """
-        Compute the TF representation of an input signal
+        """Compute the TF representation of an input signal
+
+        Note:
+            TODO: raise exception when shapes of **signal** and **t** mismatch
+
+        Args:
+            signal (numpy complex array): input signal (stimulus)
+            t (numpy float array): time vector (must have the same shape as *signal*)
+            dt (float): input signal's sample period (inverse of the sample rate)
+
+        Returns:
+            :class:`numpy.array` Time-frequency representation of the input signal.
+                Rows index frequency and columns index time
+
         """
 
         def compute_input(layer, external_conns, x_stim=0):
@@ -226,10 +241,10 @@ class Model(object):
             # 1. compute the inputs for all layers
             input_processed = []
             for layer in self.visible_layers:
-                x = compute_input(layer, self.connections[layer], x_stim)
+                x = compute_input(layer, self._connections[layer], x_stim)
                 input_processed.append((layer, x))
             for layer in self.hidden_layers:
-                x = compute_input(layer, self.connections[layer])
+                x = compute_input(layer, self._connections[layer])
                 input_processed.append((layer, x))
                 # print layer, np.sum(x)
 
