@@ -1,10 +1,8 @@
 import pygfnn.network as net
 import pygfnn.oscillator as osc
 import pygfnn.gfnn as gfnn
-from pygfnn.utils import nextpow2
 
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 

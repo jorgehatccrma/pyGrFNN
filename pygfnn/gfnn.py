@@ -95,12 +95,12 @@ class GFNN(object):
         """
         if internal_strength > 0:
             self.internal_conns = internal_strength * \
-                                  make_connections(self.f,
-                                                   self.f,
+                                  make_connections(self,
+                                                   self,
                                                    relations,
                                                    internal_stdev,
                                                    complex_kernel=complex_kernel,
-                                                   self_connect=False) / self.oscs_per_octave    # TODO: why /oscs_per_octave?
+                                                   self_connect=False)
 
 
     def reset(self, x_1=0, z=None):

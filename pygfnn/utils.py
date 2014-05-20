@@ -63,7 +63,8 @@ def nml(x, m=0.4, gamma=1.0):
         gamma (float): Nonlinearity parameter
     """
     # return m * np.tanh(g*x)
-    return m*np.tanh(gamma*(np.abs(x)+EPS))*x/(np.abs(x)+EPS)
+    a = np.abs(x)+EPS
+    return m*np.tanh(gamma*a)*x/a
 
 
 

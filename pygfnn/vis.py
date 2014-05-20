@@ -63,7 +63,7 @@ def check_mpl(fun):
 
 @check_mpl
 def tf_simple(TF, t, f, x=None, display_op=np.abs):
-    """tf_simple(TF, t, f, x=None, display_op=None)
+    """tf_simple(TF, t, f, x=None, display_op=np.abs)
 
     Simple time-frequency representation. It shows the TF in the top plot and the original time signal
     in the bottom plot, is specified.
@@ -111,7 +111,7 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
 
 @check_mpl
 def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
-    """tf_detail(TF, t, f, t_detail=None, x=None, display_op=None)
+    """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
 
     Detailed time-frequency representation. It shows the TF in the top plot. It also shows the
     frequency representation at a specific time (last time by default) on the plot at the right.
@@ -145,7 +145,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
 
     axCB = fig.add_subplot(gs[0])
     axTF = fig.add_subplot(gs[2])
-    axF = fig.add_subplot(gs[3])
+    axF = fig.add_subplot(gs[3], sharey=axTF)
 
     # find detail index
     if t_detail is None:
@@ -191,7 +191,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
 
 @check_mpl
 def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs, detail_type='polar'):
-    """plot_connections(matrix, t_detail=None, display_op=np.abs)
+    """plot_connections(matrix, f_source, f_dest, t_detail=None, display_op=np.abs, detail_type='polar')
 
     Args:
         matrix (:class:`numpy.array`): connection matrix
