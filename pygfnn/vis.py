@@ -162,7 +162,6 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     axTF.set_yscale('log')
     axTF.set_yticks(nice_freqs)
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axTF.set_xticklabels([])
     axTF.plot([t_detail, t_detail], [np.min(f), np.max(f)], color='r')
     axTF.axis('tight')
 
