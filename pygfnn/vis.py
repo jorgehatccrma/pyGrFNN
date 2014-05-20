@@ -141,11 +141,13 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
                            height_ratios=[3,1]
                            )
         gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
-        axOnset = fig.add_subplot(gs[6])
 
     axCB = fig.add_subplot(gs[0])
     axTF = fig.add_subplot(gs[2])
     axF = fig.add_subplot(gs[3], sharey=axTF)
+
+    if x is not None:
+        axOnset = fig.add_subplot(gs[6], sharex=axTF)
 
     # find detail index
     if t_detail is None:
