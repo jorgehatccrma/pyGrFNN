@@ -3,6 +3,11 @@
 Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
 A canonical model for gradient frequency neural networks.
 Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
+
+To Dos:
+    - Implement linear frequency spacing
+
+
 """
 
 import numpy as np
@@ -72,25 +77,23 @@ class GFNN(object):
         self.oscs_per_octave = oscs_per_octave
 
 
-    def connect_internally(self,
-                           relations=None,
-                           internal_strength=0.5,
-                           internal_stdev=0.5,
-                           complex_kernel=False):
+    def connect_internally(self, relations=None, internal_strength=0.5,
+                           internal_stdev=0.5, complex_kernel=False):
         """ Creates internal connections
 
         Args:
-            relations (list): list of connection relations to be established. For example,
-                ``relations = [0.5, 1., 3.]`` will establish the following connections:
-                :math:`f_{dest} == 0.5f_{src};\\quad f_{dest} == f_{src};\\quad f_{dest} == 3f_{src}`.
-                If *None*, it will be set to ``[1]``
+            relations (list): list of connection relations to be established.
+                For example, ``relations = [0.5, 1., 3.]`` will establish the
+                following connections: :math:`f_{dest} == 0.5f_{src};\\quad
+                f_{dest} == f_{src};\\quad f_{dest} == 3f_{src}`. If *None*, it
+                will be set to ``[1]``
             internal_strength (float): weight of the internal connection.
                 If 0.0, not connections will be created
             internal_stdev (float): internal connections standard deviation.
                 If *internal_strength==0.0*, this will be ignored.
             complex_kernel (bool): if *True*, the connections are complex numbers
 
-        Note:
+        Warning:
             No sanity check has been implemented
 
         """
@@ -111,9 +114,11 @@ class GFNN(object):
         """Compute the input to a GFNN (:math:`x` in equation 15 in the cited paper)
 
         Args:
-            z (:class:`numpy.array`): state of the GFNN at the instant when the input needs to be computed
-            external_inputs (list): list of tuples of the form (*source_z*, *matrix*) where *source_z*
-                is the state of the source GFNN and *matrix* is the connection matrix
+            z (:class:`numpy.array`): state of the GFNN at the instant when the
+                input needs to be computed
+            external_inputs (list): list of tuples of the form (*source_z*,
+                *matrix*) where *source_z* is the state of the source GFNN and
+                *matrix* is the connection matrix
             x_stim (:class:`numpy.array`): external stimulus
 
         Returns:
@@ -124,7 +129,6 @@ class GFNN(object):
             Here *external_inputs* refer to inter-layer connections
 
         """
-        # compute overall input (external signal + internal connections + eff/aff connections)
 
         # process external signal (stimulus)
         x = f(x_stim, self.zparams.e)

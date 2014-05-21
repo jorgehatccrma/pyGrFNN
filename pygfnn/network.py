@@ -1,4 +1,14 @@
 """Network of GFNNs related code
+
+This module provides the necessary code to build a model connecting multiple
+GFNNs. Connections can be made within a GFNN or between pairs of them.
+
+More importantly, it provides a method to run the model.
+
+To Dos:
+    - Implement other types of connectivities
+    - Implement learning?
+
 """
 
 import numpy as np
@@ -200,8 +210,8 @@ class Model(object):
 
 
 
-    def solve_for_stimulus(self, signal, t, dt):
-        """Run the model, using "intertwined" RK4
+    def run(self, signal, t, dt):
+        """Run the model for a given stimulus, using "intertwined" RK4
 
         Intertwined means that a singe RK4 step needs to be run for all layers
         in the model, before running the next RK4 step. This is due to the fact
@@ -233,16 +243,14 @@ class Model(object):
 
         """
 
+        # helper function that performs a single RK4 step (any of them)
         def rk_step(layer, stim, step):
             h = dt if step is 'k3' else 0.5*dt
             z = layer.z + h*getattr(layer, step, 0)
-            if (np.abs(z) > 100).any():
-                import pdb
-                pdb.set_trace()
+            # this pythonic trick might be too unreadable
             conns = [(L.z+h*getattr(L, step, 0), M) for (L, M) in self.connections[layer]]
             x = layer.compute_input(z, conns, stim)
             return layer.dzdt(x, z)
-
 
 
         # 1. prepare all the layers
@@ -261,27 +269,27 @@ class Model(object):
                 x_stim = [s, s, s]
 
             # k1
-            for layer in all_layers:
-                stim = x_stim[0] if layer in self.visible_layers else 0
-                layer.k1 = rk_step(layer, stim, '')
+            for L in all_layers:
+                stim = x_stim[0] if L in self.visible_layers else 0
+                L.k1 = rk_step(L, stim, '')
 
             # k2
-            for layer in all_layers:
-                stim = x_stim[1] if layer in self.visible_layers else 0
-                layer.k2 = rk_step(layer, stim, 'k1')
+            for L in all_layers:
+                stim = x_stim[1] if L in self.visible_layers else 0
+                L.k2 = rk_step(L, stim, 'k1')
 
             # k3
-            for layer in all_layers:
-                stim = x_stim[1] if layer in self.visible_layers else 0
-                layer.k3 = rk_step(layer, stim, 'k2')
+            for L in all_layers:
+                stim = x_stim[1] if L in self.visible_layers else 0
+                L.k3 = rk_step(L, stim, 'k2')
 
             # k4
-            for layer in all_layers:
-                stim = x_stim[2] if layer in self.visible_layers else 0
-                layer.k4 = rk_step(layer, stim, 'k3')
+            for L in all_layers:
+                stim = x_stim[2] if L in self.visible_layers else 0
+                L.k4 = rk_step(L, stim, 'k3')
 
             # final RK step
-            for layer in all_layers:
-                layer.z = layer.z + dt*(layer.k1 + 2.0*layer.k2 + 2.0*layer.k3 + layer.k4)/6.0
-                layer.TF[:,i] = layer.z
+            for L in all_layers:
+                L.z = L.z + dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
+                L.TF[:,i] = L.z
 

@@ -14,10 +14,3 @@ Networks of Oscillators
 .. autoexception:: UnknownLayer
     :members:
 
-
-To Dos
-------
-
-- Implement other types of connectivities
-
-

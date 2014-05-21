@@ -6,6 +6,9 @@ A canonical model for gradient frequency neural networks.
 Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
 
 
+To Dos:
+    - Implement variations of :math:`\dot{z}`
+
 """
 
 import numpy as np
@@ -23,7 +26,8 @@ class Zparam(object):
 
     """
 
-    def __init__(self, alpha=0.0, beta1=-1.0, beta2=-0.25, delta1=0.0, delta2=0.0, epsilon=1.0):
+    def __init__(self, alpha=0.0, beta1=-1.0, beta2=-0.25,
+                 delta1=0.0, delta2=0.0, epsilon=1.0):
         """Constructor.
 
         Args:
@@ -44,9 +48,10 @@ class Zparam(object):
 
 
 def zdot(x, z, f, zparams):
-    """
-    Dynamics of a neural oscillator, as described in equation 15 of the paper referenced above.
-    Can work with vectors (i.e. simultaneously compute different oscillators):
+    """Dynamics of a neural oscillator.
+
+    Implements the dynamical system described in equation 15 of the paper
+    referenced above.
 
     .. math::
 
@@ -69,19 +74,17 @@ def zdot(x, z, f, zparams):
     Returns:
          (:class:`numpy.array`): The evaluated time derivative (:math:`\\dot{z}`)
 
+    Note:
+        Can work with vectors (i.e. simultaneously compute multiple oscillators)
+
     """
 
-    try:
-        lin = zparams.a + 1j*TWO_PI*f
-        nonlin1 = zparams.b1*np.abs(z)**2
-        nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
-        # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
-        # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
-        RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
-
-    except:
-        import pdb
-        pdb.set_trace()
+    lin = zparams.a + 1j*TWO_PI*f
+    nonlin1 = zparams.b1*np.abs(z)**2
+    nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
+    # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
+    # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
+    RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
 
     return z * (lin + nonlin1 + nonlin2) + RT
 

@@ -6,18 +6,48 @@
 Welcome to pyGFNN's documentation!
 ==================================
 
-**pyGFNN** is a python implementation of a Gradient Frequency Neural Network (GFNN), introduced by Large, Almonte and Velasco in
+**pyGFNN** is a pure Python implementation of a Gradient Frequency Neural Network (GFNN), introduced by Large, Almonte and Velasco in
 
-Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
-A canonical model for gradient frequency neural networks.
-Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
+   Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
+   *A canonical model for gradient frequency neural networks.*
+   **Physica D: Nonlinear Phenomena**, 239(12):905-911, 2010.
 
-These networks can be used to compute a time-frequency representation (TFR) of an input signal (e.g. audio or an onset signal). Unlike other TFRs, GFNNs can generate energy at frequencies not present in the input signal via mode-locking. This property allows them to show behaviors similar to ones documented in music perception literature, making them good candidates to (partially) model human perception in a computer.
+These networks can be used to compute a time-frequency representation (TFR) of an input signal (e.g. audio or an onset signal). Unlike other TFRs, GFNNs can generate energy at frequencies not present in the input signal via mode-locking. This property allows them to show behaviors similar to ones documented in music perception literature, making them good candidates for computational models of human perception.
 
 
-The code is loosely based on the *Nonlinear Time-Frequency Transformation Workbench* (unpublished), Matlab code obtained from Mark Velasco on early 2014. Compared to that code, this code base is incomplete, as I'm primarily interested in rhythm processing. That said, the package has been designed to be easily extended. Usually the code is commented where only rhythmic specific implementations have been coded.
+The code is loosely based on the *Nonlinear Time-Frequency Transformation Workbench* (unpublished), Matlab code obtained from Marc Velasco on early 2014. Compared to that code, this code base is incomplete, as I'm primarily interested in rhythm processing. That said, the package has been designed to be easily extended.
 
 .. Contents:
+
+
+LICENCE
+-------
+
+TBD
+
+
+Examples
+========
+
+1. A single layer (single GFNN) model responding to an external stimulus
+
+.. literalinclude:: ../testSingleGFNN.py
+   :language: python
+   :emphasize-lines: 18-22,25-29,32-33,36
+   :linenos:
+
+
+2. A double layer model responding to an external stimulus. One layer is visible
+(i.e. received the stimulus directly) and the other one is hidden. They are
+connected via afferent and efferent connections
+
+.. literalinclude:: ../testDoubleGFNN.py
+   :language: python
+   :emphasize-lines: 18-19,28-36,40-49,53-55,63-80,84
+   :linenos:
+
+
+
 
 Modules
 =======
