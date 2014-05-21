@@ -250,28 +250,27 @@ class Model(object):
 
         """
 
-        all_layers = self.visible_layers + self.hidden_layers
+        def rk_step(layer, stim, step):
+            if step is None:
+                z = layer.z
+                conns = [(L.z, M) for (L, M) in self.connections[layer]]
+            else:
+                h = dt if step is 'k3' else 0.5 * dt
+                z = layer.z + h*getattr(layer, step)
+                conns = [(L.z+h*getattr(L, step), M) for (L, M) in self.connections[layer]]
+
+            x = layer.compute_input(z, conns, stim)
+            return layer.dzdt(x, z)
+
+
 
         # 1. prepare all the layers
+        all_layers = self.visible_layers + self.hidden_layers
         for layer in all_layers:
             layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
 
-        # RK4 reminder
-
-        # xh = 0.5*(x+x_1)   # for now, linear interpolation
-        # dth = 0.5*dt
-        # k1 = diffeq(x_1, z_1)
-        # k2 = diffeq(xh,  z_1 + dth*k1)
-        # k3 = diffeq(xh,  z_1 + dth*k2)
-        # k4 = diffeq(x,   z_1 + dt*k3)
-        # return z_1 + dt*(k1 + 2.0*k2 + 2.0*k3 + k4)/6.0
-
-
-        # TODO: there's a lot of repetition in the following code. A helper
-        #       inline function could help
 
         # 2. Run "intertwined" RK4
-        dth = 0.5 * dt
         for (i, s) in enumerate(signal):
 
             if s != signal[-1]:
@@ -280,52 +279,28 @@ class Model(object):
             else:
                 x_stim = [s, s, s]
 
-            # import pdb
-            # pdb.set_trace()
-
             # k1
             for layer in all_layers:
-                stim = 0
-                if layer in self.visible_layers:
-                    stim = x_stim[0]
-                conns = [(L.z, M) for (L, M) in self.connections[layer]]
-                x_1 = layer.compute_input(layer.z, conns, stim)
-                layer.k1 = layer.dzdt(x_1, layer.z)
+                stim = x_stim[0] if layer in self.visible_layers else 0
+                layer.k1 = rk_step(layer, stim, None)
 
 
             # k2
             for layer in all_layers:
-                stim = 0
-                if layer in self.visible_layers:
-                    stim = x_stim[1]
-
-                z = layer.z + dth*layer.k1
-                conns = [(L.z + dth*L.k1, M) for (L, M) in self.connections[layer]]
-                x_halfway = layer.compute_input(z, conns, stim)
-                layer.k2 = layer.dzdt(x_halfway, z)
+                stim = x_stim[1] if layer in self.visible_layers else 0
+                layer.k2 = rk_step(layer, stim, 'k1')
 
             # k3
             for layer in all_layers:
-                stim = 0
-                if layer in self.visible_layers:
-                    stim = x_stim[1]
-
-                z = layer.z + dth*layer.k2
-                conns = [(L.z + dth*L.k2, M) for (L, M) in self.connections[layer]]
-                x_halfway = layer.compute_input(z, conns, stim)
-                layer.k3 = layer.dzdt(x_halfway, z)
+                stim = x_stim[1] if layer in self.visible_layers else 0
+                layer.k3 = rk_step(layer, stim, 'k2')
 
             # k4
             for layer in all_layers:
-                stim = 0
-                if layer in self.visible_layers:
-                    stim = x_stim[2]
-
-                z = layer.z + dt*layer.k3
-                conns = [(L.z + dth*L.k3, M) for (L, M) in self.connections[layer]]
-                x = layer.compute_input(z, conns, stim)
-                layer.k4 = layer.dzdt(x, z)
+                stim = x_stim[2] if layer in self.visible_layers else 0
+                layer.k4 = rk_step(layer, stim, 'k3')
 
                 # final RK step
                 layer.z = layer.z + dt*(layer.k1 + 2.0*layer.k2 + 2.0*layer.k3 + layer.k4)/6.0
                 layer.TF[:,i] = layer.z
+
