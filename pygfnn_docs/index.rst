@@ -25,11 +25,11 @@ Modules
 .. toctree::
    :maxdepth: 2
 
-   defines
    oscillator
    gfnn
    network
    vis
+   defines
    utils
 
 

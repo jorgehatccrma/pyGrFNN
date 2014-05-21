@@ -22,8 +22,8 @@ t_odf = t_odf/fs_odf
 
 
 # create a pair of GFNNs
-params1 = osc.Zparam(0, -1.0, -0.25, 0, 0, 1.0)
-params2 = osc.Zparam(0.3, 1.0, -1.0, 0, 0, 1.0)
+params1 = osc.Zparam(0, -1.0, -0.25, 0, 0, .5)
+params2 = osc.Zparam(0.03, 1.0, -1.0, 0, 0, .5)
 
 
 internal_strength = 0.6
@@ -31,7 +31,7 @@ internal_stdev = 0.5
 
 center_freq = 2.0
 half_range =  2
-oscs_per_octave = 64
+oscs_per_octave = 2
 
 layer1 = gfnn.GFNN(params1,
                    fc=center_freq,
@@ -81,17 +81,12 @@ effConn = effConnStrength * model.make_connections (layer2,
                                                     self_connect=False,
                                                     conn_type='gauss')
 
+
 net.connect_layers(layer1, layer2, affConn)
 net.connect_layers(layer2, layer1, effConn)
 
 
 
-# # Temporary hack
-# seed = odf[0]
-# odf = odf[1:]
-# odf = np.insert(odf, -1, 0)
-# seed_x = layer.compute_input(layer1.z, [], seed)
-# layer1.reset(x_1=seed_x)
 
 # run the model
 net.solve_for_stimulus(odf*0.5, t_odf, 1.0/fs_odf)
@@ -117,7 +112,8 @@ if plot_tf_output:
     from pygfnn.vis import tf_detail
     # from pygfnn.vis import tf_simple
     # tf_simple(TF, t_odf, T, odf, np.abs)
+    # tf_simple(TF[:,:700], t_odf[:700], T, odf[:700], np.abs)
     # tf_simple(TF, t_odf, T, None, np.abs)
-    tf_detail(TF, t_odf, T, np.max(t_odf), odf, np.abs)
+    tf_detail(TF, t_odf, T, 5, odf, np.abs)
 
 

@@ -4,17 +4,17 @@
 import numpy as np
 from utils import normalPDF
 from utils import normalCDF
-from utils import f, nml
-from defines import COMPLEX, FLOAT, PI, PI_2
+from defines import COMPLEX, PI, PI_2
 
 
-def make_connections(source, dest, harmonics=np.array([1]), stdev=0.5, complex_kernel=False, self_connect=True, conn_type='rhythm'):
+def make_connections(source, dest, harmonics=None, stdev=0.5, complex_kernel=False, self_connect=True, conn_type='rhythm'):
     """Creates a connection matrix from source to destination.
 
     Args:
         source (:class:`.GFNN`): source GFNN (connections will be made between this and *dest*)
         dest (:class:`.GFNN`): destination GFNN (connections will be made between *source* and *this*)
-        harmonics (:class:`numpy.array`): frequency harmonics to connect (e.g. [1/3, 1/2, 1, 2, 3])
+        harmonics (:class:`numpy.array`): frequency harmonics to connect (e.g. [1/3, 1/2, 1, 2, 3]).
+            If *None*, it will be set to ``[1]``
         stdev (float): standard deviation to use in the connections (to "spread" them with neighbors)
         complex_kernel (bool): If *True*, the connections will be complex (i.e. include phase information).
             Otherwise, the connections will be real-valued weights.
@@ -40,6 +40,8 @@ def make_connections(source, dest, harmonics=np.array([1]), stdev=0.5, complex_k
     # gauss implies a 1:1 relation only (I think)
     if conn_type is 'gauss':
         harmonics = [1]
+
+    if harmonics is None: harmonics = [1]
 
     # Make self connections using a Gaussian distribution
     # TODO: optimize
@@ -187,43 +189,6 @@ class Model(object):
 
 
 
-    # def process_signal(self, signal, t, dt):
-    #     """Compute the TF representation of an input signal
-
-    #     Note:
-    #         TODO: raise exception when shapes of **signal** and **t** mismatch?
-
-    #     Args:
-    #         signal (numpy complex array): input signal (stimulus)
-    #         t (numpy float array): time vector (must have the same shape as *signal*)
-    #         dt (float): input signal's sample period (inverse of the sample rate)
-
-    #     """
-
-    #     # 1. prepare all the layers
-    #     for layer in self.visible_layers + self.hidden_layers:
-    #         layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
-    #         # layer.x = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
-
-    #     # 2. run it one sample at a time
-    #     for (i, x_stim) in enumerate(signal):
-    #         # 1. compute the inputs for all layers
-    #         input_processed = []
-    #         for layer in self.visible_layers:
-    #             x = self.compute_input(layer, self.connections[layer], x_stim)
-    #             input_processed.append((layer, x))
-    #         for layer in self.hidden_layers:
-    #             x = self.compute_input(layer, self.connections[layer])
-    #             input_processed.append((layer, x))
-    #             # print layer, np.sum(x)
-
-    #         # 2. "run" all the layers
-    #         for layer, x in input_processed:
-    #             layer.process_time_step(dt, x)
-    #             # layer.x[:,i] = x
-    #             layer.TF[:,i] = layer.z
-
-
     def solve_for_stimulus(self, signal, t, dt):
         """Run the model, using "intertwined" RK4
 
@@ -251,14 +216,9 @@ class Model(object):
         """
 
         def rk_step(layer, stim, step):
-            if step is None:
-                z = layer.z
-                conns = [(L.z, M) for (L, M) in self.connections[layer]]
-            else:
-                h = dt if step is 'k3' else 0.5 * dt
-                z = layer.z + h*getattr(layer, step)
-                conns = [(L.z+h*getattr(L, step), M) for (L, M) in self.connections[layer]]
-
+            h = dt if step is 'k3' else 0.5*dt
+            z = layer.z + h*getattr(layer, step, 0)
+            conns = [(L.z+h*getattr(L, step, 0), M) for (L, M) in self.connections[layer]]
             x = layer.compute_input(z, conns, stim)
             return layer.dzdt(x, z)
 
@@ -282,8 +242,7 @@ class Model(object):
             # k1
             for layer in all_layers:
                 stim = x_stim[0] if layer in self.visible_layers else 0
-                layer.k1 = rk_step(layer, stim, None)
-
+                layer.k1 = rk_step(layer, stim, '')
 
             # k2
             for layer in all_layers:
@@ -300,7 +259,8 @@ class Model(object):
                 stim = x_stim[2] if layer in self.visible_layers else 0
                 layer.k4 = rk_step(layer, stim, 'k3')
 
-                # final RK step
+            # final RK step
+            for layer in all_layers:
                 layer.z = layer.z + dt*(layer.k1 + 2.0*layer.k2 + 2.0*layer.k3 + layer.k4)/6.0
                 layer.TF[:,i] = layer.z
 

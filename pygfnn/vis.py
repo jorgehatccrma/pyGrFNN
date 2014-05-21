@@ -173,7 +173,9 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     axF.semilogy(np.abs(TF[:,idx]), f)
     axF.set_yticks(nice_freqs)
     axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axF.set_xticklabels([])
+    # axF.set_xticklabels([])
+    axF.set_xticks([np.min(np.abs(TF[:,idx])), np.max(np.abs(TF[:,idx]))])
+    axF.xaxis.set_ticks_position('top')
     axF.axis('tight')
     axF.yaxis.set_ticks_position('right')
 

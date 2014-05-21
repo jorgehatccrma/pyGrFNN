@@ -85,22 +85,6 @@ def nml(x, m=0.4, gamma=1.0):
 #         this assumes a fixed time step between x and x_1
 #     """
 
-#     import pdb
-#     pdb.set_trace()
-
-
-#     # NLTFT version
-#     xh = 0.5*(x+x_1)   # for now, linear interpolation (this is a HUGE problem!)
-#     h = dt
-#     hdiv2 = h/2.0;
-
-#     k1div2 = hdiv2 * diffeq(x_1, z_1)
-#     k2div2 = hdiv2 * diffeq(xh, z_1 + k1div2)
-#     k3     = h     * diffeq(xh, z_1 + k2div2)
-#     k4     = h     * diffeq(x, z_1 + k3)
-#     return z_1 + (2.0*k1div2 + 4.0*k2div2 + 2.0*k3 + k4)/6.0
-
-
 #     # # jorgeh's version
 #     # xh = 0.5*(x+x_1)   # for now, linear interpolation
 #     # dth = 0.5*dt
