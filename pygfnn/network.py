@@ -5,7 +5,7 @@ import numpy as np
 from utils import normalPDF
 from utils import normalCDF
 from utils import f, nml
-from defines import COMPLEX, PI, PI_2
+from defines import COMPLEX, FLOAT, PI, PI_2
 
 
 def make_connections(source, dest, harmonics=np.array([1]), stdev=0.5, complex_kernel=False, self_connect=True, conn_type='rhythm'):
@@ -187,69 +187,145 @@ class Model(object):
 
 
 
-    def compute_input(self, layer, external_conns, x_stim=0):
-        """TODO: document properly
+    # def process_signal(self, signal, t, dt):
+    #     """Compute the TF representation of an input signal
 
-        external_conns is a list of tuples of the form (source_layer, connection_matrix)
-        """
-        # compute overall input (external signal + internal connections + eff/aff connections)
-        # For reference: input pre-processing from NLTFT
-        # x = f(n.e, x_stim) + f(n.e, nml(x_aff)) + f(n.e, nml(x_int)) + f(n.e, nml(x_eff));
+    #     Note:
+    #         TODO: raise exception when shapes of **signal** and **t** mismatch?
 
-        # process external signal (stimulus)
-        x = f(x_stim, layer.zparams.e)
+    #     Args:
+    #         signal (numpy complex array): input signal (stimulus)
+    #         t (numpy float array): time vector (must have the same shape as *signal*)
+    #         dt (float): input signal's sample period (inverse of the sample rate)
 
-        # process internal connections
-        if layer.internal_conns is not None:
-            # process internal signal (via internal connections)
-            x_int = layer.z.dot(layer.internal_conns)
-            x = x + f(nml(x_int), layer.zparams.e)
+    #     """
 
-        # process other external inputs (afferent / efferent)
-        for (source, conns) in external_conns:
-            x_ext = source.z.dot(conns)
-            # print np.sum(x_ext)
-            x = x + f(nml(x_ext), layer.zparams.e)
-            # print x_ext
-        return x
+    #     # 1. prepare all the layers
+    #     for layer in self.visible_layers + self.hidden_layers:
+    #         layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
+    #         # layer.x = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
+
+    #     # 2. run it one sample at a time
+    #     for (i, x_stim) in enumerate(signal):
+    #         # 1. compute the inputs for all layers
+    #         input_processed = []
+    #         for layer in self.visible_layers:
+    #             x = self.compute_input(layer, self.connections[layer], x_stim)
+    #             input_processed.append((layer, x))
+    #         for layer in self.hidden_layers:
+    #             x = self.compute_input(layer, self.connections[layer])
+    #             input_processed.append((layer, x))
+    #             # print layer, np.sum(x)
+
+    #         # 2. "run" all the layers
+    #         for layer, x in input_processed:
+    #             layer.process_time_step(dt, x)
+    #             # layer.x[:,i] = x
+    #             layer.TF[:,i] = layer.z
 
 
-    def process_signal(self, signal, t, dt):
-        """Compute the TF representation of an input signal
+    def solve_for_stimulus(self, signal, t, dt):
+        """Run the model, using "intertwined" RK4
 
         Note:
-            TODO: raise exception when shapes of **signal** and **t** mismatch?
+            Assumes constant *dt*
 
-        Args:
-            signal (numpy complex array): input signal (stimulus)
-            t (numpy float array): time vector (must have the same shape as *signal*)
-            dt (float): input signal's sample period (inverse of the sample rate)
+        Pseudo-code: ::
+
+            for (i, x_stim) in stimulus:
+
+                for layer in layers:
+                    compute layer.k1 given layer.x(-1), layers.z(-1)
+
+                for layer in layers:
+                    compute layer.k2 given x_stim(-0.5), layers.z(-1), layers.k1
+
+                for layer in layers:
+                    compute layer.k3 given x_stim(-0.5), layers.z(-1), layers.k2
+
+                for layer in layers:
+                    compute layer.x(0), layer.z(0), layer.k4 given x_stim(0), layers.z(-1), layer.k3
+                    layer.TF[:,i] = layer.z(0)
+
 
         """
 
+        all_layers = self.visible_layers + self.hidden_layers
+
         # 1. prepare all the layers
-        for layer in self.visible_layers + self.hidden_layers:
+        for layer in all_layers:
             layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
-            layer.x = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
 
-        # 2. run it one sample at a time
-        for (i, x_stim) in enumerate(signal):
-            # 1. compute the inputs for all layers
-            input_processed = []
-            for layer in self.visible_layers:
-                x = self.compute_input(layer, self.connections[layer], x_stim)
-                input_processed.append((layer, x))
-            for layer in self.hidden_layers:
-                x = self.compute_input(layer, self.connections[layer])
-                input_processed.append((layer, x))
-                # print layer, np.sum(x)
+        # RK4 reminder
 
-            # 2. "run" all the layers
-            for layer, x in input_processed:
-                layer.process_time_step(dt, x)
-                layer.x[:,i] = x
+        # xh = 0.5*(x+x_1)   # for now, linear interpolation
+        # dth = 0.5*dt
+        # k1 = diffeq(x_1, z_1)
+        # k2 = diffeq(xh,  z_1 + dth*k1)
+        # k3 = diffeq(xh,  z_1 + dth*k2)
+        # k4 = diffeq(x,   z_1 + dt*k3)
+        # return z_1 + dt*(k1 + 2.0*k2 + 2.0*k3 + k4)/6.0
+
+
+        # TODO: there's a lot of repetition in the following code. A helper
+        #       inline function could help
+
+        # 2. Run "intertwined" RK4
+        dth = 0.5 * dt
+        for (i, s) in enumerate(signal):
+
+            if s != signal[-1]:
+                # linear interpolation should be fine
+                x_stim = [s, 0.5*(s+signal[i+1]), signal[i+1]]
+            else:
+                x_stim = [s, s, s]
+
+            # import pdb
+            # pdb.set_trace()
+
+            # k1
+            for layer in all_layers:
+                stim = 0
+                if layer in self.visible_layers:
+                    stim = x_stim[0]
+                conns = [(L.z, M) for (L, M) in self.connections[layer]]
+                x_1 = layer.compute_input(layer.z, conns, stim)
+                layer.k1 = layer.dzdt(x_1, layer.z)
+
+
+            # k2
+            for layer in all_layers:
+                stim = 0
+                if layer in self.visible_layers:
+                    stim = x_stim[1]
+
+                z = layer.z + dth*layer.k1
+                conns = [(L.z + dth*L.k1, M) for (L, M) in self.connections[layer]]
+                x_halfway = layer.compute_input(z, conns, stim)
+                layer.k2 = layer.dzdt(x_halfway, z)
+
+            # k3
+            for layer in all_layers:
+                stim = 0
+                if layer in self.visible_layers:
+                    stim = x_stim[1]
+
+                z = layer.z + dth*layer.k2
+                conns = [(L.z + dth*L.k2, M) for (L, M) in self.connections[layer]]
+                x_halfway = layer.compute_input(z, conns, stim)
+                layer.k3 = layer.dzdt(x_halfway, z)
+
+            # k4
+            for layer in all_layers:
+                stim = 0
+                if layer in self.visible_layers:
+                    stim = x_stim[2]
+
+                z = layer.z + dt*layer.k3
+                conns = [(L.z + dth*L.k3, M) for (L, M) in self.connections[layer]]
+                x = layer.compute_input(z, conns, stim)
+                layer.k4 = layer.dzdt(x, z)
+
+                # final RK step
+                layer.z = layer.z + dt*(layer.k1 + 2.0*layer.k2 + 2.0*layer.k3 + layer.k4)/6.0
                 layer.TF[:,i] = layer.z
-
-
-
-

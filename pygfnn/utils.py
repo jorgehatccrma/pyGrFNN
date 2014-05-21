@@ -28,7 +28,7 @@ def nl(x,gamma):
         gamma (float): Nonlinearity parameter
 
     """
-    return 1/(1-gamma*x)
+    return 1.0/(1.0-gamma*x)
 
 
 def f(x, gamma):
@@ -45,7 +45,7 @@ def f(x, gamma):
 
     """
     sq = np.sqrt(gamma)
-    return x * nl(x, sq) * nl(np.conj(x), sq)
+    return (x * nl(x, sq)) * nl(np.conj(x), sq)
 
 
 
@@ -68,32 +68,50 @@ def nml(x, m=0.4, gamma=1.0):
 
 
 
-def RK4(x, x_1, z_1, dt, diffeq):
-    """Fourth-order Runge Kutta integration
+# def RK4(x, x_1, z_1, dt, diffeq):
+#     """Fourth-order Runge Kutta integration
 
-    Args:
-        x (:class:`numpy.array`): current value of the input
-        x_1 (:class:`numpy.array`): last value of the input
-        z_1 (:class:`numpy.array`): last state of the system (oscillator)
-        dt (float): time step (fixed)
-        diffeq (function): differential equation to be solved (should return dz/dt = f(x,t))
+#     Args:
+#         x (:class:`numpy.array`): current value of the input
+#         x_1 (:class:`numpy.array`): last value of the input
+#         z_1 (:class:`numpy.array`): last state of the system (oscillator)
+#         dt (float): time step (fixed)
+#         diffeq (function): differential equation to be solved (should return dz/dt = f(x,t))
 
-    Returns:
-        (:class:`numpy.array`): updated states
+#     Returns:
+#         (:class:`numpy.array`): updated states
 
-    ToDo:
-        this assumes a fixed time step between x and x_1
-    """
+#     ToDo:
+#         this assumes a fixed time step between x and x_1
+#     """
 
-    xh = 0.5*(x+x_1)   # for now, linear interpolation
-    dth = 0.5*dt
+#     import pdb
+#     pdb.set_trace()
 
-    k1 = diffeq(x_1, z_1)
-    k2 = diffeq(xh,  z_1 + dth*k1)
-    k3 = diffeq(xh,  z_1 + dth*k2)
-    k4 = diffeq(x,   z_1 + dt*k3)
 
-    return z_1 + (dt/6.0)*(k1 + 2.0*k2 + 2.0*k3 + k4)
+#     # NLTFT version
+#     xh = 0.5*(x+x_1)   # for now, linear interpolation (this is a HUGE problem!)
+#     h = dt
+#     hdiv2 = h/2.0;
+
+#     k1div2 = hdiv2 * diffeq(x_1, z_1)
+#     k2div2 = hdiv2 * diffeq(xh, z_1 + k1div2)
+#     k3     = h     * diffeq(xh, z_1 + k2div2)
+#     k4     = h     * diffeq(x, z_1 + k3)
+#     return z_1 + (2.0*k1div2 + 4.0*k2div2 + 2.0*k3 + k4)/6.0
+
+
+#     # # jorgeh's version
+#     # xh = 0.5*(x+x_1)   # for now, linear interpolation
+#     # dth = 0.5*dt
+
+#     # k1 = diffeq(x_1, z_1)
+#     # k2 = diffeq(xh,  z_1 + dth*k1)
+#     # k3 = diffeq(xh,  z_1 + dth*k2)
+#     # k4 = diffeq(x,   z_1 + dt*k3)
+
+#     # return z_1 + dt*(k1 + 2.0*k2 + 2.0*k3 + k4)/6.0
+
 
 
 def normalPDF(x, mu, sigma):

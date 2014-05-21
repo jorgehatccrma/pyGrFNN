@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 plot_onset_signal = False
-plot_internal_conns = True
+plot_internal_conns = False
 plot_tf_output = True
 
 
@@ -59,18 +59,15 @@ T = 1.0/f
 
 # run the model
 
-# temporary hack
-# odf = np.insert(odf, 0, 0)
-# odf = odf[:-1]
-
-# seed = odf[0]
-# seed_x = net.compute_input(layer, None, seed)
+# # Temporary hack
+# seed = odf[0]*0.5
 # odf = odf[1:]
 # odf = np.insert(odf, -1, 0)
+# seed_x = layer.compute_input(layer.z, [], seed)
 # layer.reset(x_1=seed_x)
 
 
-net.process_signal(odf*0.5, t_odf, 1.0/fs_odf)
+net.solve_for_stimulus(odf*0.5, t_odf, 1.0/fs_odf)
 TF = layer.TF
 
 

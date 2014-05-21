@@ -37,16 +37,16 @@ def check_mpl(fun):
 
     Example: ::
 
-            from pygfnn.vis import check_mpl
+        from pygfnn.vis import check_mpl
 
-            # decorate a function
-            @check_mpl
-            def my_plot(x, y):
-                plt.plot(x,y)
+        # decorate a function
+        @check_mpl
+        def my_plot(x, y):
+            plt.plot(x,y)
 
 
-            # use it as you would normally would
-            my_plot(np.arange(10), np.random.rand(10))
+        # use it as you would normally would
+        my_plot(np.arange(10), np.random.rand(10))
 
     """
     @wraps(fun)
