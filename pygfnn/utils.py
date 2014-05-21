@@ -14,8 +14,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 
-
-def nl(x,gamma):
+def nl(x, gamma):
     """
     Nonlinearity of the form
 
@@ -44,9 +43,8 @@ def f(x, gamma):
         gamma (float): Nonlinearity parameter
 
     """
-    sq = np.sqrt(gamma)
-    return (x * nl(x, sq)) * nl(np.conj(x), sq)
-
+    a = np.sqrt(gamma)
+    return x * nl(x, a) * nl(np.conj(x), a)
 
 
 def nml(x, m=0.4, gamma=1.0):
@@ -76,7 +74,8 @@ def nml(x, m=0.4, gamma=1.0):
 #         x_1 (:class:`numpy.array`): last value of the input
 #         z_1 (:class:`numpy.array`): last state of the system (oscillator)
 #         dt (float): time step (fixed)
-#         diffeq (function): differential equation to be solved (should return dz/dt = f(x,t))
+#         diffeq (function): differential equation to be solved (should return
+#             dz/dt = f(x,t))
 
 #     Returns:
 #         (:class:`numpy.array`): updated states
@@ -194,7 +193,8 @@ def find_nearest(array, value):
 
 
 def nice_log_values(array):
-    """Returns an array of logarithmically spaced values covering the range in *array*
+    """Returns an array of logarithmically spaced values covering the range in
+    *array*
 
     Args:
         array (:class:`numpy.array`): source array
@@ -202,5 +202,7 @@ def nice_log_values(array):
     Returns:
         :class:`numpy.array`: log spaced nice values
     """
-    nice = 2**np.arange(np.log2(nextpow2(np.min(array))), 1+np.log2(nextpow2(np.max(array))))
+    low = np.log2(nextpow2(np.min(array)))
+    high = np.log2(nextpow2(np.max(array)))
+    nice = 2**np.arange(low, 1+high)
     return nice[(nice >= np.min(array)) & (nice <= np.max(array))]

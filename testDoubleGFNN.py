@@ -31,7 +31,7 @@ internal_stdev = 0.5
 
 center_freq = 2.0
 half_range =  2
-oscs_per_octave = 2
+oscs_per_octave = 64
 
 layer1 = gfnn.GFNN(params1,
                    fc=center_freq,
@@ -70,7 +70,7 @@ affConn = affConnStrength * model.make_connections (layer1,
                                                     harmonics=[1],
                                                     stdev=affConnStdDev,
                                                     complex_kernel=False,
-                                                    self_connect=True,
+                                                    self_connect=False,
                                                     conn_type='gauss')
 
 effConn = effConnStrength * model.make_connections (layer2,
@@ -80,6 +80,24 @@ effConn = effConnStrength * model.make_connections (layer2,
                                                     complex_kernel=True,
                                                     self_connect=False,
                                                     conn_type='gauss')
+
+
+
+# # using NLTFT matrices
+# import scipy.io as io
+# mats = io.loadmat('conns.mat')
+# print "TRACE"
+
+# import pdb
+# pdb.set_trace()
+
+# affConn = mats['affConn']
+# effConn = mats['effConn']
+# intConn = mats['internalpattern']
+# layer1.internal_conns = intConn
+# layer2.internal_conns = intConn
+
+
 
 
 net.connect_layers(layer1, layer2, affConn)

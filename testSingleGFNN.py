@@ -58,15 +58,6 @@ T = 1.0/f
 
 
 # run the model
-
-# # Temporary hack
-# seed = odf[0]*0.5
-# odf = odf[1:]
-# odf = np.insert(odf, -1, 0)
-# seed_x = layer.compute_input(layer.z, [], seed)
-# layer.reset(x_1=seed_x)
-
-
 net.solve_for_stimulus(odf*0.5, t_odf, 1.0/fs_odf)
 TF = layer.TF
 

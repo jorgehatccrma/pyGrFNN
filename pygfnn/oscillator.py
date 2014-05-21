@@ -23,7 +23,7 @@ class Zparam(object):
 
     """
 
-    def __init__(self, alpha=0.0, beta1=-1.0, delta1=0.0, beta2=-0.25, delta2=0.0, epsilon=1.0):
+    def __init__(self, alpha=0.0, beta1=-1.0, beta2=-0.25, delta1=0.0, delta2=0.0, epsilon=1.0):
         """Constructor.
 
         Args:
@@ -71,12 +71,17 @@ def zdot(x, z, f, zparams):
 
     """
 
-    lin = zparams.a + 1j*TWO_PI*f
-    nonlin1 = zparams.b1*np.abs(z)**2
-    nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
-    # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
-    # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
-    RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
+    try:
+        lin = zparams.a + 1j*TWO_PI*f
+        nonlin1 = zparams.b1*np.abs(z)**2
+        nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
+        # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
+        # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
+        RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
+
+    except:
+        import pdb
+        pdb.set_trace()
 
     return z * (lin + nonlin1 + nonlin2) + RT
 

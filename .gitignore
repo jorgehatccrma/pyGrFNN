@@ -11,3 +11,7 @@ plotTest.py
 
 # python compiled files
 *.pyc
+
+
+# matlab files
+*.mat
