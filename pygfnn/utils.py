@@ -26,6 +26,13 @@ def nl(x, gamma):
         x (:class:`numpy.array`): signal
         gamma (float): Nonlinearity parameter
 
+    Note:
+        The integral of ``gamma * nl(x, gamma)`` is
+
+        .. math::
+
+            \\int \\frac{\\gamma}{1 - \\gamma x} = -\\log (1 - \\gamma x)
+
     """
     return 1.0/(1.0-gamma*x)
 
@@ -195,6 +202,8 @@ def find_nearest(array, value):
 def nice_log_values(array):
     """Returns an array of logarithmically spaced values covering the range in
     *array*
+
+    The values in the array will be only powers of 2.
 
     Args:
         array (:class:`numpy.array`): source array

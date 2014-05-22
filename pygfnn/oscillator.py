@@ -1,9 +1,9 @@
 """
 Basic functions implementing a nonlinear neural oscillator, as described in
 
-Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
-A canonical model for gradient frequency neural networks.
-Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
+    Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
+    *A canonical model for gradient frequency neural networks.*
+    **Physica D: Nonlinear Phenomena**, 239(12):905-911, 2010.
 
 
 To Dos:
@@ -75,7 +75,8 @@ def zdot(x, z, f, zparams):
          (:class:`numpy.array`): The evaluated time derivative (:math:`\\dot{z}`)
 
     Note:
-        Can work with vectors (i.e. simultaneously compute multiple oscillators)
+        Can work with vectors (i.e. simultaneously compute multiple oscillators).
+        In that case, ``x``, ``z``, and ``f`` must have the same shape.
 
     """
 
