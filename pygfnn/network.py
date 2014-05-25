@@ -14,7 +14,7 @@ To Dos:
 import numpy as np
 from utils import normalPDF
 from utils import normalCDF
-from defines import COMPLEX, PI, PI_2
+from defines import COMPLEX, PI_2
 
 
 def make_connections(source, dest, harmonics=None, stdev=0.5,
@@ -30,7 +30,9 @@ def make_connections(source, dest, harmonics=None, stdev=0.5,
         harmonics (:class:`numpy.array`): frequency harmonics to connect
             (e.g. [1/3, 1/2, 1, 2, 3]). If *None*, it will be set to ``[1]``
         stdev (float): standard deviation to use in the connections (to "spread"
-            them with neighbors)
+            them with neighbors). Its units is *octaves* (e.g. stdev = 1.0
+            implies that roughly 68% of the weight will be distributed in two
+            octaves---+/- 1 stdev---around the mean)
         complex_kernel (bool): If *True*, the connections will be complex (i.e.
             include phase information). Otherwise, the connections will be
             real-valued weights.
@@ -62,24 +64,23 @@ def make_connections(source, dest, harmonics=None, stdev=0.5,
 
     # Make self connections using a Gaussian distribution
     for h in harmonics:
-        R = normalPDF(np.log2(RF), np.log2(h), stdev/12.0)/source.oscs_per_octave
-        # FIXME: what/why this x/12 factor? It was in the matlab code,
-        # but I don't get it (seems to relate to pitches, but then
-        # this is not the place!)
-        # Also, in the original implementation, R was divided by the number of
-        # oscillators per octave. Why? I think it should be either be divided by
-        # cumsum(R(row,:)) [preserve energy] or max(R(row,:)) [full self-feedback]
+        # R = normalPDF(np.log2(RF), np.log2(h), stdev/12.0)/source.oscs_per_octave
+        # # FIXME: what/why this x/12 factor? It was in the matlab code,
+        # # but I don't get it (seems to relate to pitches, but then
+        # # this is not the place!)
+
+        # TODO: verify if this is correct in the new Toolbox
+        R = normalPDF(np.log2(RF), np.log2(h), stdev)/source.oscs_per_octave
 
         if complex_kernel:
-            if conn_type is 'gauss':
-                # From NLTFT:
-                # Q = (pi/2)*(2*normcdf(log2(RF), mn, sd/12)-1);
-                Q = PI_2*(2.0*normalCDF(np.log2(RF), np.log2(h), stdev/12.0)-1);
-            else:
-                # From NLTFT:
-                # Q = pi*(2*normcdf(log2(RF), log2(harms(nn)), log2(1+sd(nn)))-1);
-                Q = PI*(2.0*normalCDF(np.log2(RF), np.log2(h), np.log2(1+stdev))-1);
-                # Q[R<=np.abs(conns)] = 0
+            # # From NLTFT
+            # if conn_type is 'gauss':
+            #     Q = PI_2*(2.0*normalCDF(np.log2(RF), np.log2(h), stdev/12.0)-1);
+            # else:
+            #     Q = PI*(2.0*normalCDF(np.log2(RF), np.log2(h), np.log2(1+stdev))-1);
+
+            # TODO: verify if this is correct in the new Toolbox
+            Q = PI_2*(2.0*normalCDF(np.log2(RF), np.log2(h), stdev)-1);
         else:
             Q = np.zeros(R.shape)
 

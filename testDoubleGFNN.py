@@ -1,13 +1,13 @@
-import pygfnn.network as model
-import pygfnn.oscillator as osc
-import pygfnn.gfnn as gfnn
+from pygfnn.network import Model, make_connections
+from pygfnn.oscillator import Zparam
+from pygfnn.gfnn import GFNN
 
 import numpy as np
 
 
 # load onset signal
-odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
-# odf = np.loadtxt('sampleOnsets/bossa.onset.txt')
+# odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
+odf = np.loadtxt('sampleOnsets/bossa.onset.txt')
 fs_odf = odf[0]
 odf = odf[1:]*0.5   # this factor is relevant (but annoying)
 t_odf = np.arange(0, odf.size)
@@ -15,8 +15,8 @@ t_odf = t_odf/fs_odf
 
 
 # create a pair of GFNNs
-params1 = osc.Zparam(0, -1.0, -0.25, 0, 0, .5)
-params2 = osc.Zparam(0.03, 1.0, -1.0, 0, 0, .5)
+params1 = Zparam(0, -1.0, -0.25, 0, 0, .5)
+params2 = Zparam(0.03, 1.0, -1.0, 0, 0, .5)
 
 internal_strength = 0.6
 internal_stdev = 0.5
@@ -25,15 +25,15 @@ center_freq = 2.0
 half_range =  2
 oscs_per_octave = 64
 
-layer1 = gfnn.GFNN(params1,
-                   fc=center_freq,
-                   octaves_per_side=half_range,
-                   oscs_per_octave=oscs_per_octave)
+layer1 = GFNN(params1,
+              fc=center_freq,
+              octaves_per_side=half_range,
+              oscs_per_octave=oscs_per_octave)
 
-layer2 = gfnn.GFNN(params2,
-                   fc=center_freq,
-                   octaves_per_side=half_range,
-                   oscs_per_octave=oscs_per_octave)
+layer2 = GFNN(params2,
+              fc=center_freq,
+              octaves_per_side=half_range,
+              oscs_per_octave=oscs_per_octave)
 
 
 # add internal connectivities
@@ -50,7 +50,7 @@ layer2.connect_internally(relations=rels,
 
 
 # create the model
-net = model.Model()
+net = Model()
 net.add_layer(layer1)
 net.add_layer(layer2, visible=False)
 
@@ -60,21 +60,21 @@ affConnStdDev = 0.5;
 effConnStrength = -0.75;
 effConnStdDev = 4.0;
 
-affConn = affConnStrength * model.make_connections (layer1,
-                                                    layer2,
-                                                    harmonics=[1],
-                                                    stdev=affConnStdDev,
-                                                    complex_kernel=False,
-                                                    self_connect=True,
-                                                    conn_type='gauss')
+affConn = affConnStrength * make_connections (layer1,
+                                              layer2,
+                                              harmonics=[1],
+                                              stdev=affConnStdDev,
+                                              complex_kernel=False,
+                                              self_connect=True,
+                                              conn_type='gauss')
 
-effConn = effConnStrength * model.make_connections (layer2,
-                                                    layer1,
-                                                    harmonics=[1],
-                                                    stdev=effConnStdDev,
-                                                    complex_kernel=True,
-                                                    self_connect=False,
-                                                    conn_type='gauss')
+effConn = effConnStrength * make_connections (layer2,
+                                              layer1,
+                                              harmonics=[1],
+                                              stdev=effConnStdDev,
+                                              complex_kernel=True,
+                                              self_connect=False,
+                                              conn_type='gauss')
 
 net.connect_layers(layer1, layer2, affConn)
 net.connect_layers(layer2, layer1, effConn)

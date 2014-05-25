@@ -3,19 +3,29 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pyGFNN's documentation!
-==================================
+pyGrFNN documentation
+====================
 
-**pyGFNN** is a pure Python implementation of a Gradient Frequency Neural Network (GFNN), introduced by Large, Almonte and Velasco in
+**pyGFNN** is a pure Python implementation of a Gradient Frequency Neural
+Network (GFNN), introduced by Large, Almonte and Velasco in
 
    Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
    *A canonical model for gradient frequency neural networks.*
    **Physica D: Nonlinear Phenomena**, 239(12):905-911, 2010.
 
-These networks can be used to compute a time-frequency representation (TFR) of an input signal (e.g. audio or an onset signal). Unlike other TFRs, GFNNs can generate energy at frequencies not present in the input signal via mode-locking. This property allows them to show behaviors similar to ones documented in music perception literature, making them good candidates for computational models of human perception.
+These networks can be used to compute a time-frequency representation (TFR) of
+an input signal (e.g. audio or an onset signal). Unlike other TFRs, GFNNs can
+generate energy at frequencies not present in the input signal via mode-locking.
+This property allows them to show behaviors similar to ones documented in music
+perception literature, making them good candidates for computational models of
+human perception.
 
 
-The code is loosely based on the *Nonlinear Time-Frequency Transformation Workbench* (unpublished), Matlab code obtained from Marc Velasco on early 2014. Compared to that code, this code base is incomplete, as I'm primarily interested in rhythm processing. That said, the package has been designed to be easily extended.
+The code is loosely based on the *Nonlinear Time-Frequency Transformation
+Workbench* (unpublished), Matlab code obtained from Marc Velasco on early 2014.
+Compared to that code, this code base is incomplete, as I'm primarily interested
+in rhythm processing. That said, the package has been designed to be easily
+extended.
 
 .. Contents:
 
@@ -51,6 +61,11 @@ connected via afferent and efferent connections
 
 Modules
 =======
+
+.. toctree::
+   :hidden:
+
+   self
 
 .. toctree::
    :maxdepth: 2

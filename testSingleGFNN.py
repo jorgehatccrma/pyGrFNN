@@ -1,13 +1,13 @@
-import pygfnn.network as net
-import pygfnn.oscillator as osc
-import pygfnn.gfnn as gfnn
+from pygfnn.network import Model
+from pygfnn.oscillator import Zparam
+from pygfnn.gfnn import GFNN
 
 import numpy as np
 
 
 # load onset signal
-odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
-# odf = np.loadtxt('sampleOnsets/bossa.onset.txt')
+# odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
+odf = np.loadtxt('sampleOnsets/bossa.onset.txt')
 fs_odf = odf[0]
 odf = odf[1:]*0.5   # this factor is relevant (but annoying)
 t_odf = np.arange(0, odf.size)
@@ -15,11 +15,11 @@ t_odf = t_odf/fs_odf
 
 
 # create single GFNN
-params = osc.Zparam(0, -0.25, -0.5, 0, 0, 1)
-layer = gfnn.GFNN(params,
-                  fc=2,
-                  octaves_per_side=2,
-                  oscs_per_octave=64)
+params = Zparam(0, -0.25, -0.5, 0, 0, 1)
+layer = GFNN(params,
+             fc=2,
+             octaves_per_side=2,
+             oscs_per_octave=64)
 
 # add internal connectivity
 rels = [1./3., 1./2., 1., 2., 3.]
@@ -29,7 +29,7 @@ layer.connect_internally(relations=rels,
                          complex_kernel=True)
 
 # create the model
-model = net.Model()
+model = Model()
 model.add_layer(layer)
 
 # run the model

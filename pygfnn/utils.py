@@ -26,6 +26,13 @@ def nl(x, gamma):
         x (:class:`numpy.array`): signal
         gamma (float): Nonlinearity parameter
 
+    Note:
+        The integral of ``gamma * nl(x, gamma)`` is
+
+        .. math::
+
+            \\int \\frac{\\gamma}{1 - \\gamma x} = -\\log (1 - \\gamma x)
+
     """
     return 1.0/(1.0-gamma*x)
 
@@ -125,10 +132,6 @@ def normalCDF(x, mu, sigma):
     return 0.5 * (1 + erf(z/np.sqrt(2)))
 
 
-def pattern2odf(pattern, fs_odf):
-    pass
-
-
 def nextpow2(n):
     """Similarly to Matlab's ``nextpow2``, returns the power of 2 ``>= n``
     """
@@ -195,6 +198,8 @@ def find_nearest(array, value):
 def nice_log_values(array):
     """Returns an array of logarithmically spaced values covering the range in
     *array*
+
+    The values in the array will be only powers of 2.
 
     Args:
         array (:class:`numpy.array`): source array
