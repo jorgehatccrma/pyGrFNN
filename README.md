@@ -8,10 +8,13 @@ Gradient Frequency Neural Networks in Python
 Dependencies
 ------------
 
- - PyDSTool
+ <!-- - PyDSTool -->
  - NumPy
  - SciPy
  - Matplotlib
+ - Sphinx (to build docs)
+ - sphinxcontrib-napoleon (to build docs)
+ - Nose (testing)
 
 
 Documentation
