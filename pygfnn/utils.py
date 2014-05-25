@@ -132,10 +132,6 @@ def normalCDF(x, mu, sigma):
     return 0.5 * (1 + erf(z/np.sqrt(2)))
 
 
-def pattern2odf(pattern, fs_odf):
-    pass
-
-
 def nextpow2(n):
     """Similarly to Matlab's ``nextpow2``, returns the power of 2 ``>= n``
     """

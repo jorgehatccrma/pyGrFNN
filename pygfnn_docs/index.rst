@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-pyGFNN documentation
+pyGrFNN documentation
 ====================
 
 **pyGFNN** is a pure Python implementation of a Gradient Frequency Neural

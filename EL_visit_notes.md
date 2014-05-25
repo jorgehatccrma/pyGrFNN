@@ -24,28 +24,22 @@ date: May 22, 2014
     
 
 
-1.  Why the frequency scaling in zdotH? (\sqrt{f})
-
-    **Notes:**
-    
-        
-
 1.  What is that sd/12 in resonances() inside connectMakeLog?
 
     **Notes:**
-    
+    Hack. The new version solves this.
         
 
 1.  Why divide R by n1.per (oscillators per octave)?
 
     **Notes:**
-    
+    To keep constant sum
         
 
 1.  What does the complex kernel mean in the connections? I understand they are phase shifts being applied to z, but don't understand why is that desirable / needed and how does it relate to perception.
 
     **Notes:**
-    
+    Interesting!!!
         
 
 1.  What is the idea behind the nml nonlinearity in zdot (or zdotH, etc.)? 
@@ -72,7 +66,13 @@ date: May 22, 2014
     
         
 
-1.  Why do I need to scale down the input (0.5 factor)?
+1.  Why the frequency scaling in zdotH? (\sqrt{f})
+
+    **Notes:**
+    
+        
+
+1.  Why do I need to scale down the input (e.g. 0.5 factor)? This seems related to \epsilon (see second paragraph, second column p. 907). What is the trade-off?
 
     **Notes:**
     
@@ -87,7 +87,7 @@ date: May 22, 2014
 1.  How to make networks react quicker?
 
     **Notes:**
-    
+    Look into different frequency
     
 
      1. Why do they always use the average of the TF?
@@ -99,7 +99,7 @@ date: May 22, 2014
 1.  Opinion on onset detection function as input to the model? Any objections with the idea of using an onset detection function?
 
     **Notes:**
-    
+    It is tightly coupled with the nature of the dynamical system. Maybe is not wise to think of it as "get the best onset detector there is" and then "get the best beat tracker". They are very intertwined.
         
 
 1.  What about the problem of extreme sensitivity to stimulus level? There seems to be a noticeable difference between accented vs. non-accented stimulus.
@@ -183,6 +183,7 @@ date: May 22, 2014
 
     **Notes:**
     
+    In his view, the most metrial
         
 
 1.  Any thoughts on how to make the 2D TF repr into a 3D repr?
@@ -252,6 +253,21 @@ date: May 22, 2014
 
 ### Notes
 
+- epsilon controls the amount of Nonlinearity in the system when holding x(t) fixed
+- 
 
 
 ### Questions
+
+- For the rhythm model, the 2nd layer is the "motor network". Does it make sense to connect to a plant model? 
+- Are "people's mistakes" really mistakes?
+- 
+
+
+
+# OThers
+
+- He will send me a few chapters of his current book.
+- He'd appreciate some feedback
+
+- Phase is neutrally stable
