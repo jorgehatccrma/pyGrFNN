@@ -141,7 +141,7 @@ def nextpow2(n):
 
 
 # execution time decorator
-def time_log(fun):
+def timed(fun):
     """Decorator to measure execution time of a function
 
     Args:
