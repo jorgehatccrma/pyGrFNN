@@ -153,10 +153,10 @@ def timed(fun):
     Example: ::
 
             import time
-            from pygfnn.utils import time_log
+            from pygfnn.utils import timed
 
             # decorate a function
-            @time_log
+            @timed
             def my_func(N, st=0.01):
                 for i in range(N):
                     time.sleep(st)
