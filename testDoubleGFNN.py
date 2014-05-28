@@ -1,6 +1,7 @@
 from pygfnn.network import Model, make_connections
 from pygfnn.oscillator import Zparam
 from pygfnn.gfnn import GFNN
+from pygfnn.utils import timed
 
 import numpy as np
 
@@ -81,13 +82,16 @@ net.connect_layers(layer2, layer1, effConn)
 
 
 # run the model
-net.run(odf, t_odf, 1.0/fs_odf)
+@timed
+def run():
+  net.run(odf, t_odf, 1.0/fs_odf)
 
+run()
 
 
 # visualize outputs
 TF = layer2.TF
-f = layer1.f
+f = layer2.f
 T = 1.0/f
 
 plot_onset_signal = False
