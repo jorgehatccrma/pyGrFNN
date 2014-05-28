@@ -49,7 +49,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyGFNN'
+project = u'pyGrFNN'
 copyright = u'2014, Jorge Herrera'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -209,7 +209,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'pyGFNN.tex', u'pyGFNN Documentation',
+  ('index', 'pyGrFNN.tex', u'pyGrFNN Documentation',
    u'Jorge Herrera', 'manual'),
 ]
 
@@ -253,8 +253,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'pyGFNN', u'pyGFNN Documentation',
-   u'Jorge Herrera', 'pyGFNN', 'One line description of project.',
+  ('index', 'pyGrFNN', u'pyGrFNN Documentation',
+   u'Jorge Herrera', 'pyGrFNN', 'One line description of project.',
    'Miscellaneous'),
 ]
 
