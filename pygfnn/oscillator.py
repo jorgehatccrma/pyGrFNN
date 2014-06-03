@@ -55,7 +55,10 @@ def zdot(x, z, f, zparams):
 
     .. math::
 
-        \\dot{z} = z \\Bigg(\\alpha + j\\omega + b_1 |z|^2 + \\frac{b_2\\varepsilon |z|^4}{1-\\varepsilon |z|^2} \\Bigg) + \\frac{x}{1-\\sqrt{\\varepsilon} x} \\frac{1}{1-\\sqrt{\\varepsilon} \\bar{z}}
+        \\dot{z} = z \\Bigg(\\alpha + j\\omega + b_1 |z|^2 +
+            \\frac{b_2\\varepsilon |z|^4}{1-\\varepsilon |z|^2} \\Bigg) +
+            \\frac{x}{1-\\sqrt{\\varepsilon} x} \\frac{1}{1-\\sqrt{\\varepsilon}
+            \\bar{z}}
 
     where
 
@@ -68,8 +71,8 @@ def zdot(x, z, f, zparams):
         x (:class:`numpy.array`): input signal
         z (:class:`numpy.array`): oscillator state
         f (:class:`numpy.array`): natural frequency of the oscillator
-        zparams (:class:`.Zparam`): oscillator parameters: :math:`\\alpha, \\beta_1, \\delta_1,
-            \\beta_2, \\delta_2` and :math:`\\varepsilon`
+        zparams (:class:`.Zparam`): oscillator parameters: :math:`\\alpha,
+            \\beta_1, \\delta_1, \\beta_2, \\delta_2` and :math:`\\varepsilon`
 
     Returns:
          (:class:`numpy.array`): The evaluated time derivative (:math:`\\dot{z}`)

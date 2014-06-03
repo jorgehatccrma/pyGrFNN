@@ -43,7 +43,8 @@ def f(x, gamma):
 
     .. math::
 
-        f_{\\gamma}(x) = \\frac{x}{1-\\sqrt{\\gamma} x} \\frac{1}{1-\\sqrt{\\gamma} \\bar{x}}
+        f_{\\gamma}(x) = \\frac{x}{1-\\sqrt{\\gamma} x}
+        \\frac{1}{1-\\sqrt{\\gamma} \\bar{x}}
 
     Args:
         x (:class:`numpy.array`): signal
@@ -60,7 +61,8 @@ def nml(x, m=0.4, gamma=1.0):
 
     .. math::
 
-        f_{m,\\gamma}(x) = m\\;\\mathrm{tanh}\\left(\\gamma |x|\\right) \\frac{x}{|x|}
+        f_{m,\\gamma}(x) = m\\;\\mathrm{tanh}\\left(\\gamma |x|\\right)
+        \\frac{x}{|x|}
 
     Args:
         x (:class:`numpy.array`): signal
@@ -123,9 +125,11 @@ def normalCDF(x, mu, sigma):
 
     .. math::
 
-        F(x, \\mu, \\sigma) &= \\frac{1}{2\\pi}\\int_{-\\infty}^{\\frac{x-\\mu}{\\sigma}} e^{-t^2/2} dt \\\\
+        F(x, \\mu, \\sigma) &= \\frac{1}{2\\pi}
+            \\int_{-\\infty}^{\\frac{x-\\mu}{\\sigma}} e^{-t^2/2} dt \\\\
             &= \\Phi(\\frac{x-\\mu}{\\sigma}) \\\\
-            &= \\frac{1}{2}\\left ( 1 + \\mathrm{erf} \\big ( \\frac{x - \\mu}{\\sigma \\sqrt{2}} \\big )  \\right )
+            &= \\frac{1}{2}\\left ( 1 + \\mathrm{erf}
+                \\big ( \\frac{x - \\mu}{\\sigma \\sqrt{2}} \\big )  \\right )
 
     """
     z = (x-mu) / sigma;

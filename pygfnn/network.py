@@ -14,7 +14,7 @@ To Dos:
 import numpy as np
 from utils import normalPDF
 from utils import normalCDF
-from defines import COMPLEX, PI_2
+from defines import COMPLEX, PI, PI_2
 
 
 def make_connections(source, dest, harmonics=None, stdev=0.5,

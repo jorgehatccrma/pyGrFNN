@@ -23,7 +23,7 @@ internal_strength = 0.6
 internal_stdev = 0.5
 
 center_freq = 2.0
-half_range =  2
+half_range =  2.5
 oscs_per_octave = 64
 
 layer1 = GFNN(params1,

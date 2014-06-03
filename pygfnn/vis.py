@@ -54,7 +54,8 @@ def check_mpl(fun):
         if MPL:
             output = fun(*args, **kwargs)
         else:
-            logging.info('Skipping call to %s() (couldn\'t import Matplotib or one of its modules)' % (fun.__name__,))
+            logging.info('Skipping call to %s() (couldn\'t import Matplotib or'\
+                         ' one of its modules)' % (fun.__name__,))
             output = None
         return output
 
@@ -65,15 +66,17 @@ def check_mpl(fun):
 def tf_simple(TF, t, f, x=None, display_op=np.abs):
     """tf_simple(TF, t, f, x=None, display_op=np.abs)
 
-    Simple time-frequency representation. It shows the TF in the top plot and the original time signal
-    in the bottom plot, is specified.
+    Simple time-frequency representation. It shows the TF in the top plot and
+    the original time signal in the bottom plot, is specified.
 
     Args:
         TF  (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
-        x (:class:`numpy.array`): original time domain signal. If *None*, not time domain plot is shown
-        display_op (function): operator to apply to the TF representation (e.g. `numpy.abs`)
+        x (:class:`numpy.array`): original time domain signal. If *None*, not
+            time domain plot is shown
+        display_op (function): operator to apply to the TF representation (e.g.
+            `numpy.abs`)
     """
 
     if x is None:
@@ -89,7 +92,6 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
         gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
         axTF = fig.add_subplot(gs[0])
         axOnset = fig.add_subplot(gs[1], sharex=axTF)
-
 
     axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
 
@@ -113,17 +115,24 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
 def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
 
-    Detailed time-frequency representation. It shows the TF in the top plot. It also shows the
-    frequency representation at a specific time (last time by default) on the plot at the right.
-    If specified, the original time signal is shown the bottom plot.
+    Detailed time-frequency representation. It shows the TF in the top plot. It
+    also shows the frequency representation at a specific time (last time by
+    default) on the plot at the right. If specified, the original time signal is
+    shown the bottom plot.
 
     Args:
         TF (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
         t_detail (float): time instant to be detailed
-        x (:class:`numpy.array`): original time domain signal. If *None*, not time domain plot is shown
-        display_op (function): operator to apply to the TF representation (e.g. `numpy.abs`)
+        x (:class:`numpy.array`): original time domain signal. If *None*, not
+            time domain plot is shown
+        display_op (function): operator to apply to the TF representation (e.g.
+            `numpy.abs`)
+
+    Returns:
+        (handles, ...): tuple of handles to plotted elements. They can be used
+            to create animations
     """
 
     fig = plt.figure()
@@ -162,7 +171,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     axTF.set_yscale('log')
     axTF.set_yticks(nice_freqs)
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axTF.plot([t_detail, t_detail], [np.min(f), np.max(f)], color='r')
+    tf_line, = axTF.plot([t_detail, t_detail], [np.min(f), np.max(f)], color='r')
     axTF.axis('tight')
 
     # Add colorbar
@@ -170,38 +179,42 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     cb.ax.yaxis.set_ticks_position('left')
 
     # TF detail
-    axF.semilogy(display_op(TF[:,idx]), f)
+    detail, = axF.semilogy(display_op(TF[:,idx]), f)
     axF.set_yticks(nice_freqs)
     axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    # axF.set_xticklabels([])
-    axF.set_xticks([np.min(display_op(TF[:,idx])), np.max(display_op(TF[:,idx]))])
+    axF.set_xticklabels([])
+    # axF.set_xticks([np.min(display_op(TF[:,idx])), np.max(display_op(TF[:,idx]))])
     axF.xaxis.set_ticks_position('top')
     axF.axis('tight')
     axF.yaxis.set_ticks_position('right')
 
     # onset signal
+    t_line = None
     if axOnset is not None:
         plt.setp(axTF.get_xticklabels(), visible=False)
         axOnset.plot(t, x)
-        axOnset.plot([t_detail, t_detail], [np.min(x), np.max(x)], color='r')
+        t_line, = axOnset.plot([t_detail, t_detail], [np.min(x), np.max(x)], color='r')
         axOnset.yaxis.set_ticks_position('right')
         axOnset.axis('tight')
-
-
     plt.show()
+
+    return (fig, tf_line, t_line, detail)
 
 
 
 @check_mpl
-def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs, detail_type='polar'):
-    """plot_connections(matrix, f_source, f_dest, t_detail=None, display_op=np.abs, detail_type='polar')
+def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs,
+                     detail_type='polar'):
+    """plot_connections(matrix, f_source, f_dest, t_detail=None,
+        display_op=np.abs, detail_type='polar')
 
     Args:
         matrix (:class:`numpy.array`): connection matrix
         f_source (:class:`numpy.array`): source frequency vector
         f_dest (:class:`numpy.array`): destination frequency vector
         f_detail (float): frequency of the detail plot
-        display_op (function): operator to apply to the connection matrix (e.g. `numpy.abs`)
+        display_op (function): operator to apply to the connection matrix (e.g.
+            `numpy.abs`)
         detail_type (string): detail complex display type ('polar' or 'cartesian')
     """
     fig = plt.figure()
@@ -221,7 +234,6 @@ def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs,
         (f_detail, idx) = find_nearest(f_source, f_detail)
     conn = matrix[idx, :]
 
-
     axConn.pcolormesh(f_dest, f_source, display_op(matrix), cmap='binary')
     axConn.set_xscale('log')
     axConn.set_xticks(nice_log_values(f_dest))
@@ -231,7 +243,6 @@ def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs,
     axConn.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     axConn.plot([np.min(f_dest), np.max(f_dest)], [f_detail, f_detail], color='r')
     axConn.axis('tight')
-
 
     if detail_type is not 'cartesian':
         axDetail.semilogx(f_dest, np.abs(conn))
