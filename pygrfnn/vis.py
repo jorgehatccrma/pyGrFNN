@@ -77,7 +77,14 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
             `numpy.abs`)
+
+    Note:
+        Is responsibility of the caller to issue the ``plt.show()`` command if
+        necessary
+
     """
+
+    opTF = display_op(TF)
 
     if x is None:
         fig, axTF = plt.subplots(1)
@@ -93,7 +100,7 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
         axTF = fig.add_subplot(gs[0])
         axOnset = fig.add_subplot(gs[1], sharex=axTF)
 
-    axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
+    axTF.pcolormesh(t, f, opTF, cmap='binary')
 
     axTF.set_yscale('log')
     axTF.set_yticks(nice_log_values(f))
@@ -106,7 +113,7 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
         axOnset.yaxis.set_ticks_position('right')
         axOnset.axis('tight')
 
-    plt.show()
+    # plt.show()
 
 
 
@@ -133,9 +140,15 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     Returns:
         (handles, ...): tuple of handles to plotted elements. They can be used
             to create animations
+
+    Note:
+        Is responsibility of the caller to issue the ``plt.show()`` command if
+        necessary
+
     """
 
-    # fig = plt.figure()
+    fig = plt.figure()
+    opTF = display_op(TF)
 
     if x is None:
         gs = gridspec.GridSpec(1, 4,
@@ -151,12 +164,12 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
                            )
         gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
 
-    axCB = plt.add_subplot(gs[0])
-    axTF = plt.add_subplot(gs[2])
-    axF = plt.add_subplot(gs[3], sharey=axTF)
+    axCB = fig.add_subplot(gs[0])
+    axTF = fig.add_subplot(gs[2])
+    axF = fig.add_subplot(gs[3], sharey=axTF)
 
     if x is not None:
-        axOnset = plt.add_subplot(gs[6], sharex=axTF)
+        axOnset = fig.add_subplot(gs[6], sharex=axTF)
 
     # find detail index
     if t_detail is None:
@@ -167,7 +180,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     nice_freqs = nice_log_values(f)
 
     # TF image
-    im = axTF.pcolormesh(t, f, display_op(TF), cmap='binary')
+    im = axTF.pcolormesh(t, f, opTF, cmap='binary')
     axTF.set_yscale('log')
     axTF.set_yticks(nice_freqs)
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
@@ -179,13 +192,14 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     cb.ax.yaxis.set_ticks_position('left')
 
     # TF detail
-    detail, = axF.semilogy(display_op(TF[:,idx]), f)
+    detail, = axF.semilogy(opTF[:,idx], f)
     axF.set_yticks(nice_freqs)
     axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     axF.set_xticklabels([])
-    # axF.set_xticks([np.min(display_op(TF[:,idx])), np.max(display_op(TF[:,idx]))])
+    # axF.set_xticks([np.min(opTF[:,idx]), np.max(opTF[:,idx])])
     axF.xaxis.set_ticks_position('top')
     axF.axis('tight')
+    axF.xlim([0, np.max(opTF)])
     axF.yaxis.set_ticks_position('right')
 
     # onset signal
@@ -196,9 +210,10 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
         t_line, = axOnset.plot([t_detail, t_detail], [np.min(x), np.max(x)], color='r')
         axOnset.yaxis.set_ticks_position('right')
         axOnset.axis('tight')
-    plt.show()
 
-    return (tf_line, t_line, detail)
+    # plt.show()
+
+    return (fig, tf_line, t_line, detail)
 
 
 
@@ -214,7 +229,14 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
         display_op (function): operator to apply to the connection matrix (e.g.
             `numpy.abs`)
         detail_type (string): detail complex display type ('polar' or 'cartesian')
+
+    Note:
+        Is responsibility of the caller to issue the ``plt.show()`` command if
+        necessary
+
     """
+
+    opMat = display_op(matrix)
     fig = plt.figure()
 
     if f_detail is not None:
@@ -232,7 +254,7 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
     f_dest = connection.destination.f
     matrix = connection.matrix
 
-    axConn.pcolormesh(f_dest, f_source, display_op(matrix), cmap='binary')
+    axConn.pcolormesh(f_dest, f_source, opMat, cmap='binary')
     axConn.set_xscale('log')
     axConn.set_xticks(nice_log_values(f_dest))
     axConn.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
@@ -261,6 +283,6 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
             axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
         axDetail.axis('tight')
 
-    plt.show()
+    # plt.show()
 
 

@@ -60,6 +60,7 @@ if plot_onset_signal:
 if plot_conns:
     from pygrfnn.vis import plot_connections
     plot_connections(internal_conns, f_detail=2.0)
+    plt.show()
 
 if plot_tf_output:
     # from pygrfnn.vis import tf_simple
@@ -67,4 +68,5 @@ if plot_tf_output:
     # tf_simple(TF, t_odf, T, None, np.abs)
     from pygrfnn.vis import tf_detail
     tf_detail(TF, t_odf, T, np.max(t_odf), odf, np.abs)
+    plt.show()
 
