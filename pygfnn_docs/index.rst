@@ -43,7 +43,7 @@ Examples
 
 .. literalinclude:: ../testSingleGFNN.py
    :language: python
-   :emphasize-lines: 18-22,25-29,32-33,36
+   :emphasize-lines: 18-22,25-28,32,35
    :linenos:
 
 
@@ -53,7 +53,7 @@ connected via afferent and efferent connections
 
 .. literalinclude:: ../testDoubleGFNN.py
    :language: python
-   :emphasize-lines: 18-19,28-36,40-49,53-55,63-80,84
+   :emphasize-lines: 19-20,26-34,40-45,49-53,57-59,62-65,69-73
    :linenos:
 
 
