@@ -98,7 +98,7 @@ class DuplicatedLayer(Exception):
     """
     Raised when attempting to add a previously added layer to a network
 
-    Attribute:
+    Attributes:
         layer (:class:`.GFNN`): duplicated layer
     """
 
@@ -110,7 +110,7 @@ class UnknownLayer(Exception):
     """
     Raised when attempting to use a layer unknown to the network
 
-    Attribute:
+    Attributes:
         layer (:class:`.GFNN`): unknown layer
     """
 
@@ -123,7 +123,15 @@ class UnknownLayer(Exception):
 
 
 class Connection(object):
-    """Connection object
+    """Convenient connection object
+
+    Args:
+        source (:class:`.GFNN`): source layer
+        destination (:class:`.GFNN`): destination layer
+        matrix (:class:`np.ndarray`): connection matrix
+        learn (bool): flag to enable learning of connections
+        d (float): "passive" learning rate (i.e. forgetting factor)
+        k (float): "active" learning rate
 
     Attributes:
         source (:class:`.GFNN`): source layer
