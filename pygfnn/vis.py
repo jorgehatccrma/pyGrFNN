@@ -205,8 +205,8 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
 @check_mpl
 def plot_connections(connection, f_detail=None, display_op=np.abs,
                      detail_type='polar'):
-    """plot_connections(matrix, f_source, f_dest, t_detail=None,
-        display_op=np.abs, detail_type='polar')
+    """plot_connections(connection, t_detail=None, display_op=np.abs,
+                        detail_type='polar')
 
     Args:
         connection (:class:`.Connection`): connection object

@@ -57,6 +57,15 @@ connected via afferent and efferent connections
    :linenos:
 
 
+3. A single layer model responding to an external stimulus. The intra-layer
+connections are initialized to 0, and are updated (learned) as the stimulus is
+presented.
+
+.. literalinclude:: ../testLearningSingle.py
+   :language: python
+   :emphasize-lines: 19-42
+   :linenos:
+
 
 
 Modules

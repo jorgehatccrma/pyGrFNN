@@ -19,10 +19,10 @@ class Zparam(object):
     """Convenience class to encapsulate oscillator parameters.
 
     Attributes:
-         a (float): Dampening parameter :math:`\\alpha`
-         b1 (COMPLEX): :math:`b_1 = \\beta_1 + j\\delta_1`
-         b2 (COMPLEX): :math:`b_2 = \\beta_2 + j\\delta_2`
-         e (float): Coupling strength :math:`\\varepsilon`
+         a: :class:`float` -- Dampening parameter :math:`\\alpha`
+         b1: :class:`.COMPLEX` -- :math:`b_1 = \\beta_1 + j\\delta_1`
+         b2: :class:`.COMPLEX` -- :math:`b_2 = \\beta_2 + j\\delta_2`
+         e: :class:`float` -- Coupling strength :math:`\\varepsilon`
 
     """
 

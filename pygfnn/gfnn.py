@@ -25,11 +25,11 @@ class GFNN(object):
         Currently only log-frequency spacing implemented
 
     Attributes:
-        f (:class:`np.ndarray`): ordered array of oscillators' natural frequencies (in Hz)
-        size (int): number of oscillators in the GFNN
-        oscs_per_octave (int): number of oscillators in a single octave
-        z (:class:`np.ndarray`): initial oscillators states
-        dzdt (function): parametrized oscillator differential equation
+        f: :class:`np.ndarray` -- ordered array of oscillators' natural frequencies (in Hz)
+        size: ``int`` -- number of oscillators in the GFNN
+        oscs_per_octave: ``int`` -- number of oscillators in a single octave
+        z: :class:`np.ndarray` -- initial oscillators states
+        zdot: ``function`` -- parametrized oscillator differential equation
 
 
     """
@@ -66,7 +66,7 @@ class GFNN(object):
         self.z = 1e-10*(1+1j)*np.ones(self.f.shape, dtype=COMPLEX)
 
         # oscillator differential equation
-        self.dzdt = partial(zdot, f=self.f, zparams=self.zparams)
+        self.zdot = partial(zdot, f=self.f, zparams=self.zparams)
 
         # number of oscillators per octave
         self.oscs_per_octave = oscs_per_octave

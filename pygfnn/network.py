@@ -1,9 +1,10 @@
-"""Network of GFNNs related code
+"""Network of GrFNNs related code
 
 This module provides the necessary code to build a model connecting multiple
-GFNNs. Connections can be made within a GFNN or between pairs of them.
+GrFNNs. Connections can be made within a GrFNN or between pairs of them.
 
-More importantly, it provides a method to run the model.
+More importantly, it provides a method to run the model (process an stimulus),
+including the ability to learn the connections between GrFNNs.
 
 To Dos:
     - Implement other types of connectivities
@@ -99,7 +100,7 @@ class DuplicatedLayer(Exception):
     Raised when attempting to add a previously added layer to a network
 
     Attributes:
-        layer (:class:`.GFNN`): duplicated layer
+        layer: :class:`.GFNN` -- duplicated layer
     """
 
     def __init__(self, layer):
@@ -111,7 +112,7 @@ class UnknownLayer(Exception):
     Raised when attempting to use a layer unknown to the network
 
     Attributes:
-        layer (:class:`.GFNN`): unknown layer
+        layer: :class:`.GFNN` -- unknown layer
     """
 
     def __init__(self, layer):
@@ -134,12 +135,12 @@ class Connection(object):
         k (float): "active" learning rate
 
     Attributes:
-        source (:class:`.GFNN`): source layer
-        destination (:class:`.GFNN`): destination layer
-        matrix (:class:`np.ndarray`): connection matrix
-        learn (bool): flag to enable learning of connections
-        d (float): "passive" learning rate (i.e. forgetting factor)
-        k (float): "active" learning rate
+        source: :class:`.GFNN` -- source layer
+        destination: :class:`.GFNN` -- destination layer
+        matrix: :class:`np.ndarray` -- connection matrix
+        learn: ``bool`` -- flag to enable learning of connections
+        d: ``float`` -- "passive" learning rate (i.e. forgetting factor)
+        k: ``float`` -- "active" learning rate
 
     Note:
         Currently ``d`` and ``k`` are scalar values, but they could be matrices
@@ -176,11 +177,13 @@ class Model(object):
     connections (internal to the layer or from other layers in the network).
 
     Attributes:
-        visible_layers: list of GFNN layers that will receive the external signal
-        hidden_layers: list of GFNN layers that won't receive the external signal
-        connections: dictionary of connections. Keys correspond to
-            destination layers. Values are a list of connections (see
-            :class:`.Connection`).
+        visible_layers: ``[layer]`` -- list of :class:`.GFNN` layers that will receive
+            the external signal
+        hidden_layers: ``[layer]`` -- list of :class:`.GFNN` layers that won't receive
+            the external signal
+        connections: ``{layer: [connections]}`` -- dictionary of connections.
+            *Keys* correspond to destination layers (:class:`.GFNN`). *Values*
+            are a list of connections (:class:`.Connection`).
 
     """
 
@@ -214,7 +217,7 @@ class Model(object):
                 fed into this layer
 
         Raises:
-            DuplicatedLayer: see :class:`.DuplicatedLayer`
+            DuplicatedLayer
         """
 
         if layer not in self.visible_layers + self.hidden_layers:
@@ -270,36 +273,39 @@ class Model(object):
     def run(self, signal, t, dt, learn=False):
         """Run the model for a given stimulus, using "intertwined" RK4
 
-        Intertwined means that a singe RK4 step needs to be run for all layers
-        in the model, before running the next RK4 step. This is due to the fact
-        that :math:`\\dot{z} = f(t, x(t), z(t))`. The "problem" is that
-        :math:`x(t)` is also a function of :math:`z(t)`.
-
         Args:
             signal (:class:`np.array_like`): external stimulus
             t (:class:`np.array_like`): time vector corresponding to the signal
             dt (float): sampling period of `signal`
             learn (bool): enable connection learning
 
-        Pseudo-code: ::
+        Note:
+            Intertwined means that a singe RK4 step needs to be run for all
+            layers in the model, before running the next RK4 step. This is due
+            to the fact that :math:`\\dot{z} = f(t, x(t), z(t))`. The "problem"
+            is that :math:`x(t)` is also a function of :math:`z(t)`, so it needs
+            to be updated for each layer in each RK step.
 
-            for (i, x_stim) in stimulus:
 
-                for L in layers:
-                    compute L.k1 given L.x(0), layers.z(-1)
+            Pseudo-code: ::
 
-                for L in layers:
-                    compute L.k2 given x_stim(0.5), layers.z(-1), L.k1
+                for (i, x_stim) in stimulus:
 
-                for L in layers:
-                    compute L.k3 given x_stim(0.5), layers.z(-1), L.k2
+                    for L in layers:
+                        compute L.k1 given x_stim(-1), layers.z(-1)
 
-                for L in layers:
-                    compute L.x(0), L.k4 given x_stim(1), layers.z(-1), L.k3
+                    for L in layers:
+                        compute L.k2 given x_stim(-.5), layers.z(-1), L.k1
 
-                for L in layers:
-                    compute L.z give L.k1, L.k2, L.k3, L.k4
-                    L.TF[:,i] = L.z
+                    for L in layers:
+                        compute L.k3 given x_stim(-.5), layers.z(-1), L.k2
+
+                    for L in layers:
+                        compute L.x(0), L.k4 given x_stim(0), layers.z(-1), L.k3
+
+                    for L in layers:
+                        compute L.z given L.k1, L.k2, L.k3, L.k4
+                        L.TF[:,i] = L.z
 
 
         Note:
@@ -353,7 +359,7 @@ class Model(object):
                 src = c.source
                 conns[i] = (src.z + h*getattr(src, step, 0), c.matrix)
             x = layer.compute_input(z, conns, stim)
-            return layer.dzdt(x, z)
+            return layer.zdot(x, z)
 
 
         # helper function that updates connection matrix
