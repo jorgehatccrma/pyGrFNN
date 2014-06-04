@@ -19,9 +19,6 @@ t_odf = t_odf/fs_odf
 params1 = Zparam(0, -1.0, -0.25, 0, 0, .5)
 params2 = Zparam(0.03, 1.0, -1.0, 0, 0, .5)
 
-internal_strength = 0.6
-internal_stdev = 0.5
-
 center_freq = 2.0
 half_range =  2.5
 oscs_per_octave = 64
@@ -37,17 +34,23 @@ layer2 = GFNN(params2,
               oscs_per_octave=oscs_per_octave)
 
 
-# add internal connectivities
-rels = [1./3., 1./2., 1., 2., 3.]
-layer1.connect_internally(relations=rels,
-                          internal_strength=internal_strength,
-                          internal_stdev=internal_stdev,
-                          complex_kernel=True)
+# define connectivities
 
-layer2.connect_internally(relations=rels,
-                          internal_strength=internal_strength,
-                          internal_stdev=internal_stdev,
-                          complex_kernel=True)
+# internal connectivity
+rels = [1./3., 1./2., 1., 2., 3.]
+internal_conns1 = make_connections(layer1, layer1, 0.6, 0.5, harmonics=rels,
+                                   complex_kernel=True, self_connect=False)
+
+internal_conns2 = make_connections(layer2, layer2, 0.5, 0.5, harmonics=rels,
+                                   complex_kernel=True, self_connect=False)
+
+
+# inter layer connectivity
+affConn = make_connections(layer1, layer2, 0.75, 0.5, harmonics=[1],
+                           complex_kernel=False, self_connect=True)
+
+effConn = make_connections(layer2, layer1, -0.75, 4.0, harmonics=[1],
+                           complex_kernel=True, self_connect=False)
 
 
 # create the model
@@ -55,28 +58,9 @@ net = Model()
 net.add_layer(layer1)
 net.add_layer(layer2, visible=False)
 
-# add inter-layer connections
-affConnStrength = 0.75;
-affConnStdDev = 0.5;
-effConnStrength = -0.75;
-effConnStdDev = 4.0;
-
-affConn = affConnStrength * make_connections (layer1,
-                                              layer2,
-                                              harmonics=[1],
-                                              stdev=affConnStdDev,
-                                              complex_kernel=False,
-                                              self_connect=True,
-                                              conn_type='gauss')
-
-effConn = effConnStrength * make_connections (layer2,
-                                              layer1,
-                                              harmonics=[1],
-                                              stdev=effConnStdDev,
-                                              complex_kernel=True,
-                                              self_connect=False,
-                                              conn_type='gauss')
-
+# add connectivity
+net.connect_layers(layer1, layer1, internal_conns1)
+net.connect_layers(layer2, layer2, internal_conns2)
 net.connect_layers(layer1, layer2, affConn)
 net.connect_layers(layer2, layer1, effConn)
 

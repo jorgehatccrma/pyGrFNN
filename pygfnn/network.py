@@ -14,12 +14,12 @@ To Dos:
 import numpy as np
 from utils import normalPDF
 from utils import normalCDF
+from utils import nl
 from defines import COMPLEX, PI, PI_2
 
 
-def make_connections(source, dest, harmonics=None, stdev=0.5,
-                     complex_kernel=False, self_connect=True,
-                     conn_type='rhythm'):
+def make_connections(source, dest, strength, stdev, harmonics=None,
+                     complex_kernel=False, self_connect=True):
     """Creates a connection matrix from source to destination.
 
     Args:
@@ -27,19 +27,21 @@ def make_connections(source, dest, harmonics=None, stdev=0.5,
             this and *dest*)
         dest (:class:`.GFNN`): destination GFNN (connections will be made
             between *source* and *this*)
-        harmonics (:class:`numpy.array`): frequency harmonics to connect
-            (e.g. [1/3, 1/2, 1, 2, 3]). If *None*, it will be set to ``[1]``
+        strength (float): connection strength (multiplicative real factor)
         stdev (float): standard deviation to use in the connections (to "spread"
             them with neighbors). Its units is *octaves* (e.g. stdev = 1.0
             implies that roughly 68% of the weight will be distributed in two
             octaves---+/- 1 stdev---around the mean)
+        harmonics (:class:`numpy.array`): frequency harmonics to connect
+            (e.g. [1/3, 1/2, 1, 2, 3]). If *None*, it will be set to ``[1]``
         complex_kernel (bool): If *True*, the connections will be complex (i.e.
             include phase information). Otherwise, the connections will be
             real-valued weights.
         self_connect (bool): if *False*, the connection from source_f[i] to
             dest_f[j] (where source_f[i] == dest_f[j]) will be set to 0
-        conn_type (string): type of connections. Possible values are 'rhythm'
-            (default) or 'gauss'
+
+    ToDo:
+        Revise the units of ``stdev``
 
     Returns:
         :class:`numpy.array`: Connection matrix (rows index source and columns
@@ -58,8 +60,6 @@ def make_connections(source, dest, harmonics=None, stdev=0.5,
     # j-th element
     conns = np.zeros(RF.shape, dtype=COMPLEX)
 
-    # gauss implies a 1:1 relation only (I think)
-    if conn_type is 'gauss': harmonics = [1]
     if harmonics is None: harmonics = [1]
 
     # Make self connections using a Gaussian distribution
@@ -91,7 +91,7 @@ def make_connections(source, dest, harmonics=None, stdev=0.5,
         conns = conns + R * np.exp(1j*Q)
         # This whole complex kernel business seems odd
 
-    return conns
+    return strength * conns
 
 
 class DuplicatedLayer(Exception):
@@ -137,8 +137,8 @@ class Model(object):
         hidden_layers: list of GFNN layers that won't receive the external signal
         connections: dictionary of connection matrices. Keys correspond to
             destination layers. Values are tuples identifying the source layer
-            and connection matrix. In other words ``connections[layerTo] =
-            (layerFrom, conn_matrix)``
+            connection matrix and learning parameters: ``connections[layerTo] =
+            (layerFrom, conn_matrix, learn, d, k)``
 
     """
 
@@ -186,7 +186,7 @@ class Model(object):
 
 
 
-    def connect_layers(self, source, destination, matrix):
+    def connect_layers(self, source, destination, matrix, learn=False, d=0.5, k=0.5):
         """Connect two layers.
 
         Args:
@@ -195,6 +195,9 @@ class Model(object):
             destination (:class:`.GFNN`): destination layer (connections will be
                 made from *source* layer to this layer)
             matrix (:class:`numpy.array`): Matrix of connection weights
+            learn (bool): if *True*, connections will be learned
+            d (float): "passive" learning rate
+            k (float): "active" learning rate
         """
 
         # TODO: add sanity check?
@@ -207,17 +210,23 @@ class Model(object):
         if destination not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(destination)
 
-        self.connections[destination].append((source, matrix))
+        self.connections[destination].append((source, matrix, learn, d, k))
 
 
 
-    def run(self, signal, t, dt):
+    def run(self, signal, t, dt, learn=False):
         """Run the model for a given stimulus, using "intertwined" RK4
 
         Intertwined means that a singe RK4 step needs to be run for all layers
         in the model, before running the next RK4 step. This is due to the fact
         that :math:`\\dot{z} = f(t, x(t), z(t))`. The "problem" is that
         :math:`x(t)` is also a function of :math:`z(t)`.
+
+        Args:
+            signal (:class:`np.array_like`): external stimulus
+            t (:class:`np.array_like`): time vector corresponding to the signal
+            dt (float): sampling period of `signal`
+            learn (bool): enable connection learning
 
         Pseudo-code: ::
 
@@ -239,19 +248,81 @@ class Model(object):
                     compute L.z give L.k1, L.k2, L.k3, L.k4
                     L.TF[:,i] = L.z
 
+
         Note:
-            The current implementation assumes constant *dt*
+            The current implementation assumes **constant sampling period** ``dt``
+        Note:
+
+            If ``learn is True``, then the Hebbian Learning algorithm described in
+
+               Edward W. Large. *Music Tonality, Neural Resonance and Hebbian Learning.*
+               **Proceedings of the Third International Conference on Mathematics and
+               Computation in Music (MCM 2011)**, pp. 115--125, Paris, France, 2011.
+
+            is used to update the connections:
+
+            .. math::
+
+                \\dot{c_{ij}} = -\\delta_{ij}c_{ij} + k_{ij}
+                                \\frac{z_{i}}{1-\\sqrt{\\varepsilon}z_i}
+                                \\frac{\\bar{z}_{j}}{1-\\sqrt{\\varepsilon}\\bar{z}_j}
+
+
+        Warning:
+
+            The above equation differs from the equation presented in the
+            mentioned reference (:math:`j` was used as subscript in the last
+            fractional term, instead of :math:`i`, as is in the paper). It seems
+            there it was a typo in the reference, but this **must be confirmed**
+            with the author.
+
+            Furthermore, the current implementation assumes that :math:`i`
+            indexes the source layer and :math:`j` indexes the destination layer
+            (this needs confirmation as well).
+
 
         """
 
         # helper function that performs a single RK4 step (any of them)
         def rk_step(layer, stim, step):
+            """Single RK4 step
+
+            Args:
+                layer (:class:`gfnn.GFNN`): layer to be integrated
+                stim (float): external stimulus sample
+                step (string): string identifying the previous RK step
+                    ``{'', 'k1', 'k2', 'k3'}``
+            """
             h = dt if step is 'k3' else 0.5*dt
             z = layer.z + h*getattr(layer, step, 0)
             # this pythonic trick might be too unreadable
-            conns = [(L.z+h*getattr(L, step, 0), M) for (L, M) in self.connections[layer]]
+            conns = [(L.z+h*getattr(L, step, 0), M) for (L, M, __, __, __)
+                                                    in self.connections[layer]]
             x = layer.compute_input(z, conns, stim)
             return layer.dzdt(x, z)
+
+
+        # helper function that updates connection matrix
+        def learn_step(conn, source, dest, d, k):
+            """Update connection matrices
+
+            Args:
+                conn (:class:`np.ndarray`): connection matrix
+                source (:class:`gfnn.GFNN`): origin of the connection (rows in
+                    ``conn``)
+                dest (:class:`gfnn.GFNN`): destination of the connection (cols
+                    in ``conn``)
+                d (float): "passive" learning rate :math:`\\delta`
+                k (float): "active" learning rate :math:`\\k_{ij}`
+            """
+            # TODO: test
+            e = dest.zparams.e
+            zi = dest.z
+            zj_conj = np.conj(source.z)  # verify which one should be conjugated
+            active = np.outer( zi*nl(zi, np.sqrt(e)),
+                               zj_conj*nl(zj_conj, np.sqrt(e)) )
+            cdot = -d*conn + k*active
+            conn += cdot
 
 
         # 1. prepare all the layers
@@ -293,4 +364,11 @@ class Model(object):
             for L in all_layers:
                 L.z = L.z + dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:,i] = L.z
+
+            # # learn connections
+            # if learn:
+            #     for L in all_layers:
+            #         conns, S, learn, d, k = self.connections[L]
+            #         if learn:
+            #             learn_step(conns, S, L, d=d, k=k)
 

@@ -1,4 +1,4 @@
-from pygfnn.network import Model
+from pygfnn.network import Model, make_connections
 from pygfnn.oscillator import Zparam
 from pygfnn.gfnn import GFNN
 
@@ -21,16 +21,21 @@ layer = GFNN(params,
              octaves_per_side=2,
              oscs_per_octave=64)
 
-# add internal connectivity
-rels = [1./3., 1./2., 1., 2., 3.]
-layer.connect_internally(relations=rels,
-                         internal_strength=0.6,
-                         internal_stdev=0.5,
-                         complex_kernel=True)
+# internal connectivity
+internal_conns = make_connections(layer, layer, 0.6, 0.5,
+                                  harmonics=[1./3., 1./2., 1., 2., 3.],
+                                  complex_kernel=True,
+                                  self_connect=False)
+
 
 # create the model
 model = Model()
+
+# setup layers
 model.add_layer(layer)
+
+# add connectivity
+model.connect_layers(layer, layer, internal_conns)
 
 # run the model
 model.run(odf, t_odf, 1.0/fs_odf)

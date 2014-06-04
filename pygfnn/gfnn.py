@@ -77,39 +77,6 @@ class GFNN(object):
         self.oscs_per_octave = oscs_per_octave
 
 
-    def connect_internally(self, relations=None, internal_strength=0.5,
-                           internal_stdev=0.5, complex_kernel=False):
-        """ Creates internal connections
-
-        Args:
-            relations (list): list of connection relations to be established.
-                For example, ``relations = [0.5, 1., 3.]`` will establish the
-                following connections: :math:`f_{dest} == 0.5f_{src};\\quad
-                f_{dest} == f_{src};\\quad f_{dest} == 3f_{src}`. If *None*, it
-                will be set to ``[1]``
-            internal_strength (float): weight of the internal connection.
-                If 0.0, not connections will be created
-            internal_stdev (float): internal connections standard deviation.
-                If *internal_strength==0.0*, this will be ignored.
-            complex_kernel (bool): if *True*, the connections are complex numbers
-
-        Warning:
-            No sanity check has been implemented
-
-        """
-        if relations is None: relations = [1]
-
-        if internal_strength > 0:
-            self.internal_conns = internal_strength * \
-                                  make_connections(self,
-                                                   self,
-                                                   relations,
-                                                   internal_stdev,
-                                                   complex_kernel=complex_kernel,
-                                                   self_connect=False)
-
-
-
     def compute_input(self, z, external_inputs, x_stim=0):
         """Compute the input to a GFNN (:math:`x` in equation 15 in the cited paper)
 
@@ -126,21 +93,14 @@ class GFNN(object):
                 array of inputs, one element per oscillator in the GFNN
 
         Note:
-            Here *external_inputs* refer to inter-layer connections
+            Here ``external_inputs`` refer to inter-layer connections
 
         """
 
         # process external signal (stimulus)
         x = f(x_stim, self.zparams.e)
 
-        # process internal connections
-        if self.internal_conns is not None:
-            # process internal signal (via internal connections)
-            # x_int = z.dot(self.internal_conns)
-            x_int = self.internal_conns.dot(z)
-            x = x + f(nml(x_int), self.zparams.e)
-
-        # process other external inputs (afferent / efferent)
+        # process other inputs (internal, afferent and efferent)
         for (source_z, matrix) in external_inputs:
             # x_ext = source_z.dot(matrix)
             x_ext = matrix.dot(source_z)
