@@ -22,7 +22,7 @@ layer = GFNN(params,
              oscs_per_octave=64)
 
 # internal connectivity
-internal_conns = make_connections(layer, layer, 0.6, 0.5,
+internal_conns = make_connections(layer, layer, 0.6, 0.05,
                                   harmonics=[1./3., 1./2., 1., 2., 3.],
                                   complex_kernel=True,
                                   self_connect=False)
@@ -35,7 +35,7 @@ model = Model()
 model.add_layer(layer)
 
 # add connectivity
-model.connect_layers(layer, layer, internal_conns)
+internal_conns = model.connect_layers(layer, layer, internal_conns)
 
 # run the model
 model.run(odf, t_odf, 1.0/fs_odf)
@@ -49,7 +49,7 @@ f = layer.f
 T = 1.0/f
 
 plot_onset_signal = False
-plot_internal_conns = False
+plot_conns = True
 plot_tf_output = True
 
 if plot_onset_signal:
@@ -57,9 +57,9 @@ if plot_onset_signal:
     plt.plot(t_odf, odf)
     plt.show()
 
-if plot_internal_conns:
+if plot_conns:
     from pygfnn.vis import plot_connections
-    plot_connections(internal_conns, layer.f, layer.f)
+    plot_connections(internal_conns, f_detail=2.0)
 
 if plot_tf_output:
     # from pygfnn.vis import tf_simple

@@ -41,8 +41,6 @@ conn = model.connect_layers(layer, layer, internal_conns, learn=True, d=0.001, k
 # run the model
 model.run(odf, t_odf, 1.0/fs_odf)
 
-# plot learned connections
-plot_connections(np.abs(conn.matrix), conn.source.f, conn.destination.f)
 
 
 # visualize results
@@ -51,7 +49,7 @@ f = layer.f
 T = 1.0/f
 
 plot_onset_signal = False
-plot_internal_conns = False
+plot_conns = True
 plot_tf_output = True
 
 if plot_onset_signal:
@@ -59,9 +57,9 @@ if plot_onset_signal:
     plt.plot(t_odf, odf)
     plt.show()
 
-# if plot_internal_conns:
-#     from pygfnn.vis import plot_connections
-#     plot_connections(layer.internal_conns, layer.f, layer.f)
+if plot_conns:
+    from pygfnn.vis import plot_connections
+    plot_connections(conn, display_op=lambda x: np.log(np.abs(x)))
 
 if plot_tf_output:
     # from pygfnn.vis import tf_simple

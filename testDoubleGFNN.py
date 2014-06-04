@@ -38,18 +38,18 @@ layer2 = GFNN(params2,
 
 # internal connectivity
 rels = [1./3., 1./2., 1., 2., 3.]
-internal_conns1 = make_connections(layer1, layer1, 0.6, 0.5, harmonics=rels,
+internal_conns1 = make_connections(layer1, layer1, 0.6, 0.1, harmonics=rels,
                                    complex_kernel=True, self_connect=False)
 
-internal_conns2 = make_connections(layer2, layer2, 0.5, 0.5, harmonics=rels,
+internal_conns2 = make_connections(layer2, layer2, 0.5, 0.1, harmonics=rels,
                                    complex_kernel=True, self_connect=False)
 
 
 # inter layer connectivity
-affConn = make_connections(layer1, layer2, 0.75, 0.5, harmonics=[1],
+affConn = make_connections(layer1, layer2, 0.75, 0.1, harmonics=[1],
                            complex_kernel=False, self_connect=True)
 
-effConn = make_connections(layer2, layer1, -0.75, 4.0, harmonics=[1],
+effConn = make_connections(layer2, layer1, -0.75, .4, harmonics=[1],
                            complex_kernel=True, self_connect=False)
 
 
@@ -59,10 +59,10 @@ net.add_layer(layer1)
 net.add_layer(layer2, visible=False)
 
 # add connectivity
-net.connect_layers(layer1, layer1, internal_conns1)
-net.connect_layers(layer2, layer2, internal_conns2)
-net.connect_layers(layer1, layer2, affConn)
-net.connect_layers(layer2, layer1, effConn)
+internal_conns1 = net.connect_layers(layer1, layer1, internal_conns1)
+internal_conns2 = net.connect_layers(layer2, layer2, internal_conns2)
+affConn = net.connect_layers(layer1, layer2, affConn)
+effConn = net.connect_layers(layer2, layer1, effConn)
 
 
 # run the model
@@ -79,7 +79,7 @@ f = layer2.f
 T = 1.0/f
 
 plot_onset_signal = False
-plot_internal_conns = False
+plot_conns = True
 plot_tf_output = True
 
 if plot_onset_signal:
@@ -87,9 +87,9 @@ if plot_onset_signal:
     plt.plot(t_odf, odf)
     plt.show()
 
-if plot_internal_conns:
+if plot_conns:
     from pygfnn.vis import plot_connections
-    plot_connections(effConn, layer1.f, layer2.f)
+    plot_connections(effConn)
 
 if plot_tf_output:
     # from pygfnn.vis import tf_simple

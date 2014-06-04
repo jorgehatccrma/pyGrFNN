@@ -203,15 +203,13 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
 
 
 @check_mpl
-def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs,
+def plot_connections(connection, f_detail=None, display_op=np.abs,
                      detail_type='polar'):
     """plot_connections(matrix, f_source, f_dest, t_detail=None,
         display_op=np.abs, detail_type='polar')
 
     Args:
-        matrix (:class:`numpy.array`): connection matrix
-        f_source (:class:`numpy.array`): source frequency vector
-        f_dest (:class:`numpy.array`): destination frequency vector
+        connection (:class:`.Connection`): connection object
         f_detail (float): frequency of the detail plot
         display_op (function): operator to apply to the connection matrix (e.g.
             `numpy.abs`)
@@ -219,20 +217,20 @@ def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs,
     """
     fig = plt.figure()
 
-    gs = gridspec.GridSpec(2, 1,
-                   width_ratios=[1],
-                   height_ratios=[3,1]
-                   )
-    gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
-    axConn = fig.add_subplot(gs[0])
-    axDetail = fig.add_subplot(gs[1])
-
-    if f_detail is None:
-        idx = np.round(f_source.size/2.0)
-        f_detail = f_source[idx]
+    if f_detail is not None:
+        gs = gridspec.GridSpec(2, 1,
+                       width_ratios=[1],
+                       height_ratios=[3,1]
+                       )
+        gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
+        axConn = fig.add_subplot(gs[0])
+        axDetail = fig.add_subplot(gs[1])
     else:
-        (f_detail, idx) = find_nearest(f_source, f_detail)
-    conn = matrix[idx, :]
+        axConn = fig.add_subplot(1,1,1)
+
+    f_source = connection.source.f
+    f_dest = connection.destination.f
+    matrix = connection.matrix
 
     axConn.pcolormesh(f_dest, f_source, display_op(matrix), cmap='binary')
     axConn.set_xscale('log')
@@ -244,20 +242,24 @@ def plot_connections(matrix, f_source, f_dest, f_detail=None, display_op=np.abs,
     axConn.plot([np.min(f_dest), np.max(f_dest)], [f_detail, f_detail], color='r')
     axConn.axis('tight')
 
-    if detail_type is not 'cartesian':
-        axDetail.semilogx(f_dest, np.abs(conn))
-        axDetailb = axDetail.twinx()
-        axDetailb.semilogx(f_dest, np.angle(conn), color='r')
-        axDetailb.set_xticks(nice_log_values(f_dest))
-        axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-        axDetailb.set_ylim([-np.pi, np.pi])
-    else:
-        axDetail.semilogx(f_dest, np.real(conn))
-        axDetailb = axDetail.twinx()
-        axDetailb.semilogx(f_dest, np.imag(conn), color='r')
-        axDetailb.set_xticks(nice_log_values(f_dest))
-        axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axDetail.axis('tight')
+    if f_detail is not None:
+        (f_detail, idx) = find_nearest(f_source, f_detail)
+        conn = matrix[idx, :]
+
+        if detail_type is not 'cartesian':
+            axDetail.semilogx(f_dest, np.abs(conn))
+            axDetailb = axDetail.twinx()
+            axDetailb.semilogx(f_dest, np.angle(conn), color='r')
+            axDetailb.set_xticks(nice_log_values(f_dest))
+            axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+            axDetailb.set_ylim([-np.pi, np.pi])
+        else:
+            axDetail.semilogx(f_dest, np.real(conn))
+            axDetailb = axDetail.twinx()
+            axDetailb.semilogx(f_dest, np.imag(conn), color='r')
+            axDetailb.set_xticks(nice_log_values(f_dest))
+            axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+        axDetail.axis('tight')
 
     plt.show()
 
