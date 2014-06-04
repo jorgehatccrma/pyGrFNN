@@ -25,12 +25,10 @@ class GFNN(object):
         Currently only log-frequency spacing implemented
 
     Attributes:
-        f (numpy.array): ordered array of oscillators' natural frequencies (in Hz)
+        f (:class:`np.ndarray`): ordered array of oscillators' natural frequencies (in Hz)
         size (int): number of oscillators in the GFNN
         oscs_per_octave (int): number of oscillators in a single octave
-        internal_conns (numpy.array): matrix of internal connections (rows index
-            source and columns index destination)
-        z (numpy.array): initial oscillators states
+        z (:class:`np.ndarray`): initial oscillators states
         dzdt (function): parametrized oscillator differential equation
 
 
@@ -64,9 +62,6 @@ class GFNN(object):
         # oscillator parameters
         self.zparams = zparams
 
-        # matrix of internal connections
-        self.internal_conns = None
-
         # initial oscillators states
         self.z = 1e-10*(1+1j)*np.ones(self.f.shape, dtype=COMPLEX)
 
@@ -75,6 +70,15 @@ class GFNN(object):
 
         # number of oscillators per octave
         self.oscs_per_octave = oscs_per_octave
+
+
+    def __repr__(self):
+        return  "GrFNN:\n" \
+                "\tfreq. range: {0}--{1}\n" \
+                "\toscs/octave: {2}\n" \
+                "\tnum_oscs:    {3}\n" \
+                "\t{4}\n".format(min(self.f), max(self.f), self.oscs_per_octave,
+                               self.size, self.zparams)
 
 
     def compute_input(self, z, external_inputs, x_stim=0):

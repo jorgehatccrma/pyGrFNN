@@ -1,6 +1,7 @@
 from pygfnn.network import Model, make_connections
 from pygfnn.oscillator import Zparam
 from pygfnn.gfnn import GFNN
+from pygfnn.vis import plot_connections
 
 import numpy as np
 
@@ -22,7 +23,7 @@ layer = GFNN(params,
              oscs_per_octave=64)
 
 # internal connectivity
-internal_conns = make_connections(layer, layer, 0.6, 0.5,
+internal_conns = make_connections(layer, layer, 0.0, 0.5,
                                   harmonics=[1./3., 1./2., 1., 2., 3.],
                                   complex_kernel=True,
                                   self_connect=False)
@@ -35,12 +36,13 @@ model = Model()
 model.add_layer(layer)
 
 # add connectivity
-model.connect_layers(layer, layer, internal_conns)
+conn = model.connect_layers(layer, layer, internal_conns, learn=True, d=0.001, k=0.001)
 
 # run the model
 model.run(odf, t_odf, 1.0/fs_odf)
 
-
+# plot learned connections
+plot_connections(np.abs(conn.matrix), conn.source.f, conn.destination.f)
 
 
 # visualize results
@@ -57,9 +59,9 @@ if plot_onset_signal:
     plt.plot(t_odf, odf)
     plt.show()
 
-if plot_internal_conns:
-    from pygfnn.vis import plot_connections
-    plot_connections(internal_conns, layer.f, layer.f)
+# if plot_internal_conns:
+#     from pygfnn.vis import plot_connections
+#     plot_connections(layer.internal_conns, layer.f, layer.f)
 
 if plot_tf_output:
     # from pygfnn.vis import tf_simple

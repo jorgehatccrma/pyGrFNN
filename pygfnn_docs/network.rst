@@ -8,6 +8,9 @@ Networks of Oscillators
 .. autoclass:: Model
     :members:
 
+.. autoclass:: Connection
+    :members:
+
 .. autoexception:: DuplicatedLayer
     :members:
 

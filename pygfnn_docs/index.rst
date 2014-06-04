@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 pyGrFNN documentation
-====================
+=====================
 
 **pyGFNN** is a pure Python implementation of a Gradient Frequency Neural
 Network (GFNN), introduced by Large, Almonte and Velasco in

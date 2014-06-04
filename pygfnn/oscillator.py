@@ -46,6 +46,13 @@ class Zparam(object):
         self.e = epsilon
 
 
+    def __repr__(self):
+        return  "Zparams:\n" \
+                "\talpha:   {0}\n" \
+                "\tbeta_1:  {1}\n" \
+                "\tbeta_2:  {2}\n" \
+                "\tepsilon: {3}\n".format(self.a, self.b1, self.b2, self.e)
+
 
 def zdot(x, z, f, zparams):
     """Dynamics of a neural oscillator.

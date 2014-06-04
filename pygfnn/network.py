@@ -122,6 +122,41 @@ class UnknownLayer(Exception):
                 (repr(self.layer))
 
 
+class Connection(object):
+    """Connection object
+
+    Attributes:
+        source (:class:`.GFNN`): source layer
+        destination (:class:`.GFNN`): destination layer
+        matrix (:class:`np.ndarray`): connection matrix
+        learn (bool): flag to enable learning of connections
+        d (float): "passive" learning rate (i.e. forgetting factor)
+        k (float): "active" learning rate
+
+    Note:
+        Currently ``d`` and ``k`` are scalar values, but they could be matrices
+
+    """
+
+    def __init__(self, src, dest, matrix, learn=False, d=0.05, k=0.05):
+        self.source = src
+        self.destination = dest
+        self.matrix = matrix
+        self.learn = learn
+        self.d = d
+        self.k = k
+
+
+    def __repr__(self):
+        return  "Connection:\n" \
+                "\tsource: {0}\n" \
+                "\tdest.:  {1}\n" \
+                "\tlearn: {2}\n" \
+                "\td: {3}\n" \
+                "\tk: {4}\n".format(self.source, self.destination, self.learn,
+                                  self.d, self.k)
+
+
 
 class Model(object):
     """
@@ -135,17 +170,13 @@ class Model(object):
     Attributes:
         visible_layers: list of GFNN layers that will receive the external signal
         hidden_layers: list of GFNN layers that won't receive the external signal
-        connections: dictionary of connection matrices. Keys correspond to
-            destination layers. Values are tuples identifying the source layer
-            connection matrix and learning parameters: ``connections[layerTo] =
-            (layerFrom, conn_matrix, learn, d, k)``
+        connections: dictionary of connections. Keys correspond to
+            destination layers. Values are a list of connections (see
+            :class:`.Connection`).
 
     """
 
     def __init__(self):
-        """
-        TODO: describe stuff (specially self.connections)
-        """
 
         # Visible GFNN: list of GFNN layers that will receive the external signal
         self.visible_layers = []
@@ -156,7 +187,14 @@ class Model(object):
         # connections
         self.connections = {}
 
-        pass
+
+    def __repr__(self):
+        return  "Model:\n" \
+                "\tvisible layers: {0}\n" \
+                "\thidden layers:  {1}\n" \
+                "\tconnections:    {2}\n".format(len(self.visible_layers),
+                                               len(self.hidden_layers),
+                                               len(self.connections))
 
 
     def add_layer(self, layer, visible=True):
@@ -198,6 +236,10 @@ class Model(object):
             learn (bool): if *True*, connections will be learned
             d (float): "passive" learning rate
             k (float): "active" learning rate
+
+        Returns:
+            :class:`.Connection`: connection object created
+
         """
 
         # TODO: add sanity check?
@@ -210,7 +252,10 @@ class Model(object):
         if destination not in self.visible_layers+self.hidden_layers:
             raise UnknownLayer(destination)
 
-        self.connections[destination].append((source, matrix, learn, d, k))
+        conn = Connection(source, destination, matrix, learn, d, k)
+        self.connections[destination].append(conn)
+
+        return conn
 
 
 
@@ -295,34 +340,33 @@ class Model(object):
             """
             h = dt if step is 'k3' else 0.5*dt
             z = layer.z + h*getattr(layer, step, 0)
-            # this pythonic trick might be too unreadable
-            conns = [(L.z+h*getattr(L, step, 0), M) for (L, M, __, __, __)
-                                                    in self.connections[layer]]
+            conns = [None]*len(self.connections[layer])
+            for i, c in enumerate(self.connections[layer]):
+                src = c.source
+                conns[i] = (src.z + h*getattr(src, step, 0), c.matrix)
             x = layer.compute_input(z, conns, stim)
             return layer.dzdt(x, z)
 
 
         # helper function that updates connection matrix
-        def learn_step(conn, source, dest, d, k):
+        def learn_step(conn):
             """Update connection matrices
 
             Args:
-                conn (:class:`np.ndarray`): connection matrix
-                source (:class:`gfnn.GFNN`): origin of the connection (rows in
-                    ``conn``)
-                dest (:class:`gfnn.GFNN`): destination of the connection (cols
-                    in ``conn``)
-                d (float): "passive" learning rate :math:`\\delta`
-                k (float): "active" learning rate :math:`\\k_{ij}`
+                conn (:class:`.Connection`): connection object
+
+            Returns:
+                (:class:`np.ndarray`): derivative of connections (to use in
+                    connection update rule)
             """
             # TODO: test
-            e = dest.zparams.e
-            zi = dest.z
-            zj_conj = np.conj(source.z)  # verify which one should be conjugated
+            e = conn.destination.zparams.e
+            zi = conn.destination.z
+            zj_conj = np.conj(conn.source.z)  # verify which one should be conjugated
             active = np.outer( zi*nl(zi, np.sqrt(e)),
                                zj_conj*nl(zj_conj, np.sqrt(e)) )
-            cdot = -d*conn + k*active
-            conn += cdot
+            return -conn.d*conn.matrix + conn.k*active
+
 
 
         # 1. prepare all the layers
@@ -365,10 +409,11 @@ class Model(object):
                 L.z = L.z + dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:,i] = L.z
 
-            # # learn connections
-            # if learn:
-            #     for L in all_layers:
-            #         conns, S, learn, d, k = self.connections[L]
-            #         if learn:
-            #             learn_step(conns, S, L, d=d, k=k)
+            # learn connections
+            for L in all_layers:
+                for i, conn in enumerate(self.connections[L]):
+                    if conn.learn:
+                        # print np.isnan(conn.matrix).any()
+                        conn.matrix += learn_step(conn)
+
 
