@@ -3,6 +3,7 @@ vEnv/
 
 # sphinx build folder
 pygfnn_docs/_build/
+pygrfnn_docs/_build/
 
 # random test files
 test.py

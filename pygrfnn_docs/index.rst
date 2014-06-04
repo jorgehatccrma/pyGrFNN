@@ -1,4 +1,4 @@
-.. pyGFNN documentation master file, created by
+.. pyGrFNN documentation master file, created by
    sphinx-quickstart on Tue May 13 19:30:43 2014.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -6,15 +6,15 @@
 pyGrFNN documentation
 =====================
 
-**pyGFNN** is a pure Python implementation of a Gradient Frequency Neural
-Network (GFNN), introduced by Large, Almonte and Velasco in
+**pyGrFNN** is a pure Python implementation of a Gradient Frequency Neural
+Network (GrFNN), introduced by Large, Almonte and Velasco in
 
    Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
    *A canonical model for gradient frequency neural networks.*
    **Physica D: Nonlinear Phenomena**, 239(12):905-911, 2010.
 
 These networks can be used to compute a time-frequency representation (TFR) of
-an input signal (e.g. audio or an onset signal). Unlike other TFRs, GFNNs can
+an input signal (e.g. audio or an onset signal). Unlike other TFRs, GrFNNs can
 generate energy at frequencies not present in the input signal via mode-locking.
 This property allows them to show behaviors similar to ones documented in music
 perception literature, making them good candidates for computational models of
@@ -39,9 +39,9 @@ TBD
 Examples
 ========
 
-1. A single layer (single GFNN) model responding to an external stimulus
+1. A single layer (single GrFNN) model responding to an external stimulus
 
-.. literalinclude:: ../testSingleGFNN.py
+.. literalinclude:: ../testSingleGrFNN.py
    :language: python
    :emphasize-lines: 18-22,25-28,32,35
    :linenos:
@@ -51,7 +51,7 @@ Examples
 (i.e. received the stimulus directly) and the other one is hidden. They are
 connected via afferent and efferent connections
 
-.. literalinclude:: ../testDoubleGFNN.py
+.. literalinclude:: ../testDoubleGrFNN.py
    :language: python
    :emphasize-lines: 19-20,26-34,40-45,49-53,57-59,62-65,69-73
    :linenos:
@@ -80,7 +80,7 @@ Modules
    :maxdepth: 2
 
    oscillator
-   gfnn
+   grfnn
    network
    vis
    defines

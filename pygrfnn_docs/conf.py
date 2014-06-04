@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# pyGFNN documentation build configuration file, created by
+# pyGrFNN documentation build configuration file, created by
 # sphinx-quickstart on Tue May 13 19:30:43 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -18,7 +18,7 @@ import os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../pygfnn'))
+sys.path.insert(0, os.path.abspath('../pygrfnn'))
 
 # -- General configuration ------------------------------------------------
 
@@ -189,7 +189,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pyGFNNdoc'
+htmlhelp_basename = 'pyGrFNNdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -239,7 +239,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'pygfnn', u'pyGFNN Documentation',
+    ('index', 'pygrfnn', u'pyGrFNN Documentation',
      [u'Jorge Herrera'], 1)
 ]
 

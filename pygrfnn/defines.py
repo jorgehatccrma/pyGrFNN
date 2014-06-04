@@ -1,4 +1,4 @@
-"""pyGFNN defines and constants
+"""pyGrFNN defines and constants
 """
 
 import numpy as np

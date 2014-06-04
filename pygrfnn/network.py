@@ -1,4 +1,4 @@
-"""Network of GrFNNs related code
+"""Network of GrFNNs
 
 This module provides the necessary code to build a model connecting multiple
 GrFNNs. Connections can be made within a GrFNN or between pairs of them.
@@ -24,9 +24,9 @@ def make_connections(source, dest, strength, stdev, harmonics=None,
     """Creates a connection matrix from source to destination.
 
     Args:
-        source (:class:`.GFNN`): source GFNN (connections will be made between
+        source (:class:`.GrFNN`): source GrFNN (connections will be made between
             this and *dest*)
-        dest (:class:`.GFNN`): destination GFNN (connections will be made
+        dest (:class:`.GrFNN`): destination GrFNN (connections will be made
             between *source* and *this*)
         strength (float): connection strength (multiplicative real factor)
         stdev (float): standard deviation to use in the connections (to "spread"
@@ -100,7 +100,7 @@ class DuplicatedLayer(Exception):
     Raised when attempting to add a previously added layer to a network
 
     Attributes:
-        layer: :class:`.GFNN` -- duplicated layer
+        layer: :class:`.GrFNN` -- duplicated layer
     """
 
     def __init__(self, layer):
@@ -112,7 +112,7 @@ class UnknownLayer(Exception):
     Raised when attempting to use a layer unknown to the network
 
     Attributes:
-        layer: :class:`.GFNN` -- unknown layer
+        layer: :class:`.GrFNN` -- unknown layer
     """
 
     def __init__(self, layer):
@@ -127,16 +127,16 @@ class Connection(object):
     """Convenient connection object
 
     Args:
-        source (:class:`.GFNN`): source layer
-        destination (:class:`.GFNN`): destination layer
+        source (:class:`.GrFNN`): source layer
+        destination (:class:`.GrFNN`): destination layer
         matrix (:class:`np.ndarray`): connection matrix
         learn (bool): flag to enable learning of connections
         d (float): "passive" learning rate (i.e. forgetting factor)
         k (float): "active" learning rate
 
     Attributes:
-        source: :class:`.GFNN` -- source layer
-        destination: :class:`.GFNN` -- destination layer
+        source: :class:`.GrFNN` -- source layer
+        destination: :class:`.GrFNN` -- destination layer
         matrix: :class:`np.ndarray` -- connection matrix
         learn: ``bool`` -- flag to enable learning of connections
         d: ``float`` -- "passive" learning rate (i.e. forgetting factor)
@@ -169,30 +169,30 @@ class Connection(object):
 
 class Model(object):
     """
-    A network of GFNNs
+    A network of GrFNNs
 
-    Different GFNNs are referred to as layers. Layers can be added as visible or
+    Different GrFNNs are referred to as layers. Layers can be added as visible or
     hidden; the former means that it will directly receive external stimulus,
     while the later implies that the inputs will consist only of internal
     connections (internal to the layer or from other layers in the network).
 
     Attributes:
-        visible_layers: ``[layer]`` -- list of :class:`.GFNN` layers that will receive
+        visible_layers: ``[layer]`` -- list of :class:`.GrFNN` layers that will receive
             the external signal
-        hidden_layers: ``[layer]`` -- list of :class:`.GFNN` layers that won't receive
+        hidden_layers: ``[layer]`` -- list of :class:`.GrFNN` layers that won't receive
             the external signal
         connections: ``{layer: [connections]}`` -- dictionary of connections.
-            *Keys* correspond to destination layers (:class:`.GFNN`). *Values*
+            *Keys* correspond to destination layers (:class:`.GrFNN`). *Values*
             are a list of connections (:class:`.Connection`).
 
     """
 
     def __init__(self):
 
-        # Visible GFNN: list of GFNN layers that will receive the external signal
+        # Visible GrFNN: list of GrFNN layers that will receive the external signal
         self.visible_layers = []
 
-        # Hidden GFNNs: list of GFNN layers that won't receive the external signal
+        # Hidden GrFNNs: list of GrFNN layers that won't receive the external signal
         self.hidden_layers = []
 
         # connections
@@ -209,10 +209,10 @@ class Model(object):
 
 
     def add_layer(self, layer, visible=True):
-        """Add a GFNN layer.
+        """Add a GrFNN layer.
 
         Args:
-            layer (:class:`.GFNN`): the GFNN to add to the model
+            layer (:class:`.GrFNN`): the GrFNN to add to the model
             visible (bool): If *True*, the external signal (stimulus) will be
                 fed into this layer
 
@@ -239,9 +239,9 @@ class Model(object):
         """Connect two layers.
 
         Args:
-            source (:class:`.GFNN`): source layer (connections will be made from
+            source (:class:`.GrFNN`): source layer (connections will be made from
                 this layer to *destination*)
-            destination (:class:`.GFNN`): destination layer (connections will be
+            destination (:class:`.GrFNN`): destination layer (connections will be
                 made from *source* layer to this layer)
             matrix (:class:`numpy.array`): Matrix of connection weights
             learn (bool): if *True*, connections will be learned
@@ -347,7 +347,7 @@ class Model(object):
             """Single RK4 step
 
             Args:
-                layer (:class:`gfnn.GFNN`): layer to be integrated
+                layer (:class:`grfnn.GrFNN`): layer to be integrated
                 stim (float): external stimulus sample
                 step (string): string identifying the previous RK step
                     ``{'', 'k1', 'k2', 'k3'}``

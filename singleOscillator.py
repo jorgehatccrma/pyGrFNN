@@ -2,28 +2,28 @@
 Script to study the dynamics of a single oscillator
 """
 
-import pygfnn
+import pygrfnn
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 
-TWO_PI = pygfnn.TWO_PI
+TWO_PI = pygrfnn.TWO_PI
 
 
 
 # oscillator parameters
-zparams = pygfnn.Zparam(alpha=-0.3,
-                        beta1=2.0,
-                        beta2=-2.0,
-                        epsilon=0.5)
+zparams = pygrfnn.Zparam(alpha=-0.3,
+                         beta1=2.0,
+                         beta2=-2.0,
+                         epsilon=0.5)
 
 # a single neural oscillator
-osc = pygfnn.GFNN(zparams,
-                  fc=2.0,
-                  octaves_per_side=0.0)
+osc = pygrfnn.GrFNN(zparams,
+                    fc=2.0,
+                    octaves_per_side=0.0)
 
-model = pygfnn.Model()
+model = pygrfnn.Model()
 model.add_layer(osc)
 
 

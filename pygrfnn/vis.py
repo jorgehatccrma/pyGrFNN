@@ -37,7 +37,7 @@ def check_mpl(fun):
 
     Example: ::
 
-        from pygfnn.vis import check_mpl
+        from pygrfnn.vis import check_mpl
 
         # decorate a function
         @check_mpl
@@ -135,7 +135,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
             to create animations
     """
 
-    fig = plt.figure()
+    # fig = plt.figure()
 
     if x is None:
         gs = gridspec.GridSpec(1, 4,
@@ -151,12 +151,12 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
                            )
         gs.update(wspace=0.0, hspace=0.0) # set the spacing between axes.
 
-    axCB = fig.add_subplot(gs[0])
-    axTF = fig.add_subplot(gs[2])
-    axF = fig.add_subplot(gs[3], sharey=axTF)
+    axCB = plt.add_subplot(gs[0])
+    axTF = plt.add_subplot(gs[2])
+    axF = plt.add_subplot(gs[3], sharey=axTF)
 
     if x is not None:
-        axOnset = fig.add_subplot(gs[6], sharex=axTF)
+        axOnset = plt.add_subplot(gs[6], sharex=axTF)
 
     # find detail index
     if t_detail is None:
@@ -198,7 +198,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
         axOnset.axis('tight')
     plt.show()
 
-    return (fig, tf_line, t_line, detail)
+    return (tf_line, t_line, detail)
 
 
 

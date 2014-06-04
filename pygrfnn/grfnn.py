@@ -1,4 +1,4 @@
-"""GFNN related code, as described in
+"""GrFNN related code, as described in
 
 Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
 A canonical model for gradient frequency neural networks.
@@ -17,7 +17,7 @@ from utils import f, nml
 from functools import partial
 from oscillator import zdot
 
-class GFNN(object):
+class GrFNN(object):
     """
     Gradient Frequency Neural Network
 
@@ -25,8 +25,9 @@ class GFNN(object):
         Currently only log-frequency spacing implemented
 
     Attributes:
-        f: :class:`np.ndarray` -- ordered array of oscillators' natural frequencies (in Hz)
-        size: ``int`` -- number of oscillators in the GFNN
+        f: :class:`np.ndarray` -- ordered array of oscillators' natural
+            frequencies (in Hz)
+        size: ``int`` -- number of oscillators in the GrFNN
         oscs_per_octave: ``int`` -- number of oscillators in a single octave
         z: :class:`np.ndarray` -- initial oscillators states
         zdot: ``function`` -- parametrized oscillator differential equation
@@ -39,11 +40,11 @@ class GFNN(object):
                  fc=1.0,
                  octaves_per_side=2.0,
                  oscs_per_octave=64):
-        """ GFNN constructor
+        """ GrFNN constructor
 
         Args:
             zparams (:class:`.Zparam`): oscillator parameters
-            fc (float): GFNN center frequency (in Hz.)
+            fc (float): GrFNN center frequency (in Hz.)
             octaves_per_side (float): number of octaves above (and below) fc
             oscs_per_octave (float): number of oscillators per octave
 
@@ -81,23 +82,26 @@ class GFNN(object):
                                self.size, self.zparams)
 
 
-    def compute_input(self, z, external_inputs, x_stim=0):
-        """Compute the input to a GFNN (:math:`x` in equation 15 in the cited paper)
+    def compute_input(self, z, connection_inputs, x_stim=0):
+        """Compute the overall input to a GrFNN (:math:`x` in equation 15 in the
+        cited paper)
 
         Args:
-            z (:class:`numpy.array`): state of the GFNN at the instant when the
+            z (:class:`numpy.array`): state of the GrFNN at the instant when the
                 input needs to be computed
-            external_inputs (list): list of tuples of the form (*source_z*,
-                *matrix*) where *source_z* is the state of the source GFNN and
-                *matrix* is the connection matrix
+            connection_inputs (list): list of tuples of the form (*source_z*,
+                *matrix*) where *source_z* is the state of the source
+                :class:.`GrFNN` and *matrix* is the connection matrix
+                (:class:`np.ndarray`)
             x_stim (:class:`numpy.array`): external stimulus
 
         Returns:
-            :class:`numpy.array`:
-                array of inputs, one element per oscillator in the GFNN
+            :class:`numpy.array` -- array of inputs, one element per oscillator
+            in the GrFNN
 
         Note:
-            Here ``external_inputs`` refer to inter-layer connections
+            Here ``connection_inputs`` refer to inter-layer connections, as well
+            as intra-layer connections (self connected layers)
 
         """
 
@@ -105,7 +109,7 @@ class GFNN(object):
         x = f(x_stim, self.zparams.e)
 
         # process other inputs (internal, afferent and efferent)
-        for (source_z, matrix) in external_inputs:
+        for (source_z, matrix) in connection_inputs:
             # x_ext = source_z.dot(matrix)
             x_ext = matrix.dot(source_z)
             x = x + f(nml(x_ext), self.zparams.e)

@@ -71,10 +71,8 @@ from subprocess import call
 
 def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24):
 
-    plt.ioff()
-
     # First set up the figure, the axis, and the plot element we want to animate
-    (fig, tf_line, t_line, detail) = tf_detail(TF, t_ods, T, np.max(t_ods)/2.0, ods, np.abs)
+    (tf_line, t_line, detail) = tf_detail(TF, t_ods, T, np.max(t_ods)/2.0, ods, np.abs)
 
     # initialization function
     def init():
@@ -115,4 +113,3 @@ def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24):
                         '-strict', 'experimental',
                         outfile])
 
-    plt.ion()

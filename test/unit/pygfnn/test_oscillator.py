@@ -1,9 +1,9 @@
 import unittest
-from pygfnn import oscillator as osc
+from pygrfnn import oscillator as osc
 
 
 class Test(unittest.TestCase):
-    """Unit tests for pygfnn.oscillator.Zparam"""
+    """Unit tests for pygrfnn.oscillator.Zparam"""
 
     def test_zparam(self):
         """Test nl(x, gamma) nonlinearity"""

@@ -157,7 +157,7 @@ def timed(fun):
     Example: ::
 
             import time
-            from pygfnn.utils import timed
+            from pygrfnn.utils import timed
 
             # decorate a function
             @timed

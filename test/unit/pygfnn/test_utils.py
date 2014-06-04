@@ -1,8 +1,8 @@
 import unittest
-from pygfnn import utils
+from pygrfnn import utils
 
 class Test(unittest.TestCase):
-    """Unit tests for pygfnn.utils."""
+    """Unit tests for pygrfnn.utils."""
 
     def test_nl(self):
         """Test nl(x, gamma) nonlinearity"""

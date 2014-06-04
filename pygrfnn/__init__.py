@@ -11,8 +11,9 @@ __version__ = '.'.join(__version_info__)
 
 
 from oscillator import *
-from gfnn import *
+from grfnn import *
 from network import *
 from defines import *
 from utils import *
 from vis import *
+from moviegen import *

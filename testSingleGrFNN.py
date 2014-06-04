@@ -1,6 +1,6 @@
-from pygfnn.network import Model, make_connections
-from pygfnn.oscillator import Zparam
-from pygfnn.gfnn import GFNN
+from pygrfnn.network import Model, make_connections
+from pygrfnn.oscillator import Zparam
+from pygrfnn.grfnn import GrFNN
 
 import numpy as np
 
@@ -14,9 +14,9 @@ t_odf = np.arange(0, odf.size)
 t_odf = t_odf/fs_odf
 
 
-# create single GFNN
+# create single GrFNN
 params = Zparam(0, -0.25, -0.5, 0, 0, 1)
-layer = GFNN(params,
+layer = GrFNN(params,
              fc=2,
              octaves_per_side=2,
              oscs_per_octave=64)
@@ -58,13 +58,13 @@ if plot_onset_signal:
     plt.show()
 
 if plot_conns:
-    from pygfnn.vis import plot_connections
+    from pygrfnn.vis import plot_connections
     plot_connections(internal_conns, f_detail=2.0)
 
 if plot_tf_output:
-    # from pygfnn.vis import tf_simple
+    # from pygrfnn.vis import tf_simple
     # tf_simple(TF, t_odf, T, odf, np.abs)
     # tf_simple(TF, t_odf, T, None, np.abs)
-    from pygfnn.vis import tf_detail
+    from pygrfnn.vis import tf_detail
     tf_detail(TF, t_odf, T, np.max(t_odf), odf, np.abs)
 

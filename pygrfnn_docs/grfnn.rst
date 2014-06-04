@@ -1,6 +1,6 @@
 Gradient Frequency Neural Network
 =================================
 
-.. automodule:: gfnn
+.. automodule:: grfnn
     :members:
 
