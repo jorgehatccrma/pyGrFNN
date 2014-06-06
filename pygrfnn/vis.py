@@ -199,7 +199,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     # axF.set_xticks([np.min(opTF[:,idx]), np.max(opTF[:,idx])])
     axF.xaxis.set_ticks_position('top')
     axF.axis('tight')
-    axF.xlim([0, np.max(opTF)])
+    axF.set_xlim(0, np.max(opTF))
     axF.yaxis.set_ticks_position('right')
 
     # onset signal
@@ -236,7 +236,6 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
 
     """
 
-    opMat = display_op(matrix)
     fig = plt.figure()
 
     if f_detail is not None:
@@ -253,6 +252,7 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
     f_source = connection.source.f
     f_dest = connection.destination.f
     matrix = connection.matrix
+    opMat = display_op(matrix)
 
     axConn.pcolormesh(f_dest, f_source, opMat, cmap='binary')
     axConn.set_xscale('log')

@@ -375,8 +375,8 @@ class Model(object):
             """
             # TODO: test
             e = conn.destination.zparams.e
-            zi = conn.destination.z
-            zj_conj = np.conj(conn.source.z)  # verify which one should be conjugated
+            zi = conn.source.z
+            zj_conj = np.conj(conn.destination.z)  # verify which one should be conjugated
             active = np.outer( zi*nl(zi, np.sqrt(e)),
                                zj_conj*nl(zj_conj, np.sqrt(e)) )
             return -conn.d*conn.matrix + conn.k*active

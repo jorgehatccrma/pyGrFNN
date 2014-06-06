@@ -4,7 +4,7 @@ from pygrfnn.grfnn import GrFNN
 from pygrfnn.utils import timed
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 # load onset signal
 # odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
@@ -17,20 +17,16 @@ t_odf = t_odf/fs_odf
 
 # create a pair of GrFNNs
 params1 = Zparam(0, -1.0, -0.25, 0, 0, .5)
-params2 = Zparam(0.03, 1.0, -1.0, 0, 0, .5)
+params2 = Zparam(-0.03, 1.0, -1.0, 0, 0, .5)
 
 center_freq = 2.0
 half_range =  2.5
 oscs_per_octave = 64
 
-layer1 = GrFNN(params1,
-              fc=center_freq,
-              octaves_per_side=half_range,
+layer1 = GrFNN(params1, fc=center_freq, octaves_per_side=half_range,
               oscs_per_octave=oscs_per_octave)
 
-layer2 = GrFNN(params2,
-              fc=center_freq,
-              octaves_per_side=half_range,
+layer2 = GrFNN(params2, fc=center_freq, octaves_per_side=half_range,
               oscs_per_octave=oscs_per_octave)
 
 
@@ -38,18 +34,18 @@ layer2 = GrFNN(params2,
 
 # internal connectivity
 rels = [1./3., 1./2., 1., 2., 3.]
-internal_conns1 = make_connections(layer1, layer1, 0.6, 0.1, harmonics=rels,
+internal_conns1 = make_connections(layer1, layer1, 0.0, 0.1, harmonics=rels,
                                    complex_kernel=True, self_connect=False)
 
-internal_conns2 = make_connections(layer2, layer2, 0.5, 0.1, harmonics=rels,
+internal_conns2 = make_connections(layer2, layer2, 0.0, 0.1, harmonics=rels,
                                    complex_kernel=True, self_connect=False)
 
 
 # inter layer connectivity
-affConn = make_connections(layer1, layer2, 0.75, 0.1, harmonics=[1],
+affConn = make_connections(layer1, layer2, 0.0, 0.1, harmonics=[1],
                            complex_kernel=False, self_connect=True)
 
-effConn = make_connections(layer2, layer1, -0.75, .4, harmonics=[1],
+effConn = make_connections(layer2, layer1, 0.0, .4, harmonics=[1],
                            complex_kernel=True, self_connect=False)
 
 
@@ -59,10 +55,12 @@ net.add_layer(layer1)
 net.add_layer(layer2, visible=False)
 
 # add connectivity
-internal_conns1 = net.connect_layers(layer1, layer1, internal_conns1)
-internal_conns2 = net.connect_layers(layer2, layer2, internal_conns2)
-affConn = net.connect_layers(layer1, layer2, affConn)
-effConn = net.connect_layers(layer2, layer1, effConn)
+d = 0.0001
+k = 0.005
+internal_conns1 = net.connect_layers(layer1, layer1, internal_conns1, learn=True, d=d, k=k)
+internal_conns2 = net.connect_layers(layer2, layer2, internal_conns2, learn=True, d=d, k=k)
+affConn = net.connect_layers(layer1, layer2, affConn, learn=True, d=d, k=k)
+effConn = net.connect_layers(layer2, layer1, effConn, learn=True, d=d, k=k)
 
 
 # run the model
@@ -89,7 +87,15 @@ if plot_onset_signal:
 
 if plot_conns:
     from pygrfnn.vis import plot_connections
-    plot_connections(effConn)
+    plot_connections(internal_conns1, display_op=lambda x: -np.log(np.abs(x)))
+    plt.title('Internal Connections Layer 1')
+    plot_connections(internal_conns2, display_op=lambda x: -np.log(np.abs(x)))
+    plt.title('Internal Connections Layer 2')
+    plot_connections(affConn, display_op=lambda x: -np.log(np.abs(x)))
+    plt.title('Afferent Connections')
+    plot_connections(effConn, display_op=lambda x: -np.log(np.abs(x)))
+    plt.title('Efferent Connections')
+
     plt.show()
 
 if plot_tf_output:
