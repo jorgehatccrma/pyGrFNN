@@ -4,6 +4,7 @@ from pygrfnn.grfnn import GrFNN
 from pygrfnn.utils import timed
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # load onset signal
@@ -56,7 +57,7 @@ effConn = make_connections(layer2, layer1, -0.75, .4, harmonics=[1],
 # create the model
 net = Model()
 net.add_layer(layer1)
-net.add_layer(layer2, visible=False)
+net.add_layer(layer2, input_channel=None)
 
 # add connectivity
 internal_conns1 = net.connect_layers(layer1, layer1, internal_conns1)
@@ -79,7 +80,7 @@ f = layer2.f
 T = 1.0/f
 
 plot_onset_signal = False
-plot_conns = True
+plot_conns = False
 plot_tf_output = True
 
 if plot_onset_signal:

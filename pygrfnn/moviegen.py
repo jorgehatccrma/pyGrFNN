@@ -51,6 +51,9 @@ def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24):
         anim.save(temp_video.name, writer=FFwriter, extra_args=['-vcodec', 'libx264', '-preset', 'slow'])
 
         # add audio
+        import pdb
+        pdb.set_trace()
+
         write(temp_audio.name, signal.sr, signal.data)
         call(['ffmpeg', '-i', temp_video.name,
                         # '-itsoffset', '00:00:00.1',  # for some reason, the first bit of audio is lost if not delayed

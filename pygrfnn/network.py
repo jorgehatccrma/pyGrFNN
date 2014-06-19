@@ -177,10 +177,8 @@ class Model(object):
     connections (internal to the layer or from other layers in the network).
 
     Attributes:
-        visible_layers: ``[layer]`` -- list of :class:`.GrFNN` layers that will receive
-            the external signal
-        hidden_layers: ``[layer]`` -- list of :class:`.GrFNN` layers that won't receive
-            the external signal
+        layers: ``[layer, input_channel]`` -- list of :class:`.GrFNN` layers
+            and its external input channel
         connections: ``{layer: [connections]}`` -- dictionary of connections.
             *Keys* correspond to destination layers (:class:`.GrFNN`). *Values*
             are a list of connections (:class:`.Connection`).
@@ -189,11 +187,8 @@ class Model(object):
 
     def __init__(self):
 
-        # Visible GrFNN: list of GrFNN layers that will receive the external signal
-        self.visible_layers = []
-
-        # Hidden GrFNNs: list of GrFNN layers that won't receive the external signal
-        self.hidden_layers = []
+        # list of GrFNN layers (and its corresponding external input channel)
+        self._layers = []
 
         # connections
         self.connections = {}
@@ -201,31 +196,30 @@ class Model(object):
 
     def __repr__(self):
         return  "Model:\n" \
-                "\tvisible layers: {0}\n" \
-                "\thidden layers:  {1}\n" \
-                "\tconnections:    {2}\n".format(len(self.visible_layers),
-                                               len(self.hidden_layers),
+                "\tlayers: {0}\n" \
+                "\tconnections: {1}\n".format(len(self.layers()),
                                                len(self.connections))
 
 
-    def add_layer(self, layer, visible=True):
+    def layers(self):
+        return [t[0] for t in self._layers]
+
+
+    def add_layer(self, layer, input_channel=0):
         """Add a GrFNN layer.
 
         Args:
             layer (:class:`.GrFNN`): the GrFNN to add to the model
-            visible (bool): If *True*, the external signal (stimulus) will be
-                fed into this layer
+            input_channel (`int` or `None`): If *None*, no external signal
+                (stimulus) will be fed into this layer. Otherwise, it identifies
+                the input channel to be fed into the layer.
 
         Raises:
             DuplicatedLayer
         """
 
-        if layer not in self.visible_layers + self.hidden_layers:
-            if visible:
-                self.visible_layers.append(layer)
-            else:
-                self.hidden_layers.append(layer)
-
+        if layer not in self.layers():
+            self._layers.append((layer, input_channel))
             self.connections[layer] = []    # list of connected layers. List
                                             # elems should be tuples of the form
                                             # (source_layer, connextion_matrix)
@@ -257,10 +251,10 @@ class Model(object):
         # TODO: add another method (or use duck typing) to pass harmonics or
         #       connection_type in matrix
 
-        if source not in self.visible_layers+self.hidden_layers:
+        if source not in self.layers():
             raise UnknownLayer(source)
 
-        if destination not in self.visible_layers+self.hidden_layers:
+        if destination not in self.layers():
             raise UnknownLayer(destination)
 
         conn = Connection(source, destination, matrix, learn, d, k)
@@ -274,7 +268,8 @@ class Model(object):
         """Run the model for a given stimulus, using "intertwined" RK4
 
         Args:
-            signal (:class:`np.array_like`): external stimulus
+            signal (:class:`np.array_like`): external stimulus. If multichannel,
+                the first dimension indexes time and the second one indexes channels
             t (:class:`np.array_like`): time vector corresponding to the signal
             dt (float): sampling period of `signal`
             learn (bool): enable connection learning
@@ -382,49 +377,56 @@ class Model(object):
             return -conn.d*conn.matrix + conn.k*active
 
 
+        num_frames = signal.shape[0]
+
+        if signal.ndim == 1:
+            signal = np.atleast_2d(signal).T
+
 
         # 1. prepare all the layers
-        all_layers = self.visible_layers + self.hidden_layers
-        for layer in all_layers:
-            layer.TF = np.zeros((layer.f.size, signal.size), dtype=COMPLEX)
+        for L, inchan in self._layers:
+            # FIXME
+            L.TF = np.zeros((L.f.size, num_frames), dtype=COMPLEX)
 
 
         # 2. Run "intertwined" RK4
-        for (i, s) in enumerate(signal):
+        for i in range(num_frames):
 
-            if s != signal[-1]:
+            s = signal[i,:]
+
+            if i != num_frames-1:
                 # linear interpolation should be fine
-                x_stim = [s, 0.5*(s+signal[i+1]), signal[i+1]]
+                x_stim = [s, 0.5*(s+signal[i+1,:]), signal[i+1,:]]
             else:
                 x_stim = [s, s, s]
 
             # k1
-            for L in all_layers:
-                stim = x_stim[0] if L in self.visible_layers else 0
+            for L, inchan in self._layers:
+                stim = 0 if inchan is None else x_stim[0][inchan]
                 L.k1 = rk_step(L, stim, '')
 
             # k2
-            for L in all_layers:
-                stim = x_stim[1] if L in self.visible_layers else 0
+            for L, inchan in self._layers:
+                stim = 0 if inchan is None else x_stim[1][inchan]
                 L.k2 = rk_step(L, stim, 'k1')
 
             # k3
-            for L in all_layers:
-                stim = x_stim[1] if L in self.visible_layers else 0
+            for L, inchan in self._layers:
+                stim = 0 if inchan is None else x_stim[1][inchan]
                 L.k3 = rk_step(L, stim, 'k2')
 
             # k4
-            for L in all_layers:
-                stim = x_stim[2] if L in self.visible_layers else 0
+            for L, inchan in self._layers:
+                stim = 0 if inchan is None else x_stim[2][inchan]
                 L.k4 = rk_step(L, stim, 'k3')
 
             # final RK step
-            for L in all_layers:
+            for L in self.layers():
                 L.z = L.z + dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:,i] = L.z
 
             # learn connections
-            for L in all_layers:
+            for L in self.layers():
                 for i, conn in enumerate(self.connections[L]):
                     if conn.learn:
                         # print np.isnan(conn.matrix).any()

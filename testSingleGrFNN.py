@@ -3,6 +3,7 @@ from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # load onset signal

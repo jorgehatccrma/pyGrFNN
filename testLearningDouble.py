@@ -6,6 +6,7 @@ from pygrfnn.utils import timed
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # load onset signal
 # odf = np.loadtxt('sampleOnsets/rumba.onset.txt')
 odf = np.loadtxt('sampleOnsets/bossa.onset.txt')
@@ -52,7 +53,7 @@ effConn = make_connections(layer2, layer1, 0.0, .4, harmonics=[1],
 # create the model
 net = Model()
 net.add_layer(layer1)
-net.add_layer(layer2, visible=False)
+net.add_layer(layer2, input_channel=None)
 
 # add connectivity
 d = 0.0001

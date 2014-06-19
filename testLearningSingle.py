@@ -4,6 +4,7 @@ from pygrfnn.grfnn import GrFNN
 from pygrfnn.vis import plot_connections
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # load onset signal
