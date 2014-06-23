@@ -63,7 +63,7 @@ def check_mpl(fun):
 
 
 @check_mpl
-def tf_simple(TF, t, f, x=None, display_op=np.abs):
+def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
     """tf_simple(TF, t, f, x=None, display_op=np.abs)
 
     Simple time-frequency representation. It shows the TF in the top plot and
@@ -73,7 +73,8 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
         TF  (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
-        x (:class:`numpy.array`): original time domain signal. If *None*, not
+        title (str): title of the plot
+        x (:class:`numpy.array`): original time domain signal. If *None*, no
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
             `numpy.abs`)
@@ -102,6 +103,9 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
 
     axTF.pcolormesh(t, f, opTF, cmap='binary')
 
+    if title is not None:
+        axTF.set_title(title)
+
     axTF.set_yscale('log')
     axTF.set_yticks(nice_log_values(f))
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
@@ -119,7 +123,7 @@ def tf_simple(TF, t, f, x=None, display_op=np.abs):
 
 
 @check_mpl
-def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
+def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
 
     Detailed time-frequency representation. It shows the TF in the top plot. It
@@ -131,6 +135,7 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
         TF (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
+        title (str): title of the plot
         t_detail (float): time instant to be detailed
         x (:class:`numpy.array`): original time domain signal. If *None*, not
             time domain plot is shown
@@ -187,6 +192,9 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
     tf_line, = axTF.plot([t_detail, t_detail], [np.min(f), np.max(f)], color='r')
     axTF.axis('tight')
 
+    if title is not None:
+        axTF.set_title(title)
+
     # Add colorbar
     cb = plt.colorbar(im, ax=axTF, cax=axCB)
     cb.ax.yaxis.set_ticks_position('left')
@@ -218,13 +226,14 @@ def tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs):
 
 
 @check_mpl
-def plot_connections(connection, f_detail=None, display_op=np.abs,
+def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
                      detail_type='polar'):
     """plot_connections(connection, t_detail=None, display_op=np.abs,
                         detail_type='polar')
 
     Args:
         connection (:class:`.Connection`): connection object
+        title (str): Title to be displayed
         f_detail (float): frequency of the detail plot
         display_op (function): operator to apply to the connection matrix (e.g.
             `numpy.abs`)
@@ -261,10 +270,17 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
     axConn.set_yscale('log')
     axConn.set_yticks(nice_log_values(f_source))
     axConn.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    axConn.set_ylabel(r'$f_{\mathrm{source}}$')
     axConn.plot([np.min(f_dest), np.max(f_dest)], [f_detail, f_detail], color='r')
     axConn.axis('tight')
 
-    if f_detail is not None:
+    if title is not None:
+        axConn.set_title(title)
+
+
+    if f_detail is None:
+        axConn.set_xlabel(r'$f_{\mathrm{dest}}$')
+    else:
         (f_detail, idx) = find_nearest(f_source, f_detail)
         conn = matrix[idx, :]
 
@@ -282,6 +298,7 @@ def plot_connections(connection, f_detail=None, display_op=np.abs,
             axDetailb.set_xticks(nice_log_values(f_dest))
             axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
         axDetail.axis('tight')
+        axDetail.set_xlabel(r'$f_{\mathrm{dest}}$')
 
     # plt.show()
 

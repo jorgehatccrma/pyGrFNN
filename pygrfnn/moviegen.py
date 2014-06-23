@@ -11,10 +11,10 @@ from scipy.io.wavfile import write
 from subprocess import call
 
 
-def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24):
+def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24, title=None):
 
     # First set up the figure, the axis, and the plot element we want to animate
-    (fig, tf_line, t_line, detail) = tf_detail(TF, t_ods, T, np.max(t_ods)/2.0, ods, np.abs)
+    (fig, tf_line, t_line, detail) = tf_detail(TF, t_ods, T, title, np.max(t_ods)/2.0, ods, np.abs)
 
     # initialization function
     def init():

@@ -101,9 +101,9 @@ if plot_conns:
 
 if plot_tf_output:
     # from pygrfnn.vis import tf_simple
-    # tf_simple(TF, t_odf, T, odf, np.abs)
-    # tf_simple(TF, t_odf, T, None, np.abs)
+    # tf_simple(TF, t_odf, T, None, odf, np.abs)
+    # tf_simple(TF, t_odf, T, None, None, np.abs)
     from pygrfnn.vis import tf_detail
-    tf_detail(TF, t_odf, T, np.max(t_odf), odf, np.abs)
+    tf_detail(TF, t_odf, T, None, np.max(t_odf), odf, np.abs)
     plt.show()
 

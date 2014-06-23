@@ -17,6 +17,7 @@ from utils import normalPDF
 from utils import normalCDF
 from utils import nl
 from defines import COMPLEX, PI, PI_2
+import sys
 
 
 def make_connections(source, dest, strength, stdev, harmonics=None,
@@ -427,9 +428,15 @@ class Model(object):
 
             # learn connections
             for L in self.layers():
-                for i, conn in enumerate(self.connections[L]):
+                for j, conn in enumerate(self.connections[L]):
                     if conn.learn:
                         # print np.isnan(conn.matrix).any()
                         conn.matrix += learn_step(conn)
+
+            # progress indicator
+            nc = len(str(num_frames))
+            msg = '\r{2}0:0{0}d{3}/{1}'.format(nc, num_frames, '{', '}')
+            sys.stdout.write(msg.format(i+1))
+            sys.stdout.flush()
 
 
