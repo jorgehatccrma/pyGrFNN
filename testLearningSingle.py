@@ -1,9 +1,14 @@
+"""
+Script to test connectivity learning with a single layer network
+"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
 from pygrfnn.vis import plot_connections
-
-import numpy as np
 
 
 # load onset signal
@@ -53,7 +58,6 @@ plot_conns = True
 plot_tf_output = True
 
 if plot_onset_signal:
-    import matplotlib.pyplot as plt
     plt.plot(t_odf, odf)
     plt.show()
 
