@@ -11,10 +11,10 @@ from scipy.io.wavfile import write
 from subprocess import call
 
 
-def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24):
+def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24, title=None):
 
     # First set up the figure, the axis, and the plot element we want to animate
-    (fig, tf_line, t_line, detail) = tf_detail(TF, t_ods, T, np.max(t_ods)/2.0, ods, np.abs)
+    (fig, tf_line, t_line, detail) = tf_detail(TF, t_ods, T, title, np.max(t_ods)/2.0, ods, np.abs)
 
     # initialization function
     def init():
@@ -51,6 +51,9 @@ def animate_tf_detail(TF, ods, t_ods, sr_ods, T, signal, outfile, fps=24):
         anim.save(temp_video.name, writer=FFwriter, extra_args=['-vcodec', 'libx264', '-preset', 'slow'])
 
         # add audio
+        import pdb
+        pdb.set_trace()
+
         write(temp_audio.name, signal.sr, signal.data)
         call(['ffmpeg', '-i', temp_video.name,
                         # '-itsoffset', '00:00:00.1',  # for some reason, the first bit of audio is lost if not delayed
