@@ -21,7 +21,7 @@ from utils import nl
 from defines import COMPLEX, PI, PI_2
 import sys
 
-MAX_AMP = 1e4  # None to disable
+LIMIT_OSC_MAGNITUDE = True
 
 
 def make_connections(source, dest, strength, stdev, harmonics=None,
@@ -132,6 +132,8 @@ class Connection(object):
         learn (bool): flag to enable learning of connections
         d (float): "passive" learning rate (i.e. forgetting factor)
         k (float): "active" learning rate
+        self_connection (bool): if ``False``, the diagonal of the
+            matrix is kept to 0 (even when learning is enabled)
 
     Attributes:
         source: :class:`.GrFNN` -- source layer
@@ -147,13 +149,21 @@ class Connection(object):
 
     """
 
-    def __init__(self, src, dest, matrix, learn=False, d=0.05, k=0.05):
+    def __init__(self,
+                 src,
+                 dest,
+                 matrix,
+                 learn=False,
+                 d=0.05,
+                 k=0.05,
+                 self_connection=True):
         self.source = src
         self.destination = dest
         self.matrix = matrix
         self.learn = learn
         self.d = d
         self.k = k
+        self.self_connection = self_connection
 
     def __repr__(self):
         return "Connection:\n" \
@@ -161,11 +171,13 @@ class Connection(object):
                "\tdest.:  {1}\n" \
                "\tlearn: {2}\n" \
                "\td: {3}\n" \
-               "\tk: {4}\n".format(self.source,
-                                   self.destination,
-                                   self.learn,
-                                   self.d,
-                                   self.k)
+               "\tk: {4}\n" \
+               "\tself_connect: {5}\n".format(self.source,
+                                              self.destination,
+                                              self.learn,
+                                              self.d,
+                                              self.k,
+                                              self.self_connection)
 
 
 class Model(object):
@@ -402,6 +414,8 @@ class Model(object):
             L.TF = np.zeros((L.f.size, num_frames), dtype=COMPLEX)
 
         # 2. Run "intertwined" RK4
+        nc = len(str(num_frames))
+        msg = '\r{{0:0{0}d}}/{1}'.format(nc, num_frames)
         for i in range(num_frames):
 
             s = signal[i, :]
@@ -435,20 +449,14 @@ class Model(object):
             # final RK step
             for L in self.layers():
                 L.z = L.z + dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
-                # if np.isnan(L.z).any():
-                #     import pdb
-                #     pdb.set_trace()
 
                 # FIXME: hard-limiting oscillation magnitude
-                if MAX_AMP is not None:
-
-                    idx = np.where(np.abs(L.z) >= MAX_AMP)[0]
+                if LIMIT_OSC_MAGNITUDE:
+                    max_amp = 1. / np.sqrt(L.zparams.e) - 1e-10
+                    idx = np.where(np.abs(L.z) > max_amp)[0]
                     if len(idx) > 0:
                         print(L.f[idx])
-
-                    L.z[np.abs(L.z) > MAX_AMP] = MAX_AMP * \
-                        L.z[np.abs(L.z) > MAX_AMP] / \
-                        np.abs(L.z[np.abs(L.z) > MAX_AMP])
+                    L.z[idx] = max_amp * L.z[idx] / np.abs(L.z[idx])
 
                 L.TF[:, i] = L.z
 
@@ -458,9 +466,11 @@ class Model(object):
                     if conn.learn:
                         # print np.isnan(conn.matrix).any()
                         conn.matrix += learn_step(conn)
+                        if not conn.self_connection:
+                            # FIXME: This only works if source.f == destination.f
+                            conn.matrix[range(len(conn.source.f)),
+                                        range(len(conn.destination.f))] = 0
 
             # progress indicator
-            nc = len(str(num_frames))
-            msg = '\r{2}0:0{0}d{3}/{1}'.format(nc, num_frames, '{', '}')
             sys.stdout.write(msg.format(i+1))
             sys.stdout.flush()

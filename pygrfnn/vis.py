@@ -185,9 +185,11 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     axTF.set_yscale('log')
     axTF.set_yticks(nice_freqs)
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    axTF.hold(True)
     tf_line, = axTF.plot([t_detail, t_detail],
                          [np.min(f), np.max(f)],
                          color='r')
+    axTF.hold(False)
     axTF.axis('tight')
 
     if title is not None:
@@ -271,9 +273,6 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
     axConn.set_yticks(nice_log_values(f_source))
     axConn.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     axConn.set_ylabel(r'$f_{\mathrm{source}}$')
-    axConn.plot([np.min(f_dest), np.max(f_dest)],
-                [f_detail, f_detail],
-                color='r')
     axConn.axis('tight')
 
     if title is not None:
@@ -285,30 +284,38 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
         (f_detail, idx) = find_nearest(f_source, f_detail)
         conn = matrix[idx, :]
 
+        axConn.hold(True)
+        axConn.plot([np.min(f_dest), np.max(f_dest)],
+                    [f_detail, f_detail],
+                    color='r')
+        axConn.hold(False)
+
+        scalar_formatter = mpl.ticker.ScalarFormatter()
+
         if detail_type is 'polar':
             axDetail.semilogx(f_dest, np.abs(conn))
             axDetailb = axDetail.twinx()
             axDetailb.semilogx(f_dest, np.angle(conn), color='r')
             axDetailb.set_xticks(nice_log_values(f_dest))
-            axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+            axDetailb.get_xaxis().set_major_formatter(scalar_formatter)
             axDetailb.set_ylim([-np.pi, np.pi])
             axDetail.axis('tight')
         elif detail_type is 'magnitude':
             axDetail.semilogx(f_dest, np.abs(conn))
             axDetail.set_xticks(nice_log_values(f_dest))
-            axDetail.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+            axDetail.get_xaxis().set_major_formatter(scalar_formatter)
             axDetail.axis('tight')
         elif detail_type is 'phase':
             axDetail.semilogx(f_dest, np.angle(conn), color='r')
             axDetail.set_xticks(nice_log_values(f_dest))
-            axDetail.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+            axDetail.get_xaxis().set_major_formatter(scalar_formatter)
             axDetail.set_ylim([-np.pi, np.pi])
         else:
             axDetail.semilogx(f_dest, np.real(conn))
             axDetailb = axDetail.twinx()
             axDetailb.semilogx(f_dest, np.imag(conn), color='r')
             axDetailb.set_xticks(nice_log_values(f_dest))
-            axDetailb.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+            axDetailb.get_xaxis().set_major_formatter(scalar_formatter)
             axDetail.axis('tight')
         axDetail.set_xlabel(r'$f_{\mathrm{dest}}$')
 
