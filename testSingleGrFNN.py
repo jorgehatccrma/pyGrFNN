@@ -1,3 +1,5 @@
+import timeit
+
 from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
@@ -41,6 +43,12 @@ internal_conns = model.connect_layers(layer, layer, internal_conns)
 # run the model
 model.run(odf, t_odf, 1.0/fs_odf)
 
+from pygrfnn.utils import timed
+@timed
+def runit():
+  model.run(odf, t_odf, 1.0/fs_odf)
+
+runit()
 
 
 
