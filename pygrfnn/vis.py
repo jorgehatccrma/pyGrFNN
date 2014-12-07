@@ -153,14 +153,14 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
 
     if x is None:
         gs = gridspec.GridSpec(1, 4,
-                               width_ratios=[1, 2, 20, 3],
+                               width_ratios=[1, 2, 20, 6],
                                height_ratios=[1]
                                )
         gs.update(wspace=0.0, hspace=0.0)  # set the spacing between axes.
         axOnset = None
     else:
         gs = gridspec.GridSpec(2, 4,
-                               width_ratios=[1, 2, 20, 3],
+                               width_ratios=[1, 2, 20, 6],
                                height_ratios=[3, 1]
                                )
         gs.update(wspace=0.0, hspace=0.0)  # set the spacing between axes.
@@ -203,12 +203,13 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     detail, = axF.semilogy(opTF[:, idx], f)
     axF.set_yticks(nice_freqs)
     axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axF.set_xticklabels([])
-    # axF.set_xticks([np.min(opTF[:,idx]), np.max(opTF[:,idx])])
+    # axF.set_xticklabels([])
+    # axF.set_xticks([0, np.max(opTF[:,idx])/2, np.max(opTF[:,idx])])
     axF.xaxis.set_ticks_position('top')
     axF.axis('tight')
     axF.set_xlim(0, np.max(opTF))
     axF.yaxis.set_ticks_position('right')
+    plt.setp(axF.get_xaxis().get_ticklabels(), rotation=90 )
 
     # onset signal
     t_line = None

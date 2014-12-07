@@ -13,7 +13,6 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
-
 def nl(x, gamma):
     """
     Nonlinearity of the form
@@ -37,7 +36,7 @@ def nl(x, gamma):
     return 1.0/(1.0-gamma*x)
 
 
-def f(x, gamma):
+def ff(x, gamma):
     """
     Nonlinearity of the form
 
@@ -72,7 +71,6 @@ def nml(x, m=0.4, gamma=1.0):
     # return m * np.tanh(g*x)
     a = np.abs(x)+EPS
     return m*np.tanh(gamma*a)*x/a
-
 
 
 # def RK4(x, x_1, z_1, dt, diffeq):

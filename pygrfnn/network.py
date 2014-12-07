@@ -21,8 +21,6 @@ from utils import nl
 from defines import COMPLEX, PI, PI_2
 import sys
 
-LIMIT_OSC_MAGNITUDE = True
-
 
 def make_connections(source, dest, strength, stdev, harmonics=None,
                      complex_kernel=False, self_connect=True):
@@ -362,21 +360,22 @@ class Model(object):
         """
 
         # helper function that performs a single RK4 step (any of them)
-        def rk_step(layer, stim, step):
+        def rk_step(layer, stim, pstep):
             """Single RK4 step
 
             Args:
                 layer (:class:`grfnn.GrFNN`): layer to be integrated
                 stim (float): external stimulus sample
-                step (string): string identifying the previous RK step
+                pstep (string): string identifying the previous RK step
                     ``{'', 'k1', 'k2', 'k3'}``
             """
-            h = dt if step is 'k3' else 0.5*dt
-            z = layer.z + h*getattr(layer, step, 0)
+            h = dt if pstep is 'k3' else 0.5*dt
+            pz = getattr(layer, pstep, 0)
+            z = layer.z + h*pz
             conns = [None]*len(self.connections[layer])
             for i, c in enumerate(self.connections[layer]):
                 src = c.source
-                conns[i] = (src.z + h*getattr(src, step, 0), c.matrix)
+                conns[i] = (src.z + h*pz, c.matrix)
             x = layer.compute_input(z, conns, stim)
             return layer.zdot(x, z)
 
@@ -448,16 +447,7 @@ class Model(object):
 
             # final RK step
             for L in self.layers():
-                L.z = L.z + dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
-
-                # FIXME: hard-limiting oscillation magnitude
-                if LIMIT_OSC_MAGNITUDE:
-                    max_amp = 1. / np.sqrt(L.zparams.e) - 1e-10
-                    idx = np.where(np.abs(L.z) > max_amp)[0]
-                    if len(idx) > 0:
-                        print(L.f[idx])
-                    L.z[idx] = max_amp * L.z[idx] / np.abs(L.z[idx])
-
+                L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:, i] = L.z
 
             # learn connections
@@ -474,3 +464,4 @@ class Model(object):
             # progress indicator
             sys.stdout.write(msg.format(i+1))
             sys.stdout.flush()
+        sys.stdout.write(" done!\n")

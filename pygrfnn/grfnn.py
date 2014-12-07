@@ -12,7 +12,7 @@ To Dos:
 import numpy as np
 from network import make_connections
 from defines import COMPLEX, FLOAT
-from utils import f, nml
+from utils import ff, nml
 from functools import partial
 from oscillator import zdot
 
@@ -65,7 +65,12 @@ class GrFNN(object):
         self.zparams = zparams
 
         # initial oscillators states
-        self.z = 1e-10*(1+1j)*np.ones(self.f.shape, dtype=COMPLEX)
+        # self.z = 1e-10*(1+0j)*np.ones(self.f.shape, dtype=COMPLEX)
+        r0 = 0
+        r = 0  # GrFNN Toolbox uses spontAmp.m  ...
+        r0 = (r+r0) + 0.01 * np.random.standard_normal(self.f.shape)
+        phi0 = 2 * np.pi * np.random.standard_normal(self.f.shape)
+        self.z = r0 * np.exp(1j * 2 * np.pi * phi0, dtype=COMPLEX);
 
         # oscillator differential equation
         self.zdot = partial(zdot, f=self.f, zparams=self.zparams)
@@ -75,7 +80,7 @@ class GrFNN(object):
 
     def __repr__(self):
         return "GrFNN:\n" \
-               "\tfreq. range: {0}--{1}\n" \
+               "\tfreq. range: {0} -- {1}\n" \
                "\toscs/octave: {2}\n" \
                "\tnum_oscs:    {3}\n" \
                "\t{4}\n".format(min(self.f),
@@ -107,15 +112,15 @@ class GrFNN(object):
 
         """
 
-        # OPTION 1: FROM ORIGINAL NLTFT MATLAB CODE
-        # process external signal (stimulus)
-        x = f(x_stim, self.zparams.e)
-        # process other inputs (internal, afferent and efferent)
-        for (source_z, matrix) in connection_inputs:
-            # x_ext = source_z.dot(matrix)
-            x_ext = matrix.dot(source_z)
-            x = x + f(nml(x_ext), self.zparams.e)
-        return x
+        # # OPTION 1: FROM ORIGINAL NLTFT MATLAB CODE
+        # # process external signal (stimulus)
+        # x = ff(x_stim, self.zparams.e)
+        # # process other inputs (internal, afferent and efferent)
+        # for (source_z, matrix) in connection_inputs:
+        #     # x_ext = source_z.dot(matrix)
+        #     x_ext = matrix.dot(source_z)
+        #     x = x + f(nml(x_ext), self.zparams.e)
+        # return x
 
         # # OPTION 2: My own interpretation, where the inputs are linearly
         # # summed before applying the non-linearity
@@ -125,7 +130,7 @@ class GrFNN(object):
         #     # x_ext = source_z.dot(matrix)
         #     x_ext = matrix.dot(source_z)
         #     x = x + x_ext
-        # return f(nml(x), self.zparams.e)
+        # return ff(nml(x), self.zparams.e)
 
         # # OPTION 3: My own interpretation, where the external input is
         # # non-linearly transformed, before adding the connectivity
@@ -142,12 +147,23 @@ class GrFNN(object):
         # # input, after "combining" external, internal, afferent and
         # # efferent contributions
         # # process external signal (stimulus)
-        # x = f(x_stim, self.zparams.e)
+        # x = ff(x_stim, self.zparams.e)
         # # process other inputs (internal, afferent and efferent)
         # for (source_z, matrix) in connection_inputs:
         #     # x_ext = source_z.dot(matrix)
         #     x_ext = matrix.dot(source_z)
-        #     x = x + f(nml(x_ext), self.zparams.e)
+        #     x = x + ff(nml(x_ext), self.zparams.e)
         # return nml(x)
         # # return nml(x, m=1. / np.sqrt(self.zparams.e))
         # # return nml(x, m=.8 / np.sqrt(self.zparams.e))
+
+        # OPTION 5: FROM GrFNN Toolbox-1.0 MATLAB CODE
+        # process external signal (stimulus)
+        x = x_stim
+        # process other inputs (internal, afferent and efferent)
+        # TODO: implememt connection types as describe in GrFNN-Toolbox-1.0:Functions/zdot.m
+        for (source_z, matrix) in connection_inputs:
+            # x_ext = source_z.dot(matrix)
+            x_ext = matrix.dot(source_z)
+            x = x + ff(nml(x_ext), self.zparams.e)
+        return x

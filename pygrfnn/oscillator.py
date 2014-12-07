@@ -44,6 +44,7 @@ class Zparam(object):
         self.b1 = beta1 + 1j*delta1
         self.b2 = beta2 + 1j*delta2
         self.e = epsilon
+        self.sqe = np.sqrt(self.e)
 
 
     def __repr__(self):
@@ -57,12 +58,12 @@ class Zparam(object):
 def zdot(x, z, f, zparams):
     """Dynamics of a neural oscillator.
 
-    Implements the dynamical system described in equation 15 of the paper
+    Implements the dynamical system described in equation 20 of the paper
     referenced above.
 
     .. math::
 
-        \\dot{z} = z \\Bigg(\\alpha + j\\omega + b_1 |z|^2 +
+        \\tau_i\\dot{z} = z \\Bigg(\\alpha + j\\omega + b_1 |z|^2 +
             \\frac{b_2\\varepsilon |z|^4}{1-\\varepsilon |z|^2} \\Bigg) +
             \\frac{x}{1-\\sqrt{\\varepsilon} x} \\frac{1}{1-\\sqrt{\\varepsilon}
             \\bar{z}}
@@ -90,15 +91,24 @@ def zdot(x, z, f, zparams):
 
     """
 
-    lin = zparams.a + 1j*TWO_PI*f
-    nonlin1 = zparams.b1*np.abs(z)**2
-    nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
+    # lin = zparams.a + 1j*TWO_PI*f
+    # nonlin1 = zparams.b1*np.abs(z)**2
+    # nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
+    # # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
+    # # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
+    # RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
+    # return z * (lin + nonlin1 + nonlin2) + RT
+
+
+    lin = (zparams.a + 1j*TWO_PI )*f
+    nl1 = zparams.b1*f*np.abs(z)**2
+    nl2 = zparams.b2*f*zparams.e*(np.abs(z)**4) / (1 - zparams.sqe * np.abs(z)**2)
     # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
     # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
-    RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
-
-    return z * (lin + nonlin1 + nonlin2) + RT
-
+    # RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
+    # RT = x * f * (1.0 / (1 - zparams.sqe * x)) * ( 1.0 / (1 - zparams.sqe * np.conj(z)))
+    RT = x * f
+    return z * (lin + nl1 + nl2) + RT
 
 
 
