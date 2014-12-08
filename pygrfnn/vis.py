@@ -132,7 +132,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
         title (str): title of the plot
-        t_detail (float): time instant to be detailed
+        t_detail (float or list of floats): time instant(s) to be detailed
         x (:class:`numpy.array`): original time domain signal. If *None*, not
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
@@ -151,32 +151,33 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     fig = plt.figure()
     opTF = display_op(TF)
 
+    if t_detail is None:
+        wr = [1, 2, 20]
+        detail = None
+    else:
+        wr = [1, 2, 20, 6]
+
     if x is None:
-        gs = gridspec.GridSpec(1, 4,
-                               width_ratios=[1, 2, 20, 6],
-                               height_ratios=[1]
-                               )
-        gs.update(wspace=0.0, hspace=0.0)  # set the spacing between axes.
+        hr = [1]
         axOnset = None
     else:
-        gs = gridspec.GridSpec(2, 4,
-                               width_ratios=[1, 2, 20, 6],
-                               height_ratios=[3, 1]
-                               )
-        gs.update(wspace=0.0, hspace=0.0)  # set the spacing between axes.
+        hr = [3, 1]
+
+    gs = gridspec.GridSpec(len(hr), len(wr),
+                           width_ratios=wr,
+                           height_ratios=hr
+                           )
+    gs.update(wspace=0.0, hspace=0.0)  # set the spacing between axes.
+
 
     axCB = fig.add_subplot(gs[0])
     axTF = fig.add_subplot(gs[2])
-    axF = fig.add_subplot(gs[3], sharey=axTF)
 
     if x is not None:
-        axOnset = fig.add_subplot(gs[6], sharex=axTF)
+        axOnset = fig.add_subplot(gs[len(wr)+2], sharex=axTF)
 
-    # find detail index
-    if t_detail is None:
-        idx = -1    # last column
-    else:
-        t_detail, idx = find_nearest(t, t_detail)
+    if t_detail is not None:
+        axF = fig.add_subplot(gs[3], sharey=axTF)
 
     nice_freqs = nice_log_values(f)
 
@@ -185,12 +186,6 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     axTF.set_yscale('log')
     axTF.set_yticks(nice_freqs)
     axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axTF.hold(True)
-    tf_line, = axTF.plot([t_detail, t_detail],
-                         [np.min(f), np.max(f)],
-                         color='r')
-    axTF.hold(False)
-    axTF.axis('tight')
 
     if title is not None:
         axTF.set_title(title)
@@ -200,25 +195,35 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     cb.ax.yaxis.set_ticks_position('left')
 
     # TF detail
-    detail, = axF.semilogy(opTF[:, idx], f)
-    axF.set_yticks(nice_freqs)
-    axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    # axF.set_xticklabels([])
-    # axF.set_xticks([0, np.max(opTF[:,idx])/2, np.max(opTF[:,idx])])
-    axF.xaxis.set_ticks_position('top')
-    axF.axis('tight')
-    axF.set_xlim(0, np.max(opTF))
-    axF.yaxis.set_ticks_position('right')
-    plt.setp(axF.get_xaxis().get_ticklabels(), rotation=90 )
+    # find detail index
+    tf_line = None
+    if t_detail is not None:
+        if isinstance(t_detail, np.ndarray):
+            t_detail = t_detail.tolist()
+        elif not isinstance(t_detail, list):
+            t_detail = [t_detail]
+        t_detail, idx = find_nearest(t, t_detail)
+        detail = axF.semilogy(opTF[:, idx], f)
+        axF.set_yticks(nice_freqs)
+        axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+        axF.xaxis.set_ticks_position('top')
+        axF.axis('tight')
+        axF.set_xlim(0, np.max(opTF))
+        axF.yaxis.set_ticks_position('right')
+        plt.setp(axF.get_xaxis().get_ticklabels(), rotation=-90 )
+        axTF.hold(True)
+        tf_line = axTF.plot([t_detail, t_detail], [np.min(f), np.max(f)])
+        axTF.hold(False)
+    axTF.axis('tight')
+
 
     # onset signal
     t_line = None
     if axOnset is not None:
         plt.setp(axTF.get_xticklabels(), visible=False)
-        axOnset.plot(t, x)
-        t_line, = axOnset.plot([t_detail, t_detail],
-                               [np.min(x), np.max(x)],
-                               color='r')
+        axOnset.plot(t, x, color='k')
+        if t_detail is not None:
+            t_line = axOnset.plot([t_detail, t_detail], [np.min(x), np.max(x)])
         axOnset.yaxis.set_ticks_position('right')
         axOnset.axis('tight')
 

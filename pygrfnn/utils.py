@@ -182,18 +182,21 @@ def timed(fun):
     return log_wrapper
 
 
-def find_nearest(array, value):
+def find_nearest(arr, value):
     """Finds the nearest element (and its index)
 
     Args:
-        array (:class:`numpy.array`): array to be searched
-        value (dtype): value being searched
+        arr (:class:`numpy.array`): array to be searched
+        value (dtype of list): value(s) being searched
 
     Returns:
         (dtype, int): tuple (nearest value, nearest value index)
     """
-    idx = (np.abs(array-value)).argmin()
-    return (array[idx], idx)
+    if isinstance(value, list):
+        idx = [(np.abs(arr-v)).argmin() for v in value]
+    else:
+        idx = (np.abs(arr-value)).argmin()
+    return (arr[idx], idx)
 
 
 
