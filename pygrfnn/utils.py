@@ -177,7 +177,7 @@ def timed(fun):
             elapsed_str = '%.2f seconds' % (elapsed)
         else:
             elapsed_str = time.strftime('%H:%M:%S', time.gmtime(elapsed))
-        logging.info('%s took %s' % (fun.__name__, elapsed_str, ))
+        logging.info('\n%s took %s' % (fun.__name__, elapsed_str, ))
         return output
     return log_wrapper
 

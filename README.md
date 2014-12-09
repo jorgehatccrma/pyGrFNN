@@ -15,6 +15,7 @@ Dependencies
  - Sphinx (to build docs)
  - sphinxcontrib-napoleon (to build docs)
  - Nose (only for automatic testing)
+ - Numba?
 
 
 Documentation
