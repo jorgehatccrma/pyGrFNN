@@ -24,7 +24,8 @@ import sys
 
 def make_connections(source, dest, strength, stdev, harmonics=None,
                      complex_kernel=False, self_connect=True):
-    """Creates a connection matrix from source to destination.
+    """Creates a connection matrix, that connects source layer to destination
+    layer.
 
     Args:
         source (:class:`.GrFNN`): source GrFNN (connections will be made
@@ -51,16 +52,22 @@ def make_connections(source, dest, strength, stdev, harmonics=None,
         Revise the units of ``stdev``
 
     Returns:
-        :class:`numpy.array`: Connection matrix (rows index source and
-            columns index destination)
+        :class:`numpy.array`: Connection matrix (rows index destination and
+            columns index source). In other words, to obtain the state at the
+            destination, you must use `M.dot(source.z)`, where `M` is the
+            connection matrix.
 
     """
 
     # matrix (2D arrray) of relative frequencies
-    # source is indexed in rows and destination in columns. That is,
-    # RF(i,j) specifies the relative frequency of dest_f[j] w.r.t.
-    # source_f[i]
-    RF = dest.f/source.f.reshape(source.f.size, 1)
+    # source is indexed in columns and destination in rows. That is,
+    # RF(i,j) specifies the relative frequency of source_f[j] w.r.t.
+    # dest_f[i]
+    [FS, FT] = np.meshgrid(source.f, dest.f)
+    RF = FT/FS
+    # RF = (dest.f/source.f.reshape(source.f.size, 1)).T
+
+    assert RF.shape == (len(dest.f), len(source.f))
 
     # matrix of connections
     # connection matrices index source in rows and destination in
@@ -86,8 +93,7 @@ def make_connections(source, dest, strength, stdev, harmonics=None,
             R[RF == 1] = 0
             Q[RF == 1] = 0
 
-        conns = conns + R * np.exp(1j*Q)
-        # This whole complex kernel business seems odd
+        conns += R * np.exp(1j*Q)
 
     return strength * conns
 
@@ -120,6 +126,56 @@ class UnknownLayer(Exception):
                "'add_layer(layer)'?" % (repr(self.layer))
 
 
+class Cparam(object):
+    """Convenience class to encapsulate connectivity learning parameters.
+
+    lambda = .001; mu1 = -1; mu2 = -50; ceps = 16, kappa =
+
+    Attributes:
+        l: :class:`float` -- linear forgetting rate :math:`\\lambda`
+        m1: :class:`float` --  non-linear forgetting rate 1 :math:`\\mu_1
+        m2: :class:`float` -- non-linear forgetting rate 2 :math:`\\mu_2
+        k: :class:`float` -- learning rate :math:`\\kappa`
+        e: :class:`float` -- Coupling strength :math:`\\varepsilon`
+
+    """
+
+    def __init__(self, lmbda=-1.0, mu1=0.0, mu2=0.0,
+                 kappa=1.0, epsilon=1.0):
+        """Constructor.
+
+        Args:
+            lmbda (float): :math:`\\lambda` (defaults to: -1.0) (**this is not
+                a typo: `lambda` is a keyword in python, so we used a slight
+                variation of the word**)
+            mu1 (float): :math:`\\mu_1` (defaults to: -1.0)
+            mu2 (float): :math:`\\mu_2` (defaults to: -0.25)
+            kappa (float): :math:`\\kappa` (defaults to: 0.0)
+            epsilon (float): :math:`\\varepsilon` (defaults to: 1.0)
+
+        """
+
+        self.l = lmbda
+        self.m1 = mu1
+        self.m2 = mu2
+        self.k = kappa
+        self.e = epsilon
+        self.sqe = np.sqrt(self.e)
+
+
+    def __repr__(self):
+        return  "Cparams:\n" \
+                "\tlambda:   {0}\n" \
+                "\tmu_1:  {1}\n" \
+                "\tmu_2:  {2}\n" \
+                "\tkappa:  {3}\n" \
+                "\tepsilon: {4}\n".format(self.l,
+                                          self.m1,
+                                          self.m2,
+                                          self.k,
+                                          self.e)
+
+
 class Connection(object):
     """Convenient connection object
 
@@ -127,9 +183,8 @@ class Connection(object):
         source (:class:`.GrFNN`): source layer
         destination (:class:`.GrFNN`): destination layer
         matrix (:class:`np.ndarray`): connection matrix
-        learn (bool): flag to enable learning of connections
-        d (float): "passive" learning rate (i.e. forgetting factor)
-        k (float): "active" learning rate
+        learn_params (:class:`.Cparam`): learning params. No learning is performed
+            when set to `None`
         self_connection (bool): if ``False``, the diagonal of the
             matrix is kept to 0 (even when learning is enabled)
 
@@ -137,13 +192,9 @@ class Connection(object):
         source: :class:`.GrFNN` -- source layer
         destination: :class:`.GrFNN` -- destination layer
         matrix: :class:`np.ndarray` -- connection matrix
-        learn: ``bool`` -- flag to enable learning of connections
+        cparams: :class:`.Cparam` -- Learning params (`None` means no learning)
         d: ``float`` -- "passive" learning rate (i.e. forgetting factor)
         k: ``float`` -- "active" learning rate
-
-    Note:
-        Currently ``d`` and ``k`` are scalar values, but they could be
-        matrices
 
     """
 
@@ -151,30 +202,22 @@ class Connection(object):
                  src,
                  dest,
                  matrix,
-                 learn=False,
-                 d=0.05,
-                 k=0.05,
+                 learn_params=None,
                  self_connection=True):
         self.source = src
         self.destination = dest
         self.matrix = matrix
-        self.learn = learn
-        self.d = d
-        self.k = k
+        self.cparams = learn_params
         self.self_connection = self_connection
 
     def __repr__(self):
         return "Connection:\n" \
-               "\tsource: {0}\n" \
-               "\tdest.:  {1}\n" \
-               "\tlearn: {2}\n" \
-               "\td: {3}\n" \
-               "\tk: {4}\n" \
-               "\tself_connect: {5}\n".format(self.source,
+               "\tsource:       {0}\n" \
+               "\tdest.:        {1}\n" \
+               "\tlearn_params: {2}\n" \
+               "\tself_connect: {3}\n".format(self.source,
                                               self.destination,
-                                              self.learn,
-                                              self.d,
-                                              self.k,
+                                              self.cparams,
                                               self.self_connection)
 
 
@@ -243,9 +286,7 @@ class Model(object):
                        source,
                        destination,
                        matrix,
-                       learn=False,
-                       d=0.5,
-                       k=0.5):
+                       learn=None):
         """Connect two layers.
 
         Args:
@@ -255,9 +296,8 @@ class Model(object):
                 (connections will be made from *source* layer to this
                 layer)
             matrix (:class:`numpy.array`): Matrix of connection weights
-            learn (bool): if *True*, connections will be learned
-            d (float): "passive" learning rate
-            k (float): "active" learning rate
+            learn (:class:`.Cparmas`): Learning parameters. Is `None`, no
+                learning will be performed
 
         Returns:
             :class:`.Connection`: connection object created
@@ -274,7 +314,7 @@ class Model(object):
         if destination not in self.layers():
             raise UnknownLayer(destination)
 
-        conn = Connection(source, destination, matrix, learn, d, k)
+        conn = Connection(source, destination, matrix, learn)
         self.connections[destination].append(conn)
 
         return conn
@@ -369,13 +409,16 @@ class Model(object):
                 pstep (string): string identifying the previous RK step
                     ``{'', 'k1', 'k2', 'k3'}``
             """
+            # print("***"+pstep)
+            # print(layer)
             h = dt if pstep is 'k3' else 0.5*dt
-            pz = getattr(layer, pstep, 0)
-            z = layer.z + h*pz
+            k = getattr(layer, pstep, 0)
+            z = layer.z + h*k
             conns = [None]*len(self.connections[layer])
             for i, c in enumerate(self.connections[layer]):
                 src = c.source
-                conns[i] = (src.z + h*pz, c.matrix)
+                ks = getattr(src, pstep, 0)
+                conns[i] = (src.z + h*ks, c.matrix)
             x = layer.compute_input(z, conns, stim)
             return layer.zdot(x, z)
 
@@ -453,7 +496,7 @@ class Model(object):
             # learn connections
             for L in self.layers():
                 for j, conn in enumerate(self.connections[L]):
-                    if conn.learn:
+                    if conn.cparams is not None:
                         # print np.isnan(conn.matrix).any()
                         conn.matrix += learn_step(conn)
                         if not conn.self_connection:

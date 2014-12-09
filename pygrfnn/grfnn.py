@@ -157,13 +157,21 @@ class GrFNN(object):
         # # return nml(x, m=1. / np.sqrt(self.zparams.e))
         # # return nml(x, m=.8 / np.sqrt(self.zparams.e))
 
+        def passive(x):
+            # return x / (1.0 - x * self.zparams.sqe)
+            # ToDo: should I use the P_new version in Toolbox-1.0?
+            return x / ((1.0 - x * self.zparams.sqe) * (1.0 - np.conj(x) * self.zparams.sqe))
+
+        def active(z):
+            return 1.0 / (1.0 - np.conj(z) * self.zparams.sqe)
+
         # OPTION 5: FROM GrFNN Toolbox-1.0 MATLAB CODE
         # process external signal (stimulus)
-        x = x_stim
+        x = x_stim * self.f
         # process other inputs (internal, afferent and efferent)
-        # TODO: implememt connection types as describe in GrFNN-Toolbox-1.0:Functions/zdot.m
+        # TODO: implement connection types as describe in GrFNN-Toolbox-1.0:Functions/zdot.m
         for (source_z, matrix) in connection_inputs:
-            # x_ext = source_z.dot(matrix)
-            x_ext = matrix.dot(source_z)
-            x = x + ff(nml(x_ext), self.zparams.e)
+            # x_ext = matrix.dot(source_z)
+            # x = x + passive(x_ext) * active(z)
+            x = x + self.f * matrix.dot(passive(source_z)) * active(z)
         return x

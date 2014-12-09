@@ -107,7 +107,7 @@ def zdot(x, z, f, zparams):
     # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
     # RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
     # RT = x * f * (1.0 / (1 - zparams.sqe * x)) * ( 1.0 / (1 - zparams.sqe * np.conj(z)))
-    RT = x * f
+    RT = x
     return z * (lin + nl1 + nl2) + RT
 
 
