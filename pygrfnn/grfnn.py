@@ -157,21 +157,25 @@ class GrFNN(object):
         # # return nml(x, m=1. / np.sqrt(self.zparams.e))
         # # return nml(x, m=.8 / np.sqrt(self.zparams.e))
 
+
+        # OPTION 5: FROM GrFNN Toolbox-1.0 MATLAB CODE
+        # TODO: understand how this was derived. It doesn't coincide with the
+        # 2010 paper. But it seems to work much better. Is there a reference?
+        # TODO: implement connection types as describe in
+        # GrFNN-Toolbox-1.0:Functions/zdot.m
+
         def passive(x):
+            # Passive function from the 2010 paper
             # return x / (1.0 - x * self.zparams.sqe)
-            # ToDo: should I use the P_new version in Toolbox-1.0?
+            # New passive function (P_new) from GrFNN-Toolbox-1.0
             return x / ((1.0 - x * self.zparams.sqe) * (1.0 - np.conj(x) * self.zparams.sqe))
 
         def active(z):
             return 1.0 / (1.0 - np.conj(z) * self.zparams.sqe)
 
-        # OPTION 5: FROM GrFNN Toolbox-1.0 MATLAB CODE
         # process external signal (stimulus)
         x = x_stim * self.f
         # process other inputs (internal, afferent and efferent)
-        # TODO: implement connection types as describe in GrFNN-Toolbox-1.0:Functions/zdot.m
         for (source_z, matrix) in connection_inputs:
-            # x_ext = matrix.dot(source_z)
-            # x = x + passive(x_ext) * active(z)
             x = x + self.f * matrix.dot(passive(source_z)) * active(z)
         return x

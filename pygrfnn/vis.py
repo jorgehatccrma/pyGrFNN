@@ -5,6 +5,8 @@ Note:
 
 """
 
+import warnings
+
 import numpy as np
 from functools import wraps
 from utils import find_nearest
@@ -119,7 +121,8 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
 
 
 @check_mpl
-def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
+def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
+              cmap='binary'):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
 
     Detailed time-frequency representation. It shows the TF in the top plot. It
@@ -137,6 +140,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
             `numpy.abs`)
+        cmap (`string`): colormap to use in the TF representation
 
     Returns:
         (handles, ...): tuple of handles to plotted elements. They can be used
@@ -182,10 +186,18 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
     nice_freqs = nice_log_values(f)
 
     # TF image
-    im = axTF.pcolormesh(t, f, opTF, cmap='binary')
-    axTF.set_yscale('log')
-    axTF.set_yticks(nice_freqs)
-    axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+    # im = axTF.pcolormesh(t, f, opTF, cmap=cmap)
+    im = axTF.imshow(opTF,
+                     extent=[min(t), max(t), min(f), max(f)],
+                     cmap=cmap,
+                     origin='lower'
+                     )
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        axTF.set_yscale('log')
+        axTF.set_yticks(nice_freqs)
+        axTF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+        axTF.invert_yaxis()
 
     if title is not None:
         axTF.set_title(title)
@@ -203,6 +215,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
         elif not isinstance(t_detail, list):
             t_detail = [t_detail]
         t_detail, idx = find_nearest(t, t_detail)
+        # axF.invert_xaxis()
         detail = axF.semilogy(opTF[:, idx], f)
         axF.set_yticks(nice_freqs)
         axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
@@ -213,6 +226,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
         plt.setp(axF.get_xaxis().get_ticklabels(), rotation=-90 )
         axTF.hold(True)
         tf_line = axTF.plot([t_detail, t_detail], [np.min(f), np.max(f)])
+        # tf_line = [axTF.axvline(td) for td in t_detail]
         axTF.hold(False)
     axTF.axis('tight')
 
@@ -224,6 +238,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
         axOnset.plot(t, x, color='k')
         if t_detail is not None:
             t_line = axOnset.plot([t_detail, t_detail], [np.min(x), np.max(x)])
+            # t_line = [axOnset.axvline(td) for td in t_detail]
         axOnset.yaxis.set_ticks_position('right')
         axOnset.axis('tight')
 
@@ -234,7 +249,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs):
 
 @check_mpl
 def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
-                     detail_type='polar'):
+                     detail_type='polar', cmap='binary'):
     """plot_connections(connection, t_detail=None, display_op=np.abs,
                         detail_type='polar')
 
@@ -246,6 +261,7 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
             matrix (e.g. `numpy.abs`)
         detail_type (string): detail complex display type ('cartesian',
             'polar', 'magnitude' or 'phase')
+        cmap (`string`): colormap to use in the TF representation
 
     Note:
         Is responsibility of the caller to issue the ``plt.show()``
@@ -271,27 +287,34 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
     matrix = connection.matrix
     opMat = display_op(matrix)
 
-    axConn.pcolormesh(f_dest, f_source, opMat, cmap='binary')
-    axConn.set_xscale('log')
-    axConn.set_xticks(nice_log_values(f_dest))
-    axConn.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axConn.set_yscale('log')
-    axConn.set_yticks(nice_log_values(f_source))
-    axConn.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
-    axConn.set_ylabel(r'$f_{\mathrm{source}}$')
-    axConn.axis('tight')
+    # axConn.pcolormesh(f_source, f_dest, opMat, cmap=cmap)
+    axConn.imshow(opMat,
+                     extent=[min(f_source), max(f_source), min(f_dest), max(f_dest)],
+                     cmap=cmap,
+                     origin='lower'
+                     )
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        # axConn.invert_yaxis()
+        axConn.set_xscale('log')
+        axConn.set_xticks(nice_log_values(f_source))
+        axConn.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+        axConn.set_yscale('log')
+        axConn.set_yticks(nice_log_values(f_dest))
+        axConn.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+        axConn.set_ylabel(r'$f_{\mathrm{dest}}$')
 
     if title is not None:
         axConn.set_title(title)
 
     if f_detail is None:
-        axConn.set_xlabel(r'$f_{\mathrm{dest}}$')
+        axConn.set_xlabel(r'$f_{\mathrm{source}}$')
     else:
-        (f_detail, idx) = find_nearest(f_source, f_detail)
+        (f_detail, idx) = find_nearest(f_dest, f_detail)
         conn = matrix[idx, :]
 
         axConn.hold(True)
-        axConn.plot([np.min(f_dest), np.max(f_dest)],
+        axConn.plot([np.min(f_source), np.max(f_source)],
                     [f_detail, f_detail],
                     color='r')
         axConn.hold(False)
@@ -299,30 +322,32 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
         scalar_formatter = mpl.ticker.ScalarFormatter()
 
         if detail_type is 'polar':
-            axDetail.semilogx(f_dest, np.abs(conn))
+            axDetail.semilogx(f_source, np.abs(conn))
             axDetailb = axDetail.twinx()
-            axDetailb.semilogx(f_dest, np.angle(conn), color='r')
-            axDetailb.set_xticks(nice_log_values(f_dest))
+            axDetailb.semilogx(f_source, np.angle(conn), color='r')
+            axDetailb.set_xticks(nice_log_values(f_source))
             axDetailb.get_xaxis().set_major_formatter(scalar_formatter)
             axDetailb.set_ylim([-np.pi, np.pi])
             axDetail.axis('tight')
         elif detail_type is 'magnitude':
-            axDetail.semilogx(f_dest, np.abs(conn))
-            axDetail.set_xticks(nice_log_values(f_dest))
+            axDetail.semilogx(f_source, np.abs(conn))
+            axDetail.set_xticks(nice_log_values(f_source))
             axDetail.get_xaxis().set_major_formatter(scalar_formatter)
             axDetail.axis('tight')
         elif detail_type is 'phase':
-            axDetail.semilogx(f_dest, np.angle(conn), color='r')
-            axDetail.set_xticks(nice_log_values(f_dest))
+            axDetail.semilogx(f_source, np.angle(conn), color='r')
+            axDetail.set_xticks(nice_log_values(f_source))
             axDetail.get_xaxis().set_major_formatter(scalar_formatter)
             axDetail.set_ylim([-np.pi, np.pi])
         else:
-            axDetail.semilogx(f_dest, np.real(conn))
+            axDetail.semilogx(f_source, np.real(conn))
             axDetailb = axDetail.twinx()
-            axDetailb.semilogx(f_dest, np.imag(conn), color='r')
-            axDetailb.set_xticks(nice_log_values(f_dest))
+            axDetailb.semilogx(f_source, np.imag(conn), color='r')
+            axDetailb.set_xticks(nice_log_values(f_source))
             axDetailb.get_xaxis().set_major_formatter(scalar_formatter)
             axDetail.axis('tight')
         axDetail.set_xlabel(r'$f_{\mathrm{dest}}$')
+
+        axConn.set(aspect=1, adjustable='box-forced')
 
     # plt.show()

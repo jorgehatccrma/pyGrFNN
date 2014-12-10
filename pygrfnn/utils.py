@@ -192,12 +192,13 @@ def find_nearest(arr, value):
     Returns:
         (dtype, int): tuple (nearest value, nearest value index)
     """
-    if isinstance(value, list):
-        idx = [(np.abs(arr-v)).argmin() for v in value]
-    else:
-        idx = (np.abs(arr-value)).argmin()
+    # arr must be sorted
+    idx = arr.searchsorted(value)
+    idx = np.clip(idx, 1, len(arr)-1)
+    left = arr[idx-1]
+    right = arr[idx]
+    idx -= value - left < right - value
     return (arr[idx], idx)
-
 
 
 def nice_log_values(array):
