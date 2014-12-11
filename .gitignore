@@ -16,3 +16,6 @@ plotTest.py
 
 # matlab files
 *.mat
+
+# setup.py
+*egg-info/
