@@ -244,7 +244,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
 
     # plt.show()
 
-    return (fig, tf_line, t_line, detail)
+    return (fig, im, tf_line, t_line, detail)
 
 
 @check_mpl
