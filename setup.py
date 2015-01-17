@@ -3,7 +3,7 @@
 # @Author: jorgeh
 # @Date:   2014-12-10 23:59:17
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2014-12-11 00:00:08
+# @Last Modified time: 2015-01-16 22:39:18
 
 from setuptools import setup
 
@@ -16,6 +16,10 @@ setup(name='pygrfnn',
       license='MIT',
       packages=['pygrfnn'],
       include_package_data=True,
+      install_requires=[
+          'numpy',
+          'dispatch',
+      ],
       # setup_requires=...,
       # dependency_links=...,
       zip_safe=False

@@ -13,7 +13,7 @@ sys.path.append('../')  # needed to run the examples from within the package fol
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pygrfnn.network import Model, make_connections
+from pygrfnn.network import Model, make_connections, model_update_event
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
 from pygrfnn.vis import plot_connections
@@ -57,23 +57,41 @@ s = s * env
 
 layer = GrFNN(params, fc=1,
               octaves_per_side=1,
-              oscs_per_octave=99.5)
+              oscs_per_octave=99.5,
+              stimulus_conn_type='')
 
 # print(layer)
 
 
 # create the model and add the layer
-model = Model()
+model = Model(update_interval=0.2)
 model.add_layer(layer)
+
+plt.ion()
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.grid(True)
+line1, = ax.semilogx(layer.f, np.abs(layer.z), 'k')
+ax.axis((np.min(layer.f), np.max(layer.f), 0, 1))
+
+def update_callback(sender, **kwargs):
+    z = kwargs['z']
+    line1.set_ydata(np.abs(z))
+    ax.set_title('t = {:0.2f}s'.format(kwargs['t']))
+    fig.canvas.draw()
+
+
+model_update_event.connect(update_callback, sender=layer)
 
 
 # run the model
 model.run(s, t, dt)
 
 
-TF = layer.TF
-f = layer.f
-T = 1.0 / f
+# TF = layer.TF
+# f = layer.f
+# T = 1.0 / f
 
-tf_detail(TF, t, f, None, np.max(t), np.real(s), np.abs)
-plt.show()
+# tf_detail(TF, t, f, None, np.max(t), np.real(s), np.abs)
+# plt.show()

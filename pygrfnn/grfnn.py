@@ -10,6 +10,7 @@ To Dos:
 """
 
 import numpy as np
+
 from network import make_connections
 from defines import COMPLEX, FLOAT
 from utils import ff, nml

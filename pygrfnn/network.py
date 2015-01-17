@@ -14,13 +14,17 @@ To Dos:
 
 """
 
+import sys
+
 import numpy as np
+import dispatch
+
 from utils import normalPDF
 from utils import normalCDF
 from utils import nl
 from defines import COMPLEX, PI, PI_2
-import sys
 
+model_update_event = dispatch.Signal(providing_args=["z", "t"])
 
 def make_connections(source, dest, strength, stdev, harmonics=None,
                      complex_kernel=False, self_connect=True):
@@ -245,13 +249,24 @@ class Model(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, update_interval=0.2):
+        """Model constructor
+
+        Args:
+            update_interval (float): interval (in seconds) used to dispatch
+                layer update events. This can be used, for example, to update a
+                plot in "real-time"
+
+        """
 
         # list of GrFNN layers (and its corresponding external input channel)
         self._layers = []
 
         # connections
         self.connections = {}
+
+        # update event dispatch interval (in seconds)
+        self.update_interval = update_interval
 
     def __repr__(self):
         return "Model:\n" \
@@ -454,6 +469,8 @@ class Model(object):
 
         num_frames = signal.shape[0]
 
+        cum_time = 0
+
         if signal.ndim == 1:
             signal = np.atleast_2d(signal).T
 
@@ -500,6 +517,12 @@ class Model(object):
                 L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:, i] = L.z
 
+                # dispatch event for display
+                cum_time += dt
+                if cum_time >= self.update_interval:
+                    cum_time -= self.update_interval
+                    model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
+
             # learn connections
             for L in self.layers():
                 for j, conn in enumerate(self.connections[L]):
@@ -514,4 +537,5 @@ class Model(object):
             # progress indicator
             sys.stdout.write(msg.format(i+1))
             sys.stdout.flush()
+
         sys.stdout.write(" done!\n")
