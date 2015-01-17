@@ -39,7 +39,8 @@ class GrFNN(object):
                  zparams,
                  fc=1.0,
                  octaves_per_side=2.0,
-                 oscs_per_octave=64):
+                 oscs_per_octave=64,
+                 stimulus_conn_type='active'):
         """ GrFNN constructor
 
         Args:
@@ -47,6 +48,8 @@ class GrFNN(object):
             fc (float): GrFNN center frequency (in Hz.)
             octaves_per_side (float): number of octaves above (and below) fc
             oscs_per_octave (float): number of oscillators per octave
+            stimulus_conn_type (string): type of stimulus connection (defatul
+                'active')
 
         """
 
@@ -64,6 +67,9 @@ class GrFNN(object):
         # oscillator parameters
         self.zparams = zparams
 
+        # stimulus connection type
+        self.stimulus_conn_type = stimulus_conn_type
+
         # initial oscillators states
         # self.z = 1e-10*(1+0j)*np.ones(self.f.shape, dtype=COMPLEX)
         r0 = 0
@@ -73,7 +79,7 @@ class GrFNN(object):
         self.z = r0 * np.exp(1j * 2 * np.pi * phi0, dtype=COMPLEX);
 
         # oscillator differential equation
-        self.zdot = partial(zdot, f=self.f, zparams=self.zparams)
+        self.zdot = partial(zdot, f=self.f, zp=self.zparams)
 
         # number of oscillators per octave
         self.oscs_per_octave = oscs_per_octave
@@ -97,9 +103,10 @@ class GrFNN(object):
             z (:class:`numpy.array`): state of the GrFNN at the instant
                 when the input needs to be computed
             connection_inputs (list): list of tuples of the form
-                (*source_z*, *matrix*) where *source_z* is the state of
-                the source :class:.`GrFNN` and *matrix* is the
-                connection matrix (:class:`np.ndarray`)
+                (*source_z*, *matrix*, *conn_type*) where *source_z* is the
+                state of the source :class:.`GrFNN`, *matrix* is the
+                connection matrix (:class:`np.ndarray`), and *conn_type* is the
+                type of connection (e.g. 'allfreq')
             x_stim (:class:`numpy.array`): external stimulus
 
         Returns:
@@ -112,70 +119,41 @@ class GrFNN(object):
 
         """
 
-        # # OPTION 1: FROM ORIGINAL NLTFT MATLAB CODE
-        # # process external signal (stimulus)
-        # x = ff(x_stim, self.zparams.e)
-        # # process other inputs (internal, afferent and efferent)
-        # for (source_z, matrix) in connection_inputs:
-        #     # x_ext = source_z.dot(matrix)
-        #     x_ext = matrix.dot(source_z)
-        #     x = x + f(nml(x_ext), self.zparams.e)
-        # return x
-
-        # # OPTION 2: My own interpretation, where the inputs are linearly
-        # # summed before applying the non-linearity
-        # x = x_stim
-        # # process other inputs (internal, afferent and efferent)
-        # for (source_z, matrix) in connection_inputs:
-        #     # x_ext = source_z.dot(matrix)
-        #     x_ext = matrix.dot(source_z)
-        #     x = x + x_ext
-        # return ff(nml(x), self.zparams.e)
-
-        # # OPTION 3: My own interpretation, where the external input is
-        # # non-linearly transformed, before adding the connectivity
-        # # inputs. THe result is also non-linearly transformed
-        # x = nml(x_stim)
-        # # process other inputs (internal, afferent and efferent)
-        # for (source_z, matrix) in connection_inputs:
-        #     # x_ext = source_z.dot(matrix)
-        #     x_ext = matrix.dot(source_z)
-        #     x = x + x_ext
-        # return f(nml(x), self.zparams.e)
-
-        # # OPTION 4: Apply a compressing non-linearity to the overall
-        # # input, after "combining" external, internal, afferent and
-        # # efferent contributions
-        # # process external signal (stimulus)
-        # x = ff(x_stim, self.zparams.e)
-        # # process other inputs (internal, afferent and efferent)
-        # for (source_z, matrix) in connection_inputs:
-        #     # x_ext = source_z.dot(matrix)
-        #     x_ext = matrix.dot(source_z)
-        #     x = x + ff(nml(x_ext), self.zparams.e)
-        # return nml(x)
-        # # return nml(x, m=1. / np.sqrt(self.zparams.e))
-        # # return nml(x, m=.8 / np.sqrt(self.zparams.e))
-
-
-        # OPTION 5: FROM GrFNN Toolbox-1.0 MATLAB CODE
-        # TODO: understand how this was derived. It doesn't coincide with the
-        # 2010 paper. But it seems to work much better. Is there a reference?
-        # TODO: implement connection types as describe in
-        # GrFNN-Toolbox-1.0:Functions/zdot.m
-
-        def passive(x):
-            # Passive function from the 2010 paper
-            # return x / (1.0 - x * self.zparams.sqe)
+        def passiveAllFreq(x):
             # New passive function (P_new) from GrFNN-Toolbox-1.0
-            return x / ((1.0 - x * self.zparams.sqe) * (1.0 - np.conj(x) * self.zparams.sqe))
+            return x / ((1.0 - x * self.zparams.sqe) * (1.0 - np.conj(x) *
+                self.zparams.sqe))
+
+        def passiveAll2Freq(x):
+            # passive function (P) from GrFNN-Toolbox-1.0
+            return x / (1.0 - x * self.zparams.sqe)
 
         def active(z):
             return 1.0 / (1.0 - np.conj(z) * self.zparams.sqe)
 
         # process external signal (stimulus)
-        x = x_stim * self.f
+        if self.stimulus_conn_type == 'allfreq':
+            x = self.f * active(z) * passiveAllFreq(x_stim)
+        elif self.stimulus_conn_type == 'all2freq':
+            x = self.f * active(z) * passiveAll2Freq(x_stim)
+        elif self.stimulus_conn_type == 'active':
+            x = x_stim * self.f * active(z)
+        else:
+            x = x_stim * self.f
+
         # process other inputs (internal, afferent and efferent)
-        for (source_z, matrix) in connection_inputs:
-            x = x + self.f * matrix.dot(passive(source_z)) * active(z)
+        for (source_z, matrix, conn_type) in connection_inputs:
+            if conn_type == '1freq':
+                x = x + matrix.dot(source_z)
+            elif conn_type == '2freq':
+                raise "2freq connection type not implemented. Look inside \
+                    GrFNN-Toolbox-1.0/zdot.m for details."
+            elif conn_type == '3freq':
+                raise "3freq connection type not implemented. Look inside \
+                    GrFNN-Toolbox-1.0/zdot.m for details."
+            elif conn_type == 'allfreq':
+                x = x + matrix.dot(passiveAll2Freq(source_z)) * active(z)
+            elif conn_type == 'all2freq':
+                x = x + matrix.dot(passiveAllFreq(source_z)) * active(z)
+
         return x

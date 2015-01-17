@@ -122,7 +122,7 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
 
 @check_mpl
 def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
-              cmap='binary'):
+              cmap='binary', figsize=None):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
 
     Detailed time-frequency representation. It shows the TF in the top plot. It
@@ -141,6 +141,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
         display_op (function): operator to apply to the TF representation (e.g.
             `numpy.abs`)
         cmap (`string`): colormap to use in the TF representation
+        figsize (tuple, optional): matplotlib's figure size
 
     Returns:
         (handles, ...): tuple of handles to plotted elements. They can be used
@@ -151,8 +152,10 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
         necessary
 
     """
-
-    fig = plt.figure()
+    if figsize is not None:
+        fig = plt.figure(figsize=figsize)
+    else:
+        fig = plt.figure()
     opTF = display_op(TF)
 
     if t_detail is None:

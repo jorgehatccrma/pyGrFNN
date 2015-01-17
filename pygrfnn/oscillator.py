@@ -15,7 +15,9 @@ import numpy as np
 from utils import nl
 from defines import TWO_PI
 
+
 class Zparam(object):
+
     """Convenience class to encapsulate oscillator parameters.
 
     Attributes:
@@ -40,12 +42,18 @@ class Zparam(object):
 
         """
 
-        self.a = alpha
-        self.b1 = beta1 + 1j*delta1
-        self.b2 = beta2 + 1j*delta2
+        self.alpha = alpha
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.delta1 = delta1
+        self.delta2 = delta2
+
+        self.a = alpha + 1j * TWO_PI
+        self.b1 = beta1 + 1j * delta1
+        self.b2 = beta2 + 1j * delta2
         self.e = epsilon
         self.sqe = np.sqrt(self.e)
-
+        self.epsilon = epsilon
 
     def __repr__(self):
         return  "Zparams:\n" \
@@ -55,7 +63,7 @@ class Zparam(object):
                 "\tepsilon: {3}\n".format(self.a, self.b1, self.b2, self.e)
 
 
-def zdot(x, z, f, zparams):
+def zdot(x, z, f, zp):
     """Dynamics of a neural oscillator.
 
     Implements the dynamical system described in equation 20 of the paper
@@ -79,7 +87,7 @@ def zdot(x, z, f, zparams):
         x (:class:`numpy.array`): input signal
         z (:class:`numpy.array`): oscillator state
         f (:class:`numpy.array`): natural frequency of the oscillator
-        zparams (:class:`.Zparam`): oscillator parameters: :math:`\\alpha,
+        zp (:class:`.Zparam`): oscillator parameters: :math:`\\alpha,
             \\beta_1, \\delta_1, \\beta_2, \\delta_2` and :math:`\\varepsilon`
 
     Returns:
@@ -91,24 +99,7 @@ def zdot(x, z, f, zparams):
 
     """
 
-    # lin = zparams.a + 1j*TWO_PI*f
-    # nonlin1 = zparams.b1*np.abs(z)**2
-    # nonlin2 = zparams.b2*zparams.e*(np.abs(z)**4)*nl((np.abs(z)**2), zparams.e)
-    # # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
-    # # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
-    # RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
-    # return z * (lin + nonlin1 + nonlin2) + RT
-
-
-    lin = (zparams.a + 1j*TWO_PI )*f
-    nl1 = zparams.b1*f*np.abs(z)**2
-    nl2 = zparams.b2*f*zparams.e*(np.abs(z)**4) / (1 - zparams.sqe * np.abs(z)**2)
-    # RT = x*nl(x, np.sqrt(zparams.e))              # passive part of the Resonant Terms (RT)
-    # RT = RT * nl(np.conj(z), np.sqrt(zparams.e))  # times the active part of RT
-    # RT = x * nl(np.conj(z), np.sqrt(zparams.e))     # Resonant Terms
-    # RT = x * f * (1.0 / (1 - zparams.sqe * x)) * ( 1.0 / (1 - zparams.sqe * np.conj(z)))
-    RT = x
-    return z * (lin + nl1 + nl2) + RT
-
-
-
+    lin = (zp.a) * f
+    nl1 = zp.b1 * f * np.abs(z) ** 2
+    nl2 = zp.b2 * f * zp.e * (np.abs(z) ** 4) / (1 - zp.e * np.abs(z) ** 2)
+    return z * (lin + nl1 + nl2) + x

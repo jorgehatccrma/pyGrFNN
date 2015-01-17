@@ -187,6 +187,8 @@ class Connection(object):
             when set to `None`
         self_connection (bool): if ``False``, the diagonal of the
             matrix is kept to 0 (even when learning is enabled)
+        conn_type (string): type of GrFNN connections to use. Possible values:
+        'allfreq', 'all2freq', '1freq', '2freq', '3freq'
 
     Attributes:
         source: :class:`.GrFNN` -- source layer
@@ -202,6 +204,7 @@ class Connection(object):
                  src,
                  dest,
                  matrix,
+                 conn_type,
                  learn_params=None,
                  self_connection=True):
         self.source = src
@@ -209,6 +212,7 @@ class Connection(object):
         self.matrix = matrix
         self.cparams = learn_params
         self.self_connection = self_connection
+        self.conn_type = conn_type
 
     def __repr__(self):
         return "Connection:\n" \
@@ -286,6 +290,7 @@ class Model(object):
                        source,
                        destination,
                        matrix,
+                       connection_type,
                        learn=None):
         """Connect two layers.
 
@@ -296,6 +301,8 @@ class Model(object):
                 (connections will be made from *source* layer to this
                 layer)
             matrix (:class:`numpy.array`): Matrix of connection weights
+            connection_type (string): type of connection (e.g. '1freq', '2freq',
+                '3freq', 'allfreq', 'all2freq')
             learn (:class:`.Cparmas`): Learning parameters. Is `None`, no
                 learning will be performed
 
@@ -314,7 +321,7 @@ class Model(object):
         if destination not in self.layers():
             raise UnknownLayer(destination)
 
-        conn = Connection(source, destination, matrix, learn)
+        conn = Connection(source, destination, matrix, connection_type, learn)
         self.connections[destination].append(conn)
 
         return conn
@@ -418,7 +425,7 @@ class Model(object):
             for i, c in enumerate(self.connections[layer]):
                 src = c.source
                 ks = getattr(src, pstep, 0)
-                conns[i] = (src.z + h*ks, c.matrix)
+                conns[i] = (src.z + h*ks, c.matrix, c.conn_type)
             x = layer.compute_input(z, conns, stim)
             return layer.zdot(x, z)
 
