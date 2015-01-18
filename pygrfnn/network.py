@@ -513,15 +513,18 @@ class Model(object):
                 L.k4 = rk_step(L, stim, 'k3')
 
             # final RK step
+            cum_time += dt
             for L in self.layers():
                 L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:, i] = L.z
 
                 # dispatch event for display
-                cum_time += dt
                 if cum_time >= self.update_interval:
                     cum_time -= self.update_interval
                     model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
+            if cum_time >= self.update_interval:
+                cum_time -= self.update_interval
+
 
             # learn connections
             for L in self.layers():

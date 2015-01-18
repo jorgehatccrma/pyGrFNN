@@ -41,7 +41,7 @@ class GrFNN(object):
                  fc=1.0,
                  octaves_per_side=2.0,
                  oscs_per_octave=64,
-                 stimulus_conn_type='active'):
+                 stimulus_conn_type='linear'):
         """ GrFNN constructor
 
         Args:
@@ -86,15 +86,15 @@ class GrFNN(object):
         self.oscs_per_octave = oscs_per_octave
 
     def __repr__(self):
-        return "GrFNN:\n" \
-               "\tfreq. range: {0} -- {1}\n" \
-               "\toscs/octave: {2}\n" \
-               "\tnum_oscs:    {3}\n" \
-               "\t{4}\n".format(min(self.f),
-                                max(self.f),
-                                self.oscs_per_octave,
-                                self.size,
-                                self.zparams)
+        # return "GrFNN: " \
+        #        "freq. range: {0} -- {1}, " \
+        #        "oscs/octave: {2}, " \
+        #        "num_oscs: {3}".format(min(self.f),
+        #                                  max(self.f),
+        #                                  self.oscs_per_octave,
+        #                                  self.size)
+
+        return "GrFNN: {}".format(self.zparams)
 
     def compute_input(self, z, connection_inputs, x_stim=0):
         """Compute the overall input to a GrFNN (:math:`x` in equation
@@ -133,14 +133,16 @@ class GrFNN(object):
             return 1.0 / (1.0 - np.conj(z) * self.zparams.sqe)
 
         # process external signal (stimulus)
-        if self.stimulus_conn_type == 'allfreq':
+        if self.stimulus_conn_type == 'linear':
+            x = x_stim * self.f
+        elif self.stimulus_conn_type == 'active':
+            x = x_stim * self.f * active(z)
+        elif self.stimulus_conn_type == 'allfreq':
             x = self.f * active(z) * passiveAllFreq(x_stim)
         elif self.stimulus_conn_type == 'all2freq':
             x = self.f * active(z) * passiveAll2Freq(x_stim)
-        elif self.stimulus_conn_type == 'active':
-            x = x_stim * self.f * active(z)
         else:
-            x = x_stim * self.f
+            raise Exception("Unknown stimulus connection type '{}'".format(self.stimulus_conn_type))
 
         # process other inputs (internal, afferent and efferent)
         for (source_z, matrix, conn_type) in connection_inputs:
@@ -156,5 +158,7 @@ class GrFNN(object):
                 x = x + matrix.dot(passiveAll2Freq(source_z)) * active(z)
             elif conn_type == 'all2freq':
                 x = x + matrix.dot(passiveAllFreq(source_z)) * active(z)
+            else:
+                raise Exception("Unknown connection type '{}'".format(conn_type))
 
         return x

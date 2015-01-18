@@ -11,6 +11,7 @@ import numpy as np
 from functools import wraps
 from utils import find_nearest
 from utils import nice_log_values
+from network import model_update_event
 
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -354,3 +355,33 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
         axConn.set(aspect=1, adjustable='box-forced')
 
     # plt.show()
+
+
+
+
+class GrFNNUpdate(object):
+
+    def __init__(self, grfnn, fig_name=None, title=''):
+        self.grfnn = grfnn
+        self.title = title
+        self.fig_name = fig_name
+        plt.ion()
+        if fig_name is None:
+            self.fig = plt.figure()
+        else:
+            self.fig = plt.figure(fig_name)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.grid(True)
+        self.line1, = self.ax.semilogx(grfnn.f, np.abs(grfnn.z), 'k')
+        self.ax.axis((np.min(grfnn.f), np.max(grfnn.f), 0, 1))
+        self.ax.set_title('{}'.format(self.title))
+        self.fig.canvas.draw()
+
+        def update_callback(sender, **kwargs):
+            z = sender.z
+            self.line1.set_ydata(np.abs(z))
+            self.ax.set_title('{} (t = {:0.2f}s)'.format(self.title, kwargs['t']))
+            self.fig.canvas.draw()
+
+        model_update_event.connect(update_callback, sender=grfnn)
+

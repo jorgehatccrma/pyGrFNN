@@ -3,14 +3,14 @@
 # @Author: jorgeh
 # @Date:   2014-12-10 23:59:17
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-16 22:39:18
+# @Last Modified time: 2015-01-17 21:05:57
 
 from setuptools import setup
 
 setup(name='pygrfnn',
       version='0.1',
-      description='Grdient Frequency Neural Networks',
-      url='jorge@ccrma-stanford.edu:/user/j/jorgeh/git/pygrfnn.git',
+      description='Gradient Frequency Neural Networks',
+      url='jorgeh@ccrma-stanford.edu:/user/j/jorgeh/git/pygrfnn.git',
       author='Jorge Herrera',
       author_email='jorgeh@ccrma.stanford.edu',
       license='MIT',

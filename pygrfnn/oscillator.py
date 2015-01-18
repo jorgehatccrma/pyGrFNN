@@ -57,11 +57,19 @@ class Zparam(object):
         self.epsilon = epsilon
 
     def __repr__(self):
-        return  "Zparams:\n" \
-                "\talpha:   {0}\n" \
-                "\tbeta_1:  {1}\n" \
-                "\tbeta_2:  {2}\n" \
-                "\tepsilon: {3}\n".format(self.a, self.b1, self.b2, self.e)
+        # return  "Zparams: " \
+        #         "alpha:   {0}, " \
+        #         "beta_1:  {1}, " \
+        #         "beta_2:  {2}, " \
+        #         "epsilon: {3}".format(self.a, self.b1, self.b2, self.e)
+        return  "Zparams: " \
+                "alpha: {0:0.3f}, " \
+                "beta_1: {1:0.3f}, " \
+                "delta_1: {2:0.3f}, " \
+                "beta_2: {3:0.3f}, " \
+                "delta_2: {4:0.3f}, " \
+                "epsilon: {5:0.3f}".format(self.alpha, self.beta1, self.delta1,
+                                           self.beta2, self.delta2, self.e)
 
 
 def zdot(x, z, f, zp):

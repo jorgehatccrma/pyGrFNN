@@ -18,6 +18,7 @@ from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
 from pygrfnn.vis import plot_connections
 from pygrfnn.vis import tf_detail
+from pygrfnn.vis import GrFNNUpdate
 
 
 # GrFNN params
@@ -57,8 +58,7 @@ s = s * env
 
 layer = GrFNN(params, fc=1,
               octaves_per_side=1,
-              oscs_per_octave=99.5,
-              stimulus_conn_type='')
+              oscs_per_octave=99.5)
 
 # print(layer)
 
@@ -80,7 +80,6 @@ def update_callback(sender, **kwargs):
     line1.set_ydata(np.abs(z))
     ax.set_title('t = {:0.2f}s'.format(kwargs['t']))
     fig.canvas.draw()
-
 
 model_update_event.connect(update_callback, sender=layer)
 
