@@ -56,9 +56,10 @@ s = s * env
 
 # Create a GrFNN layer
 
-layer = GrFNN(params, fc=1,
-              octaves_per_side=1,
-              oscs_per_octave=99.5)
+layer = GrFNN(params,
+              frequency_range=(0.5,2),
+              num_oscs=200,
+              stimulus_conn_type='linear')
 
 # print(layer)
 

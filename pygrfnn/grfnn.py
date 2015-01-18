@@ -29,7 +29,6 @@ class GrFNN(object):
         f: :class:`np.ndarray` -- ordered array of oscillators' natural
             frequencies (in Hz)
         size: ``int`` -- number of oscillators in the GrFNN
-        oscs_per_octave: ``int`` -- number of oscillators in a single octave
         z: :class:`np.ndarray` -- initial oscillators states
         zdot: ``function`` -- parametrized oscillator differential equation
 
@@ -38,29 +37,25 @@ class GrFNN(object):
 
     def __init__(self,
                  zparams,
-                 fc=1.0,
-                 octaves_per_side=2.0,
-                 oscs_per_octave=64,
+                 frequency_range=(0.5, 8),
+                 num_oscs=100,
                  stimulus_conn_type='linear'):
         """ GrFNN constructor
 
         Args:
             zparams (:class:`.Zparam`): oscillator parameters
-            fc (float): GrFNN center frequency (in Hz.)
-            octaves_per_side (float): number of octaves above (and below) fc
-            oscs_per_octave (float): number of oscillators per octave
-            stimulus_conn_type (string): type of stimulus connection (defatul
+            frequency_range (tuple or list): lower and upper limits of the GrFNN
+                frequency range
+            num_oscs (int): number of oscillators in the GrFFN
+            stimulus_conn_type (string): type of stimulus connection (default
                 'active')
 
         """
 
         # array of oscillators' frequencies (in Hz)
-        self.f = np.asarray(fc*np.logspace(-octaves_per_side,
-                                           octaves_per_side,
-                                           base=2.0,
-                                           num=2*oscs_per_octave *
-                                           octaves_per_side+1),
-                            dtype=FLOAT)
+        self.f = np.logspace(np.log10(frequency_range[0]),
+                             np.log10(frequency_range[1]),
+                             num_oscs)
 
         # total number of oscillator in the network
         self.size = self.f.size
@@ -82,18 +77,7 @@ class GrFNN(object):
         # oscillator differential equation
         self.zdot = partial(zdot, f=self.f, zp=self.zparams)
 
-        # number of oscillators per octave
-        self.oscs_per_octave = oscs_per_octave
-
     def __repr__(self):
-        # return "GrFNN: " \
-        #        "freq. range: {0} -- {1}, " \
-        #        "oscs/octave: {2}, " \
-        #        "num_oscs: {3}".format(min(self.f),
-        #                                  max(self.f),
-        #                                  self.oscs_per_octave,
-        #                                  self.size)
-
         return "GrFNN: {}".format(self.zparams)
 
     def compute_input(self, z, connection_inputs, x_stim=0):
@@ -134,20 +118,20 @@ class GrFNN(object):
 
         # process external signal (stimulus)
         if self.stimulus_conn_type == 'linear':
-            x = x_stim * self.f
+            x = self.f * x_stim
         elif self.stimulus_conn_type == 'active':
-            x = x_stim * self.f * active(z)
+            x = self.f * x_stim * active(z)
         elif self.stimulus_conn_type == 'allfreq':
-            x = self.f * active(z) * passiveAllFreq(x_stim)
+            x = self.f * passiveAllFreq(x_stim) * active(z)
         elif self.stimulus_conn_type == 'all2freq':
-            x = self.f * active(z) * passiveAll2Freq(x_stim)
+            x = self.f * passiveAll2Freq(x_stim) * active(z)
         else:
             raise Exception("Unknown stimulus connection type '{}'".format(self.stimulus_conn_type))
 
         # process other inputs (internal, afferent and efferent)
         for (source_z, matrix, conn_type) in connection_inputs:
             if conn_type == '1freq':
-                x = x + matrix.dot(source_z)
+                x = x + self.f * matrix.dot(source_z)
             elif conn_type == '2freq':
                 raise "2freq connection type not implemented. Look inside \
                     GrFNN-Toolbox-1.0/zdot.m for details."
@@ -155,9 +139,11 @@ class GrFNN(object):
                 raise "3freq connection type not implemented. Look inside \
                     GrFNN-Toolbox-1.0/zdot.m for details."
             elif conn_type == 'allfreq':
-                x = x + matrix.dot(passiveAll2Freq(source_z)) * active(z)
+                # x = x + matrix.dot(passiveAll2Freq(source_z)) * active(z)
+                x = x + self.f * matrix.dot(passiveAll2Freq(source_z)) * active(z)
             elif conn_type == 'all2freq':
-                x = x + matrix.dot(passiveAllFreq(source_z)) * active(z)
+                # x = x + matrix.dot(passiveAllFreq(source_z)) * active(z)
+                x = x + self.f * matrix.dot(passiveAllFreq(source_z)) * active(z)
             else:
                 raise Exception("Unknown connection type '{}'".format(conn_type))
 

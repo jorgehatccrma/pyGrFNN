@@ -48,27 +48,20 @@ class Zparam(object):
         self.beta2 = beta2
         self.delta1 = delta1
         self.delta2 = delta2
+        self.epsilon = epsilon
 
         self.a = alpha + 1j * TWO_PI
         self.b1 = beta1 + 1j * delta1
         self.b2 = beta2 + 1j * delta2
         self.e = epsilon
         self.sqe = np.sqrt(self.e)
-        self.epsilon = epsilon
 
     def __repr__(self):
-        # return  "Zparams: " \
-        #         "alpha:   {0}, " \
-        #         "beta_1:  {1}, " \
-        #         "beta_2:  {2}, " \
-        #         "epsilon: {3}".format(self.a, self.b1, self.b2, self.e)
         return  "Zparams: " \
-                "alpha: {0:0.3f}, " \
-                "beta_1: {1:0.3f}, " \
-                "delta_1: {2:0.3f}, " \
-                "beta_2: {3:0.3f}, " \
-                "delta_2: {4:0.3f}, " \
-                "epsilon: {5:0.3f}".format(self.alpha, self.beta1, self.delta1,
+                "alpha: {0:0.3g}, " \
+                "b1: {1:0.3g}+{2:0.3g}j, " \
+                "b2: {3:0.3g}+{4:0.3g}j, " \
+                "e: {5:0.3g}".format(self.alpha, self.beta1, self.delta1,
                                            self.beta2, self.delta2, self.e)
 
 

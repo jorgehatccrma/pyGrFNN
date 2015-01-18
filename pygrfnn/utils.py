@@ -104,26 +104,26 @@ def nml(x, m=0.4, gamma=1.0):
 
 
 
-def normalPDF(x, mu, sigma):
+def normal_pdf(x, mu, sigma):
     """
     Normal (Gaussian) Probability Density Function:
 
     .. math::
 
-        f(x, \\mu, \\sigma) = \\frac{1}{\\sigma\\sqrt{2 \\pi}} \
+        f(x; \\mu, \\sigma) = \\frac{1}{\\sigma\\sqrt{2 \\pi}} \
             e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}
 
     """
     return np.exp(-0.5 * ((x - mu)/sigma)**2) / (np.sqrt(TWO_PI) * sigma)
 
 
-def normalCDF(x, mu, sigma):
+def normal_cdf(x, mu, sigma):
     """
     Normal (Gaussian) Cumulative Density Function:
 
     .. math::
 
-        F(x, \\mu, \\sigma) &= \\frac{1}{2\\pi}
+        F(x; \\mu, \\sigma) &= \\frac{1}{2\\pi}
             \\int_{-\\infty}^{\\frac{x-\\mu}{\\sigma}} e^{-t^2/2} dt \\\\
             &= \\Phi(\\frac{x-\\mu}{\\sigma}) \\\\
             &= \\frac{1}{2}\\left ( 1 + \\mathrm{erf}
@@ -132,6 +132,36 @@ def normalCDF(x, mu, sigma):
     """
     z = (x-mu) / sigma;
     return 0.5 * (1 + erf(z/np.sqrt(2)))
+
+
+def log_normal_pdf(x, mu, sigma):
+    """
+    Log-normal Probability Density Function:
+
+    .. math::
+
+        f(x; \\mu, \\sigma) = \\frac{1}{x\\sigma\\sqrt{2 \\pi}} \
+            e^{-\\frac{(\\ln x-\\mu)^2}{2\\sigma^2}}, x > 0
+
+    """
+    return (np.exp(-(np.log(x) - mu)**2 / (2 * sigma**2)) / \
+        (x * sigma * np.sqrt(TWO_PI)))
+
+
+def log_normal_cdf(x, mu, sigma):
+    """
+    Log-normal Cumulative Density Function:
+
+    .. math::
+
+        F(x; \\mu, \\sigma) &= \\frac{1}{2}
+            \\left [1 + \\mathrm{erf}\\big ( \\frac{\\ln x - \\mu}
+                {\\sigma \\sqrt{2}}\\big ) \\right] \\\\
+            &= \\frac{1}{2} \\mathrm{erfc} \\big ( -\\frac{\\ln x -
+                \\mu}{\\sigma \\sqrt{2}} \\big )
+    """
+    z = (x-mu) / sigma;
+    return 0.5 * (1 + erf((np.log(x) - mu)/(sigma * np.sqrt(2))))
 
 
 def nextpow2(n):

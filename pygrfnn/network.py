@@ -17,16 +17,17 @@ To Dos:
 import sys
 
 import numpy as np
+from scipy.stats import norm
 import dispatch
 
-from utils import normalPDF
-from utils import normalCDF
+# from utils import normal_pdf
+# from utils import normal_cdf
 from utils import nl
 from defines import COMPLEX, PI, PI_2
 
 model_update_event = dispatch.Signal(providing_args=["z", "t"])
 
-def make_connections(source, dest, strength, stdev, harmonics=None,
+def make_connections(source, dest, strength, stdev, modes=None, mode_amps=None,
                      complex_kernel=False, self_connect=True):
     """Creates a connection matrix, that connects source layer to destination
     layer.
@@ -42,9 +43,12 @@ def make_connections(source, dest, strength, stdev, harmonics=None,
             "spread" them with neighbors). Its units is *octaves* (e.g.
             stdev = 1.0 implies that roughly 68% of the weight will be
             distributed in two octaves---+/- 1 stdev---around the mean)
-        harmonics (:class:`numpy.array`): frequency harmonics to connect
+        modes (:class:`numpy.array`): frequency modes to connect
             (e.g. [1/3, 1/2, 1, 2, 3]). If *None*, it will be set to
             ``[1]``
+        mode_amplitudes (:class:`numpy.array`): amplitude for each mode in
+            `modes` (e.g. [.5, .75, 1, .75, .5]). If *None*, it will be set to
+            ``[1] * len(modes)``
         complex_kernel (bool): If *True*, the connections will be
             complex (i.e. include phase information). Otherwise, the
             connections will be real-valued weights.
@@ -69,7 +73,6 @@ def make_connections(source, dest, strength, stdev, harmonics=None,
     # dest_f[i]
     [FS, FT] = np.meshgrid(source.f, dest.f)
     RF = FT/FS
-    # RF = (dest.f/source.f.reshape(source.f.size, 1)).T
 
     assert RF.shape == (len(dest.f), len(source.f))
 
@@ -79,17 +82,27 @@ def make_connections(source, dest, strength, stdev, harmonics=None,
     # the i-th element to the j-th element
     conns = np.zeros(RF.shape, dtype=COMPLEX)
 
-    if harmonics is None:
-        harmonics = [1]
+    if modes is None:
+        modes = [1]
+
+    if mode_amps is None:
+        mode_amps = [1.0] * len(modes)
+
+    assert len(modes) == len(mode_amps)
+
+    df = np.log2(dest.f[-1]/dest.f[0])/len(dest.f)
 
     # Make self connections using a Gaussian distribution
-    for h in harmonics:
-        # TODO: verify if this is correct in the new Toolbox
-        R = normalPDF(np.log2(RF), np.log2(h), stdev) / source.oscs_per_octave
+    for h, a in zip(modes, mode_amps):
+
+        # R = normal_pdf(np.log2(RF), np.log2(h), stdev) / source.oscs_per_octave
+        # R = a * norm.pdf(np.log2(RF), np.log2(h), stdev) / 100.0
+        # R = a * norm.pdf(np.log2(RF), np.log2(h), stdev) * stdev * np.sqrt(2.0*np.pi) / 100.0
+        R = a * norm.pdf(np.log2(RF), np.log2(h), stdev) * stdev * np.sqrt(2.0*np.pi) / (100.0 * df)
 
         if complex_kernel:
             # TODO: verify if this is correct in the new Toolbox
-            Q = PI_2*(2.0*normalCDF(np.log2(RF), np.log2(h), stdev)-1)
+            Q = PI_2*(2.0*normal_cdf(np.log2(RF), np.log2(h), stdev)-1)
         else:
             Q = np.zeros(R.shape)
 
@@ -325,11 +338,6 @@ class Model(object):
             :class:`.Connection`: connection object created
 
         """
-
-        # TODO: add sanity check?
-        # TODO: add another method (or use duck typing) to pass harmonics or
-        #       connection_type in matrix
-
         if source not in self.layers():
             raise UnknownLayer(source)
 
@@ -520,8 +528,8 @@ class Model(object):
 
                 # dispatch event for display
                 if cum_time >= self.update_interval:
-                    cum_time -= self.update_interval
                     model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
+
             if cum_time >= self.update_interval:
                 cum_time -= self.update_interval
 
