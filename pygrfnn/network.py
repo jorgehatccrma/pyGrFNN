@@ -262,14 +262,8 @@ class Model(object):
 
     """
 
-    def __init__(self, update_interval=0.2):
+    def __init__(self):
         """Model constructor
-
-        Args:
-            update_interval (float): interval (in seconds) used to dispatch
-                layer update events. This can be used, for example, to update a
-                plot in "real-time"
-
         """
 
         # list of GrFNN layers (and its corresponding external input channel)
@@ -277,9 +271,6 @@ class Model(object):
 
         # connections
         self.connections = {}
-
-        # update event dispatch interval (in seconds)
-        self.update_interval = update_interval
 
     def __repr__(self):
         return "Model:\n" \
@@ -477,8 +468,6 @@ class Model(object):
 
         num_frames = signal.shape[0]
 
-        cum_time = 0
-
         if signal.ndim == 1:
             signal = np.atleast_2d(signal).T
 
@@ -521,18 +510,12 @@ class Model(object):
                 L.k4 = rk_step(L, stim, 'k3')
 
             # final RK step
-            cum_time += dt
             for L in self.layers():
                 L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
                 L.TF[:, i] = L.z
 
-                # dispatch event for display
-                if cum_time >= self.update_interval:
-                    model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
-
-            if cum_time >= self.update_interval:
-                cum_time -= self.update_interval
-
+                # dispatch update event
+                model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
 
             # learn connections
             for L in self.layers():

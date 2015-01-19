@@ -65,11 +65,12 @@ layer = GrFNN(params,
 
 
 # create the model and add the layer
-model = Model(update_interval=0.2)
+model = Model()
 model.add_layer(layer)
 
 plt.ion()
-GrFNN_RT_plot(layer)
+GrFNN_RT_plot(layer, update_interval=0.2, title='Single Layer')
+
 
 # run the model
 model.run(s, t, dt)

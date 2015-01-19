@@ -360,9 +360,28 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
 
 
 class GrFNN_RT_plot(object):
+    """
+    Plot that updates in real time
+    """
+    def __init__(self, grfnn, update_interval=0, fig_name=None, title=''):
+        """
+        Constructor
 
-    def __init__(self, grfnn, fig_name=None, title=''):
+        Args:
+            grfnn (:class:pygrfnn.network.Model): GrFNN to be plotted
+            update_interval (float): plot update interval (in seconds)
+            fig_name (string): name of the figure to use. If specified, the same
+                figure will be reused in consecutive runs. If None, a new figure
+                will be created each time the caller script runs
+            title (string): optional title of the plot
+
+        Note:
+            There is probably room for optimization here. For example,
+            http://bastibe.de/2013-05-30-speeding-up-matplotlib.html does some
+            interesting analysis/optimizations for updating plots
+        """
         self.grfnn = grfnn
+        self.update_interval = update_interval
         self.title = title
         self.fig_name = fig_name
         plt.ion()
@@ -377,11 +396,19 @@ class GrFNN_RT_plot(object):
         self.ax.set_title('{}'.format(self.title))
         self.fig.canvas.draw()
 
+        self.last_update = 0
+
         def update_callback(sender, **kwargs):
-            z = sender.z
-            self.line1.set_ydata(np.abs(z))
-            self.ax.set_title('{} (t = {:0.2f}s)'.format(self.title, kwargs['t']))
-            self.fig.canvas.draw()
+            """
+            Update the plot when necessary
+            """
+            t = kwargs['t']
+            if t - self.last_update >= self.update_interval:
+                z = sender.z
+                self.line1.set_ydata(np.abs(z))
+                self.ax.set_title('{} (t = {:0.2f}s)'.format(self.title, t))
+                self.fig.canvas.draw()
+                self.last_update = t
 
         model_update_event.connect(update_callback, sender=grfnn, weak=False)
 

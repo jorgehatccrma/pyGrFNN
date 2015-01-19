@@ -67,7 +67,7 @@ C = make_connections(layer1,  # source layer
 
 
 
-model = Model(update_interval=0.005)
+model = Model()
 model.add_layer(layer1)  # layer one will receive the external stimulus (channel 0 by default)
 model.add_layer(layer2, input_channel=None)  # layer 2 is a hidden layer (no externa input)
 
@@ -81,7 +81,7 @@ conn = model.connect_layers(layer1, layer2, C, '1freq')
 
 plt.ion()
 
-GrFNN_RT_plot(layer1)
-GrFNN_RT_plot(layer2)
+GrFNN_RT_plot(layer1, update_interval=0.005, title='First Layer')
+GrFNN_RT_plot(layer2, update_interval=0.005, title='Second Layer')
 
 model.run(s, t, dt)
