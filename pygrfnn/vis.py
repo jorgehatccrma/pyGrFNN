@@ -359,7 +359,7 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
 
 
 
-class GrFNNUpdate(object):
+class GrFNN_RT_plot(object):
 
     def __init__(self, grfnn, fig_name=None, title=''):
         self.grfnn = grfnn
@@ -383,5 +383,5 @@ class GrFNNUpdate(object):
             self.ax.set_title('{} (t = {:0.2f}s)'.format(self.title, kwargs['t']))
             self.fig.canvas.draw()
 
-        model_update_event.connect(update_callback, sender=grfnn)
+        model_update_event.connect(update_callback, sender=grfnn, weak=False)
 

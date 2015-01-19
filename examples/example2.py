@@ -6,12 +6,12 @@ sys.path.append('../')  # needed to run the examples from within the package fol
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pygrfnn.network import Model, make_connections, model_update_event
+from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
 from pygrfnn.vis import plot_connections
 from pygrfnn.vis import tf_detail
-
+from pygrfnn.vis import GrFNN_RT_plot
 
 # 1. Create Stimulus: Complex sinusoid
 
@@ -81,40 +81,7 @@ conn = model.connect_layers(layer1, layer2, C, '1freq')
 
 plt.ion()
 
-
-fig1 = plt.figure(2)
-plt.clf()
-ax1 = fig1.add_subplot(111)
-ax1.grid(True)
-line1, = ax1.semilogx(layer1.f, np.abs(layer1.z), 'k')
-ax1.axis((np.min(layer1.f), np.max(layer1.f), 0, 1))
-
-def update_callback1(sender, **kwargs):
-    z = kwargs['z']
-    line1.set_ydata(np.abs(z))
-    ax1.set_title('t = {:0.2f}s'.format(kwargs['t']))
-    fig1.canvas.draw()
-
-
-fig2 = plt.figure(3)
-plt.clf()
-ax2 = fig2.add_subplot(111)
-ax2.grid(True)
-line2, = ax2.semilogx(layer2.f, np.abs(layer2.z), 'k')
-ax2.axis((np.min(layer2.f), np.max(layer2.f), 0, 1))
-
-def update_callback2(sender, **kwargs):
-    z = kwargs['z']
-    line2.set_ydata(np.abs(z))
-    ax2.set_title('t = {:0.2f}s'.format(kwargs['t']))
-    fig2.canvas.draw()
-
-
-
-model_update_event.connect(update_callback1, sender=layer1)
-model_update_event.connect(update_callback2, sender=layer2)
-
-
-
+GrFNN_RT_plot(layer1)
+GrFNN_RT_plot(layer2)
 
 model.run(s, t, dt)
