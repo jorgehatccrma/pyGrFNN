@@ -250,10 +250,10 @@ def fareyratio(fractions, pertol=.01):
     """
     vFarey = np.frompyfunc(fast_farey_ratio, 2, 4)
     sel = fractions > 1
-    fractions[sel] = 1.0/fractions[sel]
+    # fractions[sel] = 1.0/fractions[sel]
     n, d, l, e = vFarey(fractions, pertol)
-    n[sel], d[sel] = d[sel], n[sel]
-    fractions[sel] = 1.0/fractions[sel]
+    # n[sel], d[sel] = d[sel], n[sel]
+    # fractions[sel] = 1.0/fractions[sel]
     return n.astype(FLOAT), d.astype(FLOAT), l.astype(FLOAT), e.astype(FLOAT)
 
 
