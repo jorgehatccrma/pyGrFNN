@@ -21,6 +21,7 @@ from scipy.stats import norm
 import dispatch
 
 from utils import nl
+from utils import fareyratio
 from defines import COMPLEX, PI, PI_2
 
 model_update_event = dispatch.Signal(providing_args=["z", "t"])
@@ -213,7 +214,12 @@ class Connection(object):
         cparams: :class:`.Cparam` -- Learning params (`None` means no learning)
         d: ``float`` -- "passive" learning rate (i.e. forgetting factor)
         k: ``float`` -- "active" learning rate
-
+        RF: :class:`np.ndarray` -- array of frequency ratio.
+            `R(i,j) = dest(i)/source.f(j)`
+        farey_num: :class:`np.ndarray` -- Farey numerator for the
+            frequency relationship RF(i,j)
+        farey_den: :class:`np.ndarray` -- Farey denominator for the
+            frequency relationship RF(i,j)
     """
 
     def __init__(self,
@@ -231,7 +237,10 @@ class Connection(object):
         self.conn_type = conn_type
 
         # compute integer relationships between frequencies of both layers
-
+        # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
+        [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
+        self.RF = FT/FS
+        self.farey_num, self.farey_den, _, _ = fareyratio(self.RF)
 
     def __repr__(self):
         return "Connection:\n" \
