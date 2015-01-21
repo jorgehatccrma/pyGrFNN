@@ -66,7 +66,7 @@ layer = GrFNN(params,
 
 # create the model and add the layer
 model = Model()
-model.add_layer(layer)
+model.add_layer(layer, input_channel=0)
 
 plt.ion()
 GrFNN_RT_plot(layer, update_interval=0.2, title='Single Layer')

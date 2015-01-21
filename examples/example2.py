@@ -68,8 +68,8 @@ C = make_connections(layer1,  # source layer
 
 
 model = Model()
-model.add_layer(layer1)  # layer one will receive the external stimulus (channel 0 by default)
-model.add_layer(layer2, input_channel=None)  # layer 2 is a hidden layer (no externa input)
+model.add_layer(layer1, input_channel=0)  # layer one will receive the external stimulus
+model.add_layer(layer2)  # layer 2 is a hidden layer (no external input)
 
 conn = model.connect_layers(layer1, layer2, C, '1freq')
 

@@ -20,8 +20,6 @@ import numpy as np
 from scipy.stats import norm
 import dispatch
 
-# from utils import normal_pdf
-# from utils import normal_cdf
 from utils import nl
 from defines import COMPLEX, PI, PI_2
 
@@ -194,18 +192,19 @@ class Cparam(object):
 
 
 class Connection(object):
-    """Convenient connection object
+    """
+    Connection object
 
     Args:
         source (:class:`.GrFNN`): source layer
         destination (:class:`.GrFNN`): destination layer
         matrix (:class:`np.ndarray`): connection matrix
+        conn_type (string): type of GrFNN connections to use. Possible values:
+            'allfreq', 'all2freq', '1freq', '2freq', '3freq'
         learn_params (:class:`.Cparam`): learning params. No learning is performed
             when set to `None`
         self_connection (bool): if ``False``, the diagonal of the
             matrix is kept to 0 (even when learning is enabled)
-        conn_type (string): type of GrFNN connections to use. Possible values:
-        'allfreq', 'all2freq', '1freq', '2freq', '3freq'
 
     Attributes:
         source: :class:`.GrFNN` -- source layer
@@ -230,6 +229,9 @@ class Connection(object):
         self.cparams = learn_params
         self.self_connection = self_connection
         self.conn_type = conn_type
+
+        # compute integer relationships between frequencies of both layers
+
 
     def __repr__(self):
         return "Connection:\n" \
@@ -281,7 +283,7 @@ class Model(object):
     def layers(self):
         return [t[0] for t in self._layers]
 
-    def add_layer(self, layer, input_channel=0):
+    def add_layer(self, layer, input_channel=None):
         """Add a GrFNN layer.
 
         Args:

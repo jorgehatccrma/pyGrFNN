@@ -9,13 +9,13 @@ To Dos:
 
 """
 
+from functools import partial
+
 import numpy as np
 
 from network import make_connections
-from defines import COMPLEX, FLOAT
-from utils import ff, nml
-from functools import partial
 from oscillator import zdot
+from defines import COMPLEX, FLOAT
 
 
 class GrFNN(object):

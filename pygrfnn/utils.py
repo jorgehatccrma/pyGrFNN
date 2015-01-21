@@ -1,6 +1,8 @@
 """Utility functions
 """
 
+from __future__ import division
+
 import numpy as np
 from defines import TWO_PI
 from defines import EPS
@@ -73,103 +75,10 @@ def nml(x, m=0.4, gamma=1.0):
     return m*np.tanh(gamma*a)*x/a
 
 
-# def RK4(x, x_1, z_1, dt, diffeq):
-#     """Fourth-order Runge Kutta integration
-
-#     Args:
-#         x (:class:`numpy.array`): current value of the input
-#         x_1 (:class:`numpy.array`): last value of the input
-#         z_1 (:class:`numpy.array`): last state of the system (oscillator)
-#         dt (float): time step (fixed)
-#         diffeq (function): differential equation to be solved (should return
-#             dz/dt = f(x,t))
-
-#     Returns:
-#         (:class:`numpy.array`): updated states
-
-#     ToDo:
-#         this assumes a fixed time step between x and x_1
-#     """
-
-#     # # jorgeh's version
-#     # xh = 0.5*(x+x_1)   # for now, linear interpolation
-#     # dth = 0.5*dt
-
-#     # k1 = diffeq(x_1, z_1)
-#     # k2 = diffeq(xh,  z_1 + dth*k1)
-#     # k3 = diffeq(xh,  z_1 + dth*k2)
-#     # k4 = diffeq(x,   z_1 + dt*k3)
-
-#     # return z_1 + dt*(k1 + 2.0*k2 + 2.0*k3 + k4)/6.0
-
-
-
-def normal_pdf(x, mu, sigma):
-    """
-    Normal (Gaussian) Probability Density Function:
-
-    .. math::
-
-        f(x; \\mu, \\sigma) = \\frac{1}{\\sigma\\sqrt{2 \\pi}} \
-            e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}
-
-    """
-    return np.exp(-0.5 * ((x - mu)/sigma)**2) / (np.sqrt(TWO_PI) * sigma)
-
-
-def normal_cdf(x, mu, sigma):
-    """
-    Normal (Gaussian) Cumulative Density Function:
-
-    .. math::
-
-        F(x; \\mu, \\sigma) &= \\frac{1}{2\\pi}
-            \\int_{-\\infty}^{\\frac{x-\\mu}{\\sigma}} e^{-t^2/2} dt \\\\
-            &= \\Phi(\\frac{x-\\mu}{\\sigma}) \\\\
-            &= \\frac{1}{2}\\left ( 1 + \\mathrm{erf}
-                \\big ( \\frac{x - \\mu}{\\sigma \\sqrt{2}} \\big )  \\right )
-
-    """
-    z = (x-mu) / sigma;
-    return 0.5 * (1 + erf(z/np.sqrt(2)))
-
-
-def log_normal_pdf(x, mu, sigma):
-    """
-    Log-normal Probability Density Function:
-
-    .. math::
-
-        f(x; \\mu, \\sigma) = \\frac{1}{x\\sigma\\sqrt{2 \\pi}} \
-            e^{-\\frac{(\\ln x-\\mu)^2}{2\\sigma^2}}, x > 0
-
-    """
-    return (np.exp(-(np.log(x) - mu)**2 / (2 * sigma**2)) / \
-        (x * sigma * np.sqrt(TWO_PI)))
-
-
-def log_normal_cdf(x, mu, sigma):
-    """
-    Log-normal Cumulative Density Function:
-
-    .. math::
-
-        F(x; \\mu, \\sigma) &= \\frac{1}{2}
-            \\left [1 + \\mathrm{erf}\\big ( \\frac{\\ln x - \\mu}
-                {\\sigma \\sqrt{2}}\\big ) \\right] \\\\
-            &= \\frac{1}{2} \\mathrm{erfc} \\big ( -\\frac{\\ln x -
-                \\mu}{\\sigma \\sqrt{2}} \\big )
-    """
-    z = (x-mu) / sigma;
-    return 0.5 * (1 + erf((np.log(x) - mu)/(sigma * np.sqrt(2))))
-
-
 def nextpow2(n):
     """Similarly to Matlab's ``nextpow2``, returns the power of 2 ``>= n``
     """
-    m_f = np.log2(n)
-    m_i = np.ceil(m_f)
-    return 2**m_i
+    return 2 ** np.ceil(np.log2(n))
 
 
 # execution time decorator
@@ -247,3 +156,153 @@ def nice_log_values(array):
     high = np.log2(nextpow2(np.max(array)))
     nice = 2**np.arange(low, 1+high)
     return nice[(nice >= np.min(array)) & (nice <= np.max(array))]
+
+
+def memodict(f):
+    """ Memoization decorator for a function taking a single argument """
+    class memodict(dict):
+        def __missing__(self, key):
+            ret = self[key] = f(key)
+            return ret
+    return memodict().__getitem__
+
+
+@memodict
+def fast_farey_ratio(f_t):
+    """
+    Compute the Farey ratio of a fraction f with tolerance t.
+
+    To allow usage of single argument memoization (see `memodict`), fraction
+    and tolerance are passed as a tuple
+
+    Args:
+        f_t (tuple): (fraction, tolerance) tuple
+
+    Returns:
+        tuple: `(n, d, l, e)` for numerator, denominator, level and error
+    """
+    f, pertol = f_t
+
+    frac = f
+    if frac > 1:
+        frac = 1/f
+
+    ln = 0
+    ld = 1
+    rn = 1
+    rd = 1
+    l = 1
+
+    if (abs(frac - ln/ld) <= frac*pertol):
+        n = ln
+        d = ld
+        e = abs(frac - ln/ld)
+    elif (abs(frac - rn/rd) <= frac*pertol):
+        n = rn
+        d = rd
+        e = abs(frac - rn/rd)
+    else:
+        cn = ln+rn
+        cd = ld+rd
+        l  = l + 1
+        while (abs(frac - cn/cd) > frac*pertol):
+            if frac > cn/cd:
+                ln=cn
+                ld=cd
+            else:
+                rn=cn
+                rd=cd
+            cn = ln+rn
+            cd = ld+rd
+            l  = l + 1
+        n = cn
+        d = cd
+        e = abs(frac - cn/cd)
+
+    if f > 1:
+        n, d = d, n
+
+    return n, d, l, e
+
+
+def fareyratio(fractions, pertol=.01):
+    """
+    Compute Farey ratio for a list of fractions
+
+    Args:
+        f_t (tuple): (fraction, tolerance) tuple
+
+    Returns:
+        tuple: `([], [], [], [])` for numerator list, denominator list, level
+            list and error list
+
+    """
+    num = [None] * len(fractions)
+    denom = [None] * len(fractions)
+    level = [None] * len(fractions)
+    error = [None] * len(fractions)
+
+    for i, f in enumerate(fractions):
+        num[i], denom[i], level[i], error[i] = fast_farey_ratio((f, pertol))
+
+    return num, denom, level, error
+
+
+# def slowfareyratio(fractions, pertol=.01):
+
+#     num = [None] * len(fractions)
+#     denom = [None] * len(fractions)
+#     level = [None] * len(fractions)
+#     error = [None] * len(fractions)
+
+#     for i, f in enumerate(fractions):
+#         if f > 1:
+#             frac = 1/f
+#         else:
+#             frac = f
+
+#         ln = 0
+#         ld = 1
+
+#         rn = 1
+#         rd = 1
+
+#         l = 1
+
+#         if (abs(frac - ln/ld) <= frac*pertol):
+#             n = ln
+#             d = ld
+#             e = abs(frac - ln/ld)
+#         elif (abs(frac - rn/rd) <= frac*pertol):
+#             n = rn
+#             d = rd
+#             e = abs(frac - rn/rd)
+#         else:
+#             cn = ln+rn
+#             cd = ld+rd
+#             l  = l + 1
+#             while (abs(frac - cn/cd) > frac*pertol):
+#                 if frac > cn/cd:
+#                     ln=cn
+#                     ld=cd
+#                 else:
+#                     rn=cn
+#                     rd=cd
+#                 cn = ln+rn
+#                 cd = ld+rd
+#                 l  = l + 1
+#             n = cn
+#             d = cd
+#             e = abs(frac - cn/cd)
+
+#         if f > 1:
+#             tmp = n
+#             n = d
+#             d = tmp
+
+#         num[i] = n
+#         denom[i] = d
+#         level[i] = l
+#         error[i] = e
+
+#     return num, denom, level, error
