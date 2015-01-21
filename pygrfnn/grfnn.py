@@ -9,6 +9,7 @@ To Dos:
 
 """
 
+from __future__ import division
 from functools import partial
 
 import numpy as np
@@ -80,18 +81,17 @@ class GrFNN(object):
     def __repr__(self):
         return "GrFNN: {}".format(self.zparams)
 
-    def compute_input(self, z, connection_inputs, x_stim=0):
+    def compute_input(self, z, connections, x_stim=0):
         """Compute the overall input to a GrFNN (:math:`x` in equation
         15 in the cited paper)
 
         Args:
             z (:class:`numpy.array`): state of the GrFNN at the instant
-                when the input needs to be computed
-            connection_inputs (list): list of tuples of the form
-                (*source_z*, *matrix*, *conn_type*) where *source_z* is the
-                state of the source :class:.`GrFNN`, *matrix* is the
-                connection matrix (:class:`np.ndarray`), and *conn_type* is the
-                type of connection (e.g. 'allfreq')
+                when the input needs to be computed.
+            connections (list): list of tuples of the form
+                (*source_z*, *connection*) where *source_z* is the
+                state of the source :class:.`GrFNN` and *connection* is a
+                connection object (:class:`Connection`)
             x_stim (:class:`numpy.array`): external stimulus
 
         Returns:
@@ -99,8 +99,12 @@ class GrFNN(object):
             oscillator in the GrFNN
 
         Note:
-            Here ``connection_inputs`` refer to inter-layer connections,
+            Here ``connections`` refer to inter-layer connections,
             as well as intra-layer connections (self connected layers)
+
+        Note:
+            `z` does not necessarily correspond to `self.z`, as this method
+            might be called at in "intermediate" integration (RK4) step
 
         """
 
@@ -129,12 +133,19 @@ class GrFNN(object):
             raise Exception("Unknown stimulus connection type '{}'".format(self.stimulus_conn_type))
 
         # process other inputs (internal, afferent and efferent)
-        for (source_z, matrix, conn_type) in connection_inputs:
+        for (source_z, c) in connections:
+            matrix, conn_type = c.matrix, c.conn_type
             if conn_type == '1freq':
                 x = x + self.f * matrix.dot(source_z)
             elif conn_type == '2freq':
-                raise "2freq connection type not implemented. Look inside \
-                    GrFNN-Toolbox-1.0/zdot.m for details."
+                # TODO: verify this!
+                num, den = c.farey_num, c.farey_den
+                Z1, Z2 = np.meshgrid(source_z, np.conj(z))
+                Z1 **= num
+                Z2 **= den-1
+                M = self.zparams.e ** ((num + den - 2)/2.0)
+                M *= Z1 * Z2
+                x = x + self.f * np.sum(matrix * M, 1)  # sum across columns
             elif conn_type == '3freq':
                 raise "3freq connection type not implemented. Look inside \
                     GrFNN-Toolbox-1.0/zdot.m for details."

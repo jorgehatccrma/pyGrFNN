@@ -240,7 +240,7 @@ class Connection(object):
         # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
         [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
         self.RF = FT/FS
-        self.farey_num, self.farey_den, _, _ = fareyratio(self.RF)
+        self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
 
     def __repr__(self):
         return "Connection:\n" \
@@ -450,7 +450,7 @@ class Model(object):
             for i, c in enumerate(self.connections[layer]):
                 src = c.source
                 ks = getattr(src, pstep, 0)
-                conns[i] = (src.z + h*ks, c.matrix, c.conn_type)
+                conns[i] = (src.z + h*ks, c)
             x = layer.compute_input(z, conns, stim)
             return layer.zdot(x, z)
 
