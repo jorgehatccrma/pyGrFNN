@@ -56,8 +56,6 @@ zp2 = Zparam(-0.4, 1.75, 0, -1.25, 0, 1)
 # n2 = networkMake(2, 'hopf', alpha2, beta21, beta22,  0, 0, neps2, ...
 #                     'log', .375, 12, 321, ...
 #                     'display', 2, 'save', 1, 'channel', 1);
-
-# **** TODO: INCLUDE THIS ****
 # n1.w = 3.0;
 
 
@@ -66,7 +64,7 @@ zp2 = Zparam(-0.4, 1.75, 0, -1.25, 0, 1)
 # layer2 = GrFNN(zp2, frequency_range=(.375,12), num_oscs=321)
 layer1 = GrFNN(zp1, frequency_range=(.5,4), num_oscs=200)
 layer2 = GrFNN(zp2, frequency_range=(.5,4), num_oscs=200)
-
+layer1.w = 3.0
 
 # Model
 model = Model()
@@ -81,10 +79,10 @@ amps  =      [1,   1,   1,   1,   1 ]
 # C1 = connectMake(n1, n1, 'gaus',  1, 1.05, 0, 1, 'modes', modes, 'amps', amps, 'sds', sds);
 # C0 = connectMake(n1, n1, 'gaus',  1, 1.05, 0, 0, 'modes', modes, 'amps', amps, 'sds', sds);
 
-C11 = make_connections(layer1, layer1, .25,  0.0015, modes=modes, mode_amps=amps)
-C12 = make_connections(layer1, layer2, .25,  0.0015, modes=modes, mode_amps=amps)
-C22 = make_connections(layer2, layer2, .25,  0.0015, modes=modes, mode_amps=amps)
-C21 = make_connections(layer2, layer1, .25,  0.0015, modes=modes, mode_amps=amps)
+C11 = make_connections(layer1, layer1, 1.0,  0.0015, modes=modes, mode_amps=amps)
+C12 = make_connections(layer1, layer2, 1.0,  0.0015, modes=modes, mode_amps=amps)
+C22 = make_connections(layer2, layer2, 1.0,  0.0015, modes=modes, mode_amps=amps)
+C21 = make_connections(layer2, layer1, 1.0,  0.0015, modes=modes, mode_amps=amps)
 
 # %% Connections
 # % Internal

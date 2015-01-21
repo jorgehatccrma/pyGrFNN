@@ -78,6 +78,10 @@ class GrFNN(object):
         # oscillator differential equation
         self.zdot = partial(zdot, f=self.f, zp=self.zparams)
 
+        # input scaling factor (be default f)
+        self.w = self.f
+
+
     def __repr__(self):
         return "GrFNN: {}".format(self.zparams)
 
@@ -122,39 +126,39 @@ class GrFNN(object):
 
         # process external signal (stimulus)
         if self.stimulus_conn_type == 'linear':
-            x = self.f * x_stim
+            x = self.w * x_stim
         elif self.stimulus_conn_type == 'active':
-            x = self.f * x_stim * active(z)
+            x = self.w * x_stim * active(z)
         elif self.stimulus_conn_type == 'allfreq':
-            x = self.f * passiveAllFreq(x_stim) * active(z)
+            x = self.w * passiveAllFreq(x_stim) * active(z)
         elif self.stimulus_conn_type == 'all2freq':
-            x = self.f * passiveAll2Freq(x_stim) * active(z)
+            x = self.w * passiveAll2Freq(x_stim) * active(z)
         else:
             raise Exception("Unknown stimulus connection type '{}'".format(self.stimulus_conn_type))
 
         # process other inputs (internal, afferent and efferent)
-        for (source_z, c) in connections:
-            matrix, conn_type = c.matrix, c.conn_type
+        for (source_z, conn) in connections:
+            matrix, conn_type = conn.matrix, conn.conn_type
             if conn_type == '1freq':
-                x = x + self.f * matrix.dot(source_z)
+                x = x + conn.weights * matrix.dot(source_z)
             elif conn_type == '2freq':
                 # TODO: verify this!
-                num, den = c.farey_num, c.farey_den
+                num, den = conn.farey_num, c.farey_den
                 Z1, Z2 = np.meshgrid(source_z, np.conj(z))
                 Z1 **= num
                 Z2 **= den-1
                 M = self.zparams.e ** ((num + den - 2)/2.0)
                 M *= Z1 * Z2
-                x = x + self.f * np.sum(matrix * M, 1)  # sum across columns
+                x = x + conn.weights * np.sum(matrix * M, 1)  # sum across columns
             elif conn_type == '3freq':
                 raise "3freq connection type not implemented. Look inside \
                     GrFNN-Toolbox-1.0/zdot.m for details."
             elif conn_type == 'allfreq':
                 # x = x + matrix.dot(passiveAll2Freq(source_z)) * active(z)
-                x = x + self.f * matrix.dot(passiveAll2Freq(source_z)) * active(z)
+                x = x + conn.weights * matrix.dot(passiveAll2Freq(source_z)) * active(z)
             elif conn_type == 'all2freq':
                 # x = x + matrix.dot(passiveAllFreq(source_z)) * active(z)
-                x = x + self.f * matrix.dot(passiveAllFreq(source_z)) * active(z)
+                x = x + conn.weights * matrix.dot(passiveAllFreq(source_z)) * active(z)
             else:
                 raise Exception("Unknown connection type '{}'".format(conn_type))
 

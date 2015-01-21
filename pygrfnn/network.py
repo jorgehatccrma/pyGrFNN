@@ -202,6 +202,7 @@ class Connection(object):
         matrix (:class:`np.ndarray`): connection matrix
         conn_type (string): type of GrFNN connections to use. Possible values:
             'allfreq', 'all2freq', '1freq', '2freq', '3freq'
+        weight (float): frequency weight factor
         learn_params (:class:`.Cparam`): learning params. No learning is performed
             when set to `None`
         self_connection (bool): if ``False``, the diagonal of the
@@ -227,6 +228,7 @@ class Connection(object):
                  dest,
                  matrix,
                  conn_type,
+                 weight=1.0,
                  learn_params=None,
                  self_connection=True):
         self.source = src
@@ -236,10 +238,13 @@ class Connection(object):
         self.self_connection = self_connection
         self.conn_type = conn_type
 
+        # this is only for 'log' spaced GrFNNs
+        self.weights = weight * dest.f
+
         # compute integer relationships between frequencies of both layers
         # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
         [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
-        self.RF = FT/FS
+        self.RF = FS/FT
         self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
 
     def __repr__(self):
@@ -321,6 +326,7 @@ class Model(object):
                        destination,
                        matrix,
                        connection_type,
+                       weight=1.0,
                        learn=None):
         """Connect two layers.
 
@@ -330,9 +336,10 @@ class Model(object):
             destination (:class:`.GrFNN`): destination layer
                 (connections will be made from *source* layer to this
                 layer)
-            matrix (:class:`numpy.array`): Matrix of connection weights
+            matrix (:class:`numpy.array`): connection matrix
             connection_type (string): type of connection (e.g. '1freq', '2freq',
                 '3freq', 'allfreq', 'all2freq')
+            weight (float): connection weight factor.
             learn (:class:`.Cparmas`): Learning parameters. Is `None`, no
                 learning will be performed
 
@@ -346,7 +353,8 @@ class Model(object):
         if destination not in self.layers():
             raise UnknownLayer(destination)
 
-        conn = Connection(source, destination, matrix, connection_type, learn)
+        conn = Connection(source, destination, matrix, connection_type,
+                          weight=weight, learn_params=learn)
         self.connections[destination].append(conn)
 
         return conn
