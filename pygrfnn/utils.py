@@ -158,102 +158,6 @@ def nice_log_values(array):
     return nice[(nice >= np.min(array)) & (nice <= np.max(array))]
 
 
-def memodict(f):
-    """ Memoization decorator for a function taking a single argument """
-    class memodict(dict):
-        def __missing__(self, key):
-            ret = self[key] = f(key)
-            return ret
-    return memodict().__getitem__
-
-
-@memodict
-def fast_farey_ratio_single(f_t):
-    """
-    Compute the Farey ratio of a fraction f with tolerance t.
-
-    To allow usage of single argument memoization (see `memodict`), fraction
-    and tolerance are passed as a tuple
-
-    Args:
-        f_t (tuple): (fraction, tolerance) tuple
-
-    Returns:
-        tuple: `(n, d, l, e)` for numerator, denominator, level and error
-
-    ToDo: optimize? Look into fractions module of the standard library. It
-        seems to be exactly what we need. In particular, look at
-        `limit_denominator()`
-    """
-    f, pertol = f_t
-
-    frac = f
-    if frac > 1:
-        frac = 1/f
-
-    ln = 0
-    ld = 1
-    rn = 1
-    rd = 1
-    l = 1
-
-    if (abs(frac - ln/ld) <= frac*pertol):
-        n = ln
-        d = ld
-        e = abs(frac - ln/ld)
-    elif (abs(frac - rn/rd) <= frac*pertol):
-        n = rn
-        d = rd
-        e = abs(frac - rn/rd)
-    else:
-        cn = ln+rn
-        cd = ld+rd
-        l  = l + 1
-        while (abs(frac - cn/cd) > frac*pertol):
-            if frac > cn/cd:
-                ln=cn
-                ld=cd
-            else:
-                rn=cn
-                rd=cd
-            cn = ln+rn
-            cd = ld+rd
-            l  = l + 1
-        n = cn
-        d = cd
-        e = abs(frac - cn/cd)
-
-    if f > 1:
-        n, d = d, n
-
-    return n, d, l, e
-
-
-
-def fareyratio(fractions, pertol=.01):
-    """
-    Compute Farey ratio for a list of fractions
-
-    Args:
-        f_t (tuple): (fraction, tolerance) tuple
-
-    Returns:
-        tuple: `([], [], [], [])` for numerator list, denominator list, level
-            list and error list
-
-    """
-    num = np.zeros(fractions.shape)
-    den = np.zeros(fractions.shape)
-    lev = np.zeros(fractions.shape)
-    err = np.zeros(fractions.shape)
-
-    for (r, c), f in np.ndenumerate(fractions):
-        num[r,c], den[r,c], lev[r,c], err[r,c] = fast_farey_ratio_single((f, pertol))
-
-    return num, den, lev, err
-
-
-
 def memoize(f):
     """ Memoization decorator for functions taking one or more arguments. """
     class memodict(dict):
@@ -267,7 +171,7 @@ def memoize(f):
     return memodict(f)
 
 @memoize
-def fast_farey_ratio_multi(f, pertol=0.01):
+def fast_farey_ratio(f, pertol=0.01):
     """
     Compute the Farey ratio of a fraction f with tolerance t.
 
@@ -326,7 +230,7 @@ def fast_farey_ratio_multi(f, pertol=0.01):
 
     return n, d, l, e
 
-def fareyratio2(fractions, pertol=.01):
+def fareyratio(fractions, pertol=.01):
     """
     Compute Farey ratio for a list of fractions
 
@@ -344,67 +248,12 @@ def fareyratio2(fractions, pertol=.01):
         this
 
     """
-    vFarey = np.frompyfunc(fast_farey_ratio_multi, 2, 4)
+    vFarey = np.frompyfunc(fast_farey_ratio, 2, 4)
+    sel = fractions > 1
+    fractions[sel] = 1.0/fractions[sel]
     n, d, l, e = vFarey(fractions, pertol)
+    n[sel], d[sel] = d[sel], n[sel]
+    fractions[sel] = 1.0/fractions[sel]
     return n.astype(FLOAT), d.astype(FLOAT), l.astype(FLOAT), e.astype(FLOAT)
 
-
-# def slowfareyratio(fractions, pertol=.01):
-
-#     num = [None] * len(fractions)
-#     denom = [None] * len(fractions)
-#     level = [None] * len(fractions)
-#     error = [None] * len(fractions)
-
-#     for i, f in enumerate(fractions):
-#         if f > 1:
-#             frac = 1/f
-#         else:
-#             frac = f
-
-#         ln = 0
-#         ld = 1
-
-#         rn = 1
-#         rd = 1
-
-#         l = 1
-
-#         if (abs(frac - ln/ld) <= frac*pertol):
-#             n = ln
-#             d = ld
-#             e = abs(frac - ln/ld)
-#         elif (abs(frac - rn/rd) <= frac*pertol):
-#             n = rn
-#             d = rd
-#             e = abs(frac - rn/rd)
-#         else:
-#             cn = ln+rn
-#             cd = ld+rd
-#             l  = l + 1
-#             while (abs(frac - cn/cd) > frac*pertol):
-#                 if frac > cn/cd:
-#                     ln=cn
-#                     ld=cd
-#                 else:
-#                     rn=cn
-#                     rd=cd
-#                 cn = ln+rn
-#                 cd = ld+rd
-#                 l  = l + 1
-#             n = cn
-#             d = cd
-#             e = abs(frac - cn/cd)
-
-#         if f > 1:
-#             tmp = n
-#             n = d
-#             d = tmp
-
-#         num[i] = n
-#         denom[i] = d
-#         level[i] = l
-#         error[i] = e
-
-#     return num, denom, level, error
 
