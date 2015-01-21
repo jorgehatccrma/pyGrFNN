@@ -3,7 +3,7 @@
 # @Author: Jorge Herrera
 # @Date:   2015-01-19 21:07:50
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-20 18:07:30
+# @Last Modified time: 2015-01-20 19:26:23
 
 import numpy as np
 
@@ -41,7 +41,7 @@ def test_frequency_relationships():
                                                      [4., 2., 1]]))
 
     np.testing.assert_array_equal(conn.farey_num, np.array([[1., 1., 1.],
-                                                            [2., 1., .5],
+                                                            [2., 1., 1.],
                                                             [4., 2., 1]]))
     np.testing.assert_array_equal(conn.farey_den, np.array([[1., 2., 4.],
                                                             [1., 1., 2.],
