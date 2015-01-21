@@ -30,9 +30,11 @@ class GrFNN(object):
         f: :class:`np.ndarray` -- ordered array of oscillators' natural
             frequencies (in Hz)
         size: ``int`` -- number of oscillators in the GrFNN
+        stimulus_conn_type (string) -- stimulus connection type. One of the
+            following: 'linear', 'active', 'all2freq' or 'all2freq'
         z: :class:`np.ndarray` -- initial oscillators states
         zdot: ``function`` -- parametrized oscillator differential equation
-
+        w :class:`np.ndarray` -- input scaling factor (defaults to self.f)
 
     """
 
@@ -78,7 +80,7 @@ class GrFNN(object):
         # oscillator differential equation
         self.zdot = partial(zdot, f=self.f, zp=self.zparams)
 
-        # input scaling factor (be default f)
+        # input scaling factor
         self.w = self.f
 
 
@@ -143,7 +145,7 @@ class GrFNN(object):
                 x = x + conn.weights * matrix.dot(source_z)
             elif conn_type == '2freq':
                 # TODO: verify this!
-                num, den = conn.farey_num, c.farey_den
+                num, den = conn.farey_num, conn.farey_den
                 Z1, Z2 = np.meshgrid(source_z, np.conj(z))
                 Z1 **= num
                 Z2 **= den-1

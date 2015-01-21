@@ -97,11 +97,10 @@ C21 = make_connections(layer2, layer1, 1.0,  0.0015, modes=modes, mode_amps=amps
 # % Efferent
 # n1 = connectAdd(n2, n1, C1, 'weight', .05, 'type', '2freq');
 
-# **** TODO: INCLUDE 'weight' params ****
-c11 = model.connect_layers(layer1, layer1, C11, '2freq')
-c12 = model.connect_layers(layer1, layer2, C12, '2freq')
-c22 = model.connect_layers(layer2, layer2, C22, '2freq')
-c21 = model.connect_layers(layer2, layer1, C21, '2freq')
+c11 = model.connect_layers(layer1, layer1, C11, '2freq', weight=.10)
+c12 = model.connect_layers(layer1, layer2, C12, '2freq', weight=.40)
+c22 = model.connect_layers(layer2, layer2, C22, '2freq', weight=.10)
+c21 = model.connect_layers(layer2, layer1, C21, '2freq', weight=.05)
 
 
 plt.ion()
