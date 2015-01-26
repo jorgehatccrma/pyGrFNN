@@ -4,6 +4,7 @@ Rhythm processing model
 
 from __future__ import division
 
+from time import time
 import sys
 sys.path.append('../')  # needed to run the examples from within the package folder
 
@@ -24,40 +25,37 @@ from pyrhythm.library import get_pattern
 from daspy import Signal
 from daspy.processing import onset_detection_signal
 
-# p = get_pattern("iso")
-# sr = 22050
-# x, _ = p.as_signal(tempo=120.0,
-#                    reps=24.0,
-#                    lead_silence=0.0,
-#                    sr=sr,
-#                    click_freq=1200.0,
-#                    with_beat=False,
-#                    beat_freq=1800.0,
-#                    accented=False)
+use_matlab_stimulus = False
 
-# x = Signal(x, sr=sr)
-# s = onset_detection_signal(x)
+if use_matlab_stimulus:
+    D = loadmat('examples/iso44_signal')
+    sr = float(D['Fs'][0][0])
+    s = D['signal'][0]  # analytical signal (generated in matlab)
+    s = Signal(s, sr=sr)
+else:
+    p = get_pattern("iso")
+    sr = 22050
+    x, _ = p.as_signal(tempo=120.0,
+                       reps=12.0,
+                       lead_silence=0.0,
+                       sr=sr,
+                       click_freq=1200.0,
+                       with_beat=False,
+                       beat_freq=1800.0,
+                       accented=False)
+    x = Signal(x, sr=sr)
+    s = onset_detection_signal(x)
 
-
-# rms = np.sqrt(np.sum(s**2)/len(s))
-# s *= 0.05/rms
-# s = Signal(hilbert(s), sr=s.sr)
-
-
-D = loadmat('examples/iso44_signal')
-
-sr = float(D['Fs'][0][0])
-s = D['signal'][0]  # analytical signal (generated in matlab)
-
-s = Signal(s, sr=sr)
+    rms = np.sqrt(np.sum(s**2)/len(s))
+    s *= 0.05/rms
+    s = Signal(hilbert(s), sr=s.sr)
 
 t = s.time_vector()
 dt = 1/s.sr
-
-print "SR: ", s.sr
-
+# print "SR: ", s.sr
 
 
+# GrFNNs definition
 zp1 = Zparam(0.00001, 0, -2.0, 0, 0, 1)
 zp2 = Zparam(-0.4, 1.75, -1.25, 0, 0, 1)
 # w = .4
@@ -89,10 +87,12 @@ c22 = model.connect_layers(layer2, layer2, C22, '2freq', weight=.10, self_connec
 c21 = model.connect_layers(layer2, layer1, C21, '2freq', weight=.05)
 
 # Simulation
-plt.ion()
-GrFNN_RT_plot(layer1, update_interval=0.1, title='First Layer')
-GrFNN_RT_plot(layer2, update_interval=0.1, title='Second Layer')
-# GrFNN_RT_plot(layer1, update_interval=2.0/s.sr, title='First Layer')
-# GrFNN_RT_plot(layer2, update_interval=2.0/s.sr, title='Second Layer')
+# plt.ion()
+# GrFNN_RT_plot(layer1, update_interval=0.1, title='First Layer')
+# GrFNN_RT_plot(layer2, update_interval=0.1, title='Second Layer')
+# # GrFNN_RT_plot(layer1, update_interval=2.0/s.sr, title='First Layer')
+# # GrFNN_RT_plot(layer2, update_interval=2.0/s.sr, title='Second Layer')
 
+tic = time()
 model.run(s, t, dt)
+print "Run time: {:0.1f} seconds".format(time() - tic)
