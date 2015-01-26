@@ -41,9 +41,8 @@ Examples
 
 1. A single layer (single GrFNN) model responding to an external stimulus
 
-.. literalinclude:: ../testSingleGrFNN.py
+.. literalinclude:: ../examples/example1.py
    :language: python
-   :emphasize-lines: 18-22,25-28,32,35
    :linenos:
 
 
@@ -51,20 +50,10 @@ Examples
 (i.e. received the stimulus directly) and the other one is hidden. They are
 connected via afferent and efferent connections
 
-.. literalinclude:: ../testDoubleGrFNN.py
+.. literalinclude:: ../examples/example2.py
    :language: python
-   :emphasize-lines: 19-20,26-34,40-45,49-53,57-59,62-65,69-73
    :linenos:
 
-
-3. A single layer model responding to an external stimulus. The intra-layer
-connections are initialized to 0, and are updated (learned) as the stimulus is
-presented.
-
-.. literalinclude:: ../testLearningSingle.py
-   :language: python
-   :emphasize-lines: 19-42
-   :linenos:
 
 
 

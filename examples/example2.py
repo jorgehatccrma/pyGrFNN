@@ -54,17 +54,8 @@ layer2 = GrFNN(params2,
                frequency_range=(50,200),
                num_oscs=200)
 
-# C = make_connections(layer1,  # source layer
-#                      layer2,  # destination layer
-#                      1,  # connection strength multiplicative factor
-#                      0.028712718  # std dev(eye-balled to closely match that of GrFNN =-Toolbox-1.0 example)
-#                      )
-C = make_connections(layer1,  # source layer
-                     layer2,  # destination layer
-                     1,  # connection strength multiplicative factor
-                     0.0015
-                     )
-
+# C = make_connections(layer1, layer2, 1, 1.005)
+C = np.eye(len(layer2.f), len(layer1.f))
 
 
 model = Model()

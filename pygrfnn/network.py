@@ -23,10 +23,12 @@ import dispatch
 from utils import nl
 from utils import fareyratio
 from defines import COMPLEX, PI, PI_2
+from grfnn import compute_input
 
 model_update_event = dispatch.Signal(providing_args=["z", "t"])
 
-def make_connections(source, dest, strength, stdev, modes=None, mode_amps=None,
+def make_connections(source, dest, strength=1.0, range=1.02,
+                     modes=None, mode_amps=None,
                      complex_kernel=False, self_connect=True):
     """Creates a connection matrix, that connects source layer to destination
     layer.
@@ -38,10 +40,9 @@ def make_connections(source, dest, strength, stdev, modes=None, mode_amps=None,
             made between *source* and *this*)
         strength (float): connection strength (multiplicative real
             factor)
-        stdev (float): standard deviation to use in the connections (to
-            "spread" them with neighbors). Its units is *octaves* (e.g.
-            stdev = 1.0 implies that roughly 68% of the weight will be
-            distributed in two octaves---+/- 1 stdev---around the mean)
+        range (float): defines the standard deviation to use in the connections
+            ("spread" them with neighbors). It is expressed as a ratio, to
+            account for the log scale of the oscillators' frequency
         modes (:class:`numpy.array`): frequency modes to connect
             (e.g. [1/3, 1/2, 1, 2, 3]). If *None*, it will be set to
             ``[1]``
@@ -56,7 +57,8 @@ def make_connections(source, dest, strength, stdev, modes=None, mode_amps=None,
             0
 
     ToDo:
-        Revise the units of ``stdev``
+        - Revise the units of ``stdev``
+        - Possibly handle different stdevs for different modes?
 
     Returns:
         :class:`numpy.array`: Connection matrix (rows index destination and
@@ -66,12 +68,13 @@ def make_connections(source, dest, strength, stdev, modes=None, mode_amps=None,
 
     """
 
-    # matrix (2D arrray) of relative frequencies
+    # matrix (2D array) of relative frequencies
     # source is indexed in columns and destination in rows. That is,
     # RF(i,j) specifies the relative frequency of source_f[j] w.r.t.
     # dest_f[i]
     [FS, FT] = np.meshgrid(source.f, dest.f)
     RF = FT/FS
+    logRF = np.log2(RF)
 
     assert RF.shape == (len(dest.f), len(source.f))
 
@@ -89,19 +92,16 @@ def make_connections(source, dest, strength, stdev, modes=None, mode_amps=None,
 
     assert len(modes) == len(mode_amps)
 
+    sigmas = np.abs(np.log2(range))*np.ones(len(modes))
+    log_modes = np.log2(modes)
+
     df = np.log2(dest.f[-1]/dest.f[0])/len(dest.f)
 
     # Make self connections using a Gaussian distribution
-    for h, a in zip(modes, mode_amps):
-
-        # R = normal_pdf(np.log2(RF), np.log2(h), stdev) / source.oscs_per_octave
-        # R = a * norm.pdf(np.log2(RF), np.log2(h), stdev) / 100.0
-        # R = a * norm.pdf(np.log2(RF), np.log2(h), stdev) * stdev * np.sqrt(2.0*np.pi) / 100.0
-        R = a * norm.pdf(np.log2(RF), np.log2(h), stdev) * stdev * np.sqrt(2.0*np.pi) / (100.0 * df)
-
+    for m, a, s in zip(log_modes, mode_amps, sigmas):
+        R = a * norm.pdf(logRF, m, s) * df
         if complex_kernel:
-            # TODO: verify if this is correct in the new Toolbox
-            Q = PI_2*(2.0*normal_cdf(np.log2(RF), np.log2(h), stdev)-1)
+            Q = PI_2*(2.0*norm.cdf(logRF, m, s)-1)
         else:
             Q = np.zeros(R.shape)
 
@@ -205,7 +205,7 @@ class Connection(object):
         weight (float): frequency weight factor
         learn_params (:class:`.Cparam`): learning params. No learning is performed
             when set to `None`
-        self_connection (bool): if ``False``, the diagonal of the
+        self_connect (bool): if ``False``, the diagonal of the
             matrix is kept to 0 (even when learning is enabled)
 
     Attributes:
@@ -230,12 +230,12 @@ class Connection(object):
                  conn_type,
                  weight=1.0,
                  learn_params=None,
-                 self_connection=True):
+                 self_connect=True):
         self.source = src
         self.destination = dest
-        self.matrix = matrix
+        self.matrix = matrix.copy()
         self.cparams = learn_params
-        self.self_connection = self_connection
+        self.self_connect = self_connect
         self.conn_type = conn_type
 
         # this is only for 'log' spaced GrFNNs
@@ -244,23 +244,21 @@ class Connection(object):
         # compute integer relationships between frequencies of both layers
         # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
         [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
-        self.RF = FS/FT
+        self.RF = FT/FS
         self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
 
+        if not self.self_connect:
+            self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
+
     def __repr__(self):
-        return "Connection:\n" \
-               "\tsource:       {0}\n" \
-               "\tdest.:        {1}\n" \
-               "\tlearn_params: {2}\n" \
-               "\tself_connect: {3}\n".format(self.source,
-                                              self.destination,
-                                              self.cparams,
-                                              self.self_connection)
+        return "Connection from {0} " \
+               "(self_connect={1})\n".format(self.source.name,
+                                             self.self_connect)
 
 
 class Model(object):
     """
-    A network of GrFNNs
+    A network of GrFNNs.
 
     Different GrFNNs are referred to as layers. Layers can be added as
     visible or hidden; the former means that it will directly receive
@@ -279,8 +277,7 @@ class Model(object):
     """
 
     def __init__(self):
-        """Model constructor
-        """
+        """Model constructor"""
 
         # list of GrFNN layers (and its corresponding external input channel)
         self._layers = []
@@ -298,7 +295,8 @@ class Model(object):
         return [t[0] for t in self._layers]
 
     def add_layer(self, layer, input_channel=None):
-        """Add a GrFNN layer.
+        """
+        Add a GrFNN layer.
 
         Args:
             layer (:class:`.GrFNN`): the GrFNN to add to the model
@@ -317,6 +315,9 @@ class Model(object):
                                             # List elems should be tuples
                                             # of the form (source_layer,
                                             # connextion_matrix)
+            if layer.name == '':
+                layer.name = 'Layer {}'.format(len(self._layers))
+
 
         else:
             raise DuplicatedLayer(layer)
@@ -327,8 +328,10 @@ class Model(object):
                        matrix,
                        connection_type,
                        weight=1.0,
-                       learn=None):
-        """Connect two layers.
+                       learn=None,
+                       self_connect=True):
+        """
+        Connect two layers.
 
         Args:
             source (:class:`.GrFNN`): source layer (connections will be
@@ -342,6 +345,8 @@ class Model(object):
             weight (float): connection weight factor.
             learn (:class:`.Cparmas`): Learning parameters. Is `None`, no
                 learning will be performed
+            self_connect (bool): whether or not to connect oscillators of the
+                same frequency
 
         Returns:
             :class:`.Connection`: connection object created
@@ -354,7 +359,7 @@ class Model(object):
             raise UnknownLayer(destination)
 
         conn = Connection(source, destination, matrix, connection_type,
-                          weight=weight, learn_params=learn)
+                          weight=weight, learn_params=learn, self_connect=self_connect)
         self.connections[destination].append(conn)
 
         return conn
@@ -439,52 +444,6 @@ class Model(object):
 
         """
 
-        # helper function that performs a single RK4 step (any of them)
-        def rk_step(layer, stim, pstep):
-            """Single RK4 step
-
-            Args:
-                layer (:class:`grfnn.GrFNN`): layer to be integrated
-                stim (float): external stimulus sample
-                pstep (string): string identifying the previous RK step
-                    ``{'', 'k1', 'k2', 'k3'}``
-            """
-            # print("***"+pstep)
-            # print(layer)
-            h = dt if pstep is 'k3' else 0.5*dt
-            k = getattr(layer, pstep, 0)
-            z = layer.z + h*k
-            conns = [None]*len(self.connections[layer])
-            for i, c in enumerate(self.connections[layer]):
-                src = c.source
-                ks = getattr(src, pstep, 0)
-                conns[i] = (src.z + h*ks, c)
-            x = layer.compute_input(z, conns, stim)
-            return layer.zdot(x, z)
-
-        # helper function that updates connection matrix
-        def learn_step(conn):
-            """Update connection matrices
-
-            Args:
-                conn (:class:`.Connection`): connection object
-
-            Returns:
-                (:class:`np.ndarray`): derivative of connections (to use in
-                    connection update rule)
-            """
-            # TODO: test
-            e = conn.destination.zparams.e
-            zi = conn.source.z
-            zj_conj = np.conj(conn.destination.z)  # verify which one should
-                                                   # be conjugated
-            active = np.outer(zi*nl(zi, np.sqrt(e)),
-                              zj_conj*nl(zj_conj, np.sqrt(e)))
-            # if np.isnan(active).any():
-            #     import pdb
-            #     pdb.set_trace()
-            return -conn.d*conn.matrix + conn.k*active
-
         num_frames = signal.shape[0]
 
         if signal.ndim == 1:
@@ -493,13 +452,15 @@ class Model(object):
         # 1. prepare all the layers
         for L, inchan in self._layers:
             # FIXME
-            L.TF = np.zeros((L.f.size, num_frames), dtype=COMPLEX)
+            L.TF = np.zeros((L.f.size, num_frames+1), dtype=COMPLEX)
+            L.TF[:,0] = L.z
 
         # 2. Run "intertwined" RK4
         nc = len(str(num_frames))
         msg = '\r{{0:0{0}d}}/{1}'.format(nc, num_frames)
         for i in range(num_frames):
 
+            #print "Frame {}:".format(i)
             s = signal[i, :]
 
             if i != num_frames-1:
@@ -510,28 +471,42 @@ class Model(object):
 
             # k1
             for L, inchan in self._layers:
+                #print "Layer {} - k1".format(L.name)
                 stim = 0 if inchan is None else x_stim[0][inchan]
-                L.k1 = rk_step(L, stim, '')
+                L.k1 = rk_step(L, dt, self.connections, stim, '')
+                #print "k1:"
+                #print L.k1*dt
 
             # k2
             for L, inchan in self._layers:
+                #print "Layer {} - k2".format(L.name)
                 stim = 0 if inchan is None else x_stim[1][inchan]
-                L.k2 = rk_step(L, stim, 'k1')
+                L.k2 = rk_step(L, dt, self.connections, stim, 'k1')
+                #print "k2:"
+                #print L.k2*dt
 
             # k3
             for L, inchan in self._layers:
+                #print "Layer {} - k3".format(L.name)
                 stim = 0 if inchan is None else x_stim[1][inchan]
-                L.k3 = rk_step(L, stim, 'k2')
+                L.k3 = rk_step(L, dt, self.connections, stim, 'k2')
+                #print "k3:"
+                #print L.k3*dt
 
             # k4
             for L, inchan in self._layers:
+                #print "Layer {} - k4".format(L.name)
                 stim = 0 if inchan is None else x_stim[2][inchan]
-                L.k4 = rk_step(L, stim, 'k3')
+                L.k4 = rk_step(L, dt, self.connections, stim, 'k3')
+                #print "k4:"
+                #print L.k4*dt
 
             # final RK step
             for L in self.layers():
                 L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
-                L.TF[:, i] = L.z
+                L.TF[:, i+1] = L.z
+                #print "Layer {} z:".format(L.name)
+                #print L.z
 
                 # dispatch update event
                 model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
@@ -540,7 +515,6 @@ class Model(object):
             for L in self.layers():
                 for j, conn in enumerate(self.connections[L]):
                     if conn.cparams is not None:
-                        # print np.isnan(conn.matrix).any()
                         conn.matrix += learn_step(conn)
                         if not conn.self_connection:
                             # FIXME: This only works if source.f == destination.f
@@ -552,3 +526,50 @@ class Model(object):
             sys.stdout.flush()
 
         sys.stdout.write(" done!\n")
+
+
+# helper function that performs a single RK4 step (any of them)
+def rk_step(layer, dt, connections, stim, pstep):
+    """Single RK4 step
+
+    Args:
+        layer (:class:`grfnn.GrFNN`): layer to be integrated
+        dt (float): integration step (in seconds)
+        connections (dict): connection dictionary (see :class:`Model`)
+        stim (float): external stimulus sample
+        pstep (string): string identifying the previous RK step
+            ``{'', 'k1', 'k2', 'k3'}``
+    """
+    h = dt if pstep is 'k3' else 0.5*dt
+    k = getattr(layer, pstep, 0)
+    z = layer.z + h*k
+    conns = [None]*len(connections[layer])
+    for i, c in enumerate(connections[layer]):
+        src = c.source
+        ks = getattr(src, pstep, 0)
+        conns[i] = (src.z + h*ks, c)
+    x = compute_input(layer, z, conns, stim)
+    return layer.zdot(x, z, layer.f, layer.zparams)
+
+
+# helper function that updates connection matrix
+def learn_step(conn):
+    """Update connection matrices
+
+    Args:
+        conn (:class:`.Connection`): connection object
+
+    Returns:
+        (:class:`np.ndarray`): derivative of connections (to use in
+            connection update rule)
+    """
+    # TODO: test
+    e = conn.destination.zparams.e
+    zi = conn.source.z
+    zj_conj = np.conj(conn.destination.z)  # verify which one should
+                                           # be conjugated
+    active = np.outer(zi*nl(zi, np.sqrt(e)),
+                      zj_conj*nl(zj_conj, np.sqrt(e)))
+    return -conn.d*conn.matrix + conn.k*active
+
+
