@@ -3,7 +3,7 @@
 # @Author: jorgeh
 # @Date:   2015-01-25 11:07:19
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-26 17:52:47
+# @Last Modified time: 2015-01-26 20:16:40
 
 from __future__ import division
 
@@ -29,7 +29,7 @@ s = D['signal'][0]  # analytical signal (generated in matlab)
 
 # plt.plot(real(s))
 
-num_oscs = 5
+num_oscs = 100
 
 zp1 = Zparam(0.00001, 0, -2.0, 0, 0, 1)
 zp2 = Zparam(-0.4, 1.75, -1.25, 0, 0, 1)
@@ -38,6 +38,7 @@ zp2 = Zparam(-0.4, 1.75, -1.25, 0, 0, 1)
 # n2 = GrFNN(zp2, name='L2', frequency_range=(1., 4.), num_oscs=num_oscs, z0=0.5+0.5j)
 n1 = GrFNN(zp1, name='L1', frequency_range=(1., 4.), num_oscs=num_oscs, stimulus_conn_type='active')
 n2 = GrFNN(zp2, name='L2', frequency_range=(1., 4.), num_oscs=num_oscs)
+
 
 M = Model()
 M.add_layer(n1, input_channel=0)
@@ -53,7 +54,7 @@ C12 = make_connections(n1, n2, 1.0,  1.05, modes=modes, mode_amps=amps)
 C22 = make_connections(n2, n2, 1.0,  1.05, modes=modes, mode_amps=amps)
 C21 = make_connections(n2, n1, 1.0,  1.05, modes=modes, mode_amps=amps)
 
-c11 = M.connect_layers(n1, n1, C11, '2freq', weight=.80)
+c11 = M.connect_layers(n1, n1, C11, '2freq', weight=.10)
 c12 = M.connect_layers(n1, n2, C12, '2freq', weight=.40)
 c22 = M.connect_layers(n2, n2, C22, '2freq', weight=.10)
 c21 = M.connect_layers(n2, n1, C21, '2freq', weight=.05)
