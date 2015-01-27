@@ -26,33 +26,35 @@ from daspy import Signal
 from daspy.processing import onset_detection_signal
 
 use_matlab_stimulus = False
+RT_display = True
 
-if use_matlab_stimulus:
-    D = loadmat('examples/iso44_signal')
-    sr = float(D['Fs'][0][0])
-    s = D['signal'][0]  # analytical signal (generated in matlab)
-    s = Signal(s, sr=sr)
-else:
-    p = get_pattern("iso")
-    sr = 22050
-    x, _ = p.as_signal(tempo=120.0,
-                       reps=12.0,
-                       lead_silence=0.0,
-                       sr=sr,
-                       click_freq=1200.0,
-                       with_beat=False,
-                       beat_freq=1800.0,
-                       accented=False)
-    x = Signal(x, sr=sr)
-    s = onset_detection_signal(x)
+def get_stimulus(pattern_name="iso"):
+    if use_matlab_stimulus:
+        D = loadmat('examples/iso44_signal')
+        sr = float(D['Fs'][0][0])
+        s = D['signal'][0]  # analytical signal (generated in matlab)
+        s = Signal(s, sr=sr)
+    else:
+        p = get_pattern(pattern_name)
+        sr = 22050
+        x, _ = p.as_signal(tempo=120.0,
+                         reps=12.0,
+                         lead_silence=0.0,
+                         sr=sr,
+                         click_freq=1200.0,
+                         with_beat=False,
+                         beat_freq=1800.0,
+                         accented=False)
+        x = Signal(x, sr=sr)
+        s = onset_detection_signal(x)
 
-    rms = np.sqrt(np.sum(s**2)/len(s))
-    s *= 0.05/rms
-    s = Signal(hilbert(s), sr=s.sr)
-
-t = s.time_vector()
-dt = 1/s.sr
-# print "SR: ", s.sr
+        rms = np.sqrt(np.sum(s**2)/len(s))
+        s *= 0.05/rms
+        s = Signal(hilbert(s), sr=s.sr)
+    t = s.time_vector()
+    dt = 1/s.sr
+    # print "SR: ", s.sr
+    return s, t, dt
 
 
 # GrFNNs definition
@@ -81,18 +83,39 @@ C12 = make_connections(layer1, layer2, 1.0,  1.05, modes=modes, mode_amps=amps)
 C22 = make_connections(layer2, layer2, 1.0,  1.05, modes=modes, mode_amps=amps)
 C21 = make_connections(layer2, layer1, 1.0,  1.05, modes=modes, mode_amps=amps)
 
-c11 = model.connect_layers(layer1, layer1, C11, '2freq', weight=.10, self_connect=False)
-c12 = model.connect_layers(layer1, layer2, C12, '2freq', weight=.40)
-c22 = model.connect_layers(layer2, layer2, C22, '2freq', weight=.10, self_connect=False)
-c21 = model.connect_layers(layer2, layer1, C21, '2freq', weight=.05)
+c11 = model.connect_layers(layer1, layer1, C11, '2freq', weight=.10)
+c12 = model.connect_layers(layer1, layer2, C12, '2freq', weight=.40, self_connect=True)
+c22 = model.connect_layers(layer2, layer2, C22, '2freq', weight=.10)
+c21 = model.connect_layers(layer2, layer1, C21, '2freq', weight=.05, self_connect=True)
 
-# Simulation
-# plt.ion()
-# GrFNN_RT_plot(layer1, update_interval=0.1, title='First Layer')
-# GrFNN_RT_plot(layer2, update_interval=0.1, title='Second Layer')
-# # GrFNN_RT_plot(layer1, update_interval=2.0/s.sr, title='First Layer')
-# # GrFNN_RT_plot(layer2, update_interval=2.0/s.sr, title='Second Layer')
 
-tic = time()
-model.run(s, t, dt)
-print "Run time: {:0.1f} seconds".format(time() - tic)
+if __name__ == '__main__':
+
+    if len(sys.argv) > 1:
+        pattern_name = sys.argv[1]
+    else:
+        pattern_name = "iso"
+
+    s, t, dt = get_stimulus(pattern_name)
+
+    # Simulation
+    if RT_display:
+        plt.ion()
+        plt.plot(t, s);
+        plt.title('Stimulus')
+        GrFNN_RT_plot(layer1, update_interval=2.0/s.sr, title='First Layer')
+        GrFNN_RT_plot(layer2, update_interval=2.0/s.sr, title='Second Layer')
+
+    tic = time()
+    model.run(s, t, dt)
+    print "Run time: {:0.1f} seconds".format(time() - tic)
+
+    TF = layer2.TF
+    r = np.sum(TF, 0)
+
+    rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
+    r *= 0.05/rms
+
+    plt.figure()
+    plt.plot(t, np.real(r))
+    plt.plot(t, np.real(s))

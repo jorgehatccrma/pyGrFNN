@@ -79,8 +79,7 @@ class GrFNN(object):
             r0 = 0
             # r = 0  # GrFNN Toolbox uses spontAmp.m  ...
             f0 = self.f[0]
-            # a, b1, b2, e = f0*zparams.alpha, f0*zparams.beta1, f0*zparams.beta2, f0*zparams.epsilon
-            a, b1, b2, e = zparams.alpha, zparams.beta1, zparams.beta2, zparams.epsilon
+            a, b1, b2, e = f0*zparams.alpha, f0*zparams.beta1, f0*zparams.beta2, f0*zparams.epsilon
             r = spontaneus_amplitudes(a, b1, b2, e)[-1]
             r0 = (r+r0) + 0.01 * np.random.standard_normal(self.f.shape)
             phi0 = 2 * np.pi * np.random.standard_normal(self.f.shape)
@@ -118,8 +117,6 @@ def twoFreq(z, source_z, num, den, matrix, e, weights):
     Z1, Z2 = np.meshgrid(source_z, np.conj(z))
     Z1 **= num
     Z2 **= den-1
-    # Z1 = np.tile(source_z, (len(z), 1)) ** num
-    # Z2 = np.tile(np.conj(z), (len(source_z), 1)).T ** (den - 1)
     M = (e ** ((num + den - 2)/2.0)) * Z1 * Z2
     return weights * np.sum(matrix * M, 1)  # sum across columns
 
@@ -178,7 +175,6 @@ def compute_input(layer, z, connections, x_stim=0):
         if conn_type == '1freq':
             x = x + conn.weights * matrix.dot(source_z)
         elif conn_type == '2freq':
-            # TODO: verify this!
             x = x + twoFreq(z, source_z,
                             conn.farey_num, conn.farey_den,
                             matrix,

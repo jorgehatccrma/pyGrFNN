@@ -3,7 +3,7 @@
 # @Author: jorgeh
 # @Date:   2015-01-25 11:07:19
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-25 18:32:52
+# @Last Modified time: 2015-01-26 14:14:35
 
 from scipy.io import loadmat
 import numpy as np
@@ -23,12 +23,12 @@ D = loadmat('test/testSignal')
 sr = float(D['Fs'][0][0])
 s = D['signal'][0]  # analytical signal (generated in matlab)
 
-s = s[:9]
+s = s[:10]
 
 # plt.plot(real(s))
 
-zp1 = Zparam(0.1, -1.0, -10., 0, 0, 1)
-zp2 = Zparam(-0.1, 2.0, -3., 0, 0, 1)
+zp1 = Zparam(0.00001, 0, -2.0, 0, 0, 1)
+zp2 = Zparam(-0.4, 1.75, -1.25, 0, 0, 1)
 
 n1 = GrFNN(zp1, name='L1', frequency_range=(1., 4.), num_oscs=5, z0=0.5+0.5j, stimulus_conn_type='active')
 n2 = GrFNN(zp2, name='L2', frequency_range=(1., 4.), num_oscs=5, z0=0.5+0.5j)

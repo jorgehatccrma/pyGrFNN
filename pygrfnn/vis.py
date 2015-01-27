@@ -393,8 +393,10 @@ class GrFNN_RT_plot(object):
         self.ax.grid(True)
         self.line1, = self.ax.semilogx(grfnn.f, np.abs(grfnn.z), 'k')
         self.ax.axis((np.min(grfnn.f), np.max(grfnn.f), 0, 1))
+        plt.xticks(nice_log_values(grfnn.f))
         self.ax.set_title('{}'.format(self.title))
         self.fig.canvas.draw()
+
 
         self.last_update = 0
 

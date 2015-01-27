@@ -95,7 +95,8 @@ def make_connections(source, dest, strength=1.0, range=1.02,
     sigmas = np.abs(np.log2(range))*np.ones(len(modes))
     log_modes = np.log2(modes)
 
-    df = np.log2(dest.f[-1]/dest.f[0])/len(dest.f)
+    per = np.floor(len(source.f)/(np.log2(source.f[-1])-np.log2(source.f[0])))
+    df = 1.0/per
 
     # Make self connections using a Gaussian distribution
     for m, a, s in zip(log_modes, mode_amps, sigmas):
@@ -202,11 +203,11 @@ class Connection(object):
         matrix (:class:`np.ndarray`): connection matrix
         conn_type (string): type of GrFNN connections to use. Possible values:
             'allfreq', 'all2freq', '1freq', '2freq', '3freq'
+        self_connect (bool): if ``False``, the diagonal of the
+            matrix is kept to 0 (even when learning is enabled)
         weight (float): frequency weight factor
         learn_params (:class:`.Cparam`): learning params. No learning is performed
             when set to `None`
-        self_connect (bool): if ``False``, the diagonal of the
-            matrix is kept to 0 (even when learning is enabled)
 
     Attributes:
         source: :class:`.GrFNN` -- source layer
@@ -224,22 +225,22 @@ class Connection(object):
     """
 
     def __init__(self,
-                 src,
-                 dest,
+                 source,
+                 destination,
                  matrix,
                  conn_type,
+                 self_connect,
                  weight=1.0,
-                 learn_params=None,
-                 self_connect=True):
-        self.source = src
-        self.destination = dest
+                 learn_params=None):
+        self.source = source
+        self.destination = destination
         self.matrix = matrix.copy()
         self.cparams = learn_params
         self.self_connect = self_connect
         self.conn_type = conn_type
 
         # this is only for 'log' spaced GrFNNs
-        self.weights = weight * dest.f
+        self.weights = weight * destination.f
 
         # compute integer relationships between frequencies of both layers
         # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
@@ -247,8 +248,10 @@ class Connection(object):
         self.RF = FT/FS
         self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
 
+        # if not self.self_connect:
+        #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
         if not self.self_connect:
-            self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
+            self.matrix[self.RF==1.0] = 0
 
     def __repr__(self):
         return "Connection from {0} " \
@@ -329,7 +332,7 @@ class Model(object):
                        connection_type,
                        weight=1.0,
                        learn=None,
-                       self_connect=True):
+                       self_connect=False):
         """
         Connect two layers.
 
@@ -346,7 +349,7 @@ class Model(object):
             learn (:class:`.Cparmas`): Learning parameters. Is `None`, no
                 learning will be performed
             self_connect (bool): whether or not to connect oscillators of the
-                same frequency
+                same frequency. By default is `False`
 
         Returns:
             :class:`.Connection`: connection object created
@@ -359,7 +362,8 @@ class Model(object):
             raise UnknownLayer(destination)
 
         conn = Connection(source, destination, matrix, connection_type,
-                          weight=weight, learn_params=learn, self_connect=self_connect)
+                          weight=weight, learn_params=learn,
+                          self_connect=self_connect)
         self.connections[destination].append(conn)
 
         return conn
@@ -452,54 +456,36 @@ class Model(object):
         # 1. prepare all the layers
         for L, inchan in self._layers:
             # FIXME
-            L.TF = np.zeros((L.f.size, num_frames+1), dtype=COMPLEX)
+            L.TF = np.zeros((L.f.size, num_frames), dtype=COMPLEX)
             L.TF[:,0] = L.z
 
         # 2. Run "intertwined" RK4
         nc = len(str(num_frames))
         msg = '\r{{0:0{0}d}}/{1}'.format(nc, num_frames)
-        for i in range(num_frames):
+        for i in range(num_frames-1):
 
-            #print "Frame {}:".format(i)
             s = signal[i, :]
+            s_next = signal[i+1, :]
+            # input signal (need interpolated values for k2 & k3)
+            # linear interpolation should be fine
+            x_stim = [s, 0.5*(s+s_next), 0.5*(s+s_next), s_next]
 
-            if i != num_frames-1:
-                # linear interpolation should be fine
-                x_stim = [s, 0.5*(s+signal[i+1, :]), signal[i+1, :]]
-            else:
-                x_stim = [s, s, s]
+            for k in range(4):
+                for L, inchan in self._layers:
+                    stim = 0 if inchan is None else x_stim[k][inchan]
+                    # ToDo DRY: The following if/elif... could be further
+                    # simplified to adhere to DRY, but for some reason the
+                    # version implemented using setattr() didn't give the same
+                    # results?!
+                    if k==0:
+                        L.k1 = rk_step(L, dt, self.connections, stim, 'k0')
+                    elif k==1:
+                        L.k2 = rk_step(L, dt, self.connections, stim, 'k1')
+                    elif k==2:
+                        L.k3 = rk_step(L, dt, self.connections, stim, 'k2')
+                    elif k==3:
+                        L.k4 = rk_step(L, dt, self.connections, stim, 'k3')
 
-            # k1
-            for L, inchan in self._layers:
-                #print "Layer {} - k1".format(L.name)
-                stim = 0 if inchan is None else x_stim[0][inchan]
-                L.k1 = rk_step(L, dt, self.connections, stim, '')
-                #print "k1:"
-                #print L.k1*dt
-
-            # k2
-            for L, inchan in self._layers:
-                #print "Layer {} - k2".format(L.name)
-                stim = 0 if inchan is None else x_stim[1][inchan]
-                L.k2 = rk_step(L, dt, self.connections, stim, 'k1')
-                #print "k2:"
-                #print L.k2*dt
-
-            # k3
-            for L, inchan in self._layers:
-                #print "Layer {} - k3".format(L.name)
-                stim = 0 if inchan is None else x_stim[1][inchan]
-                L.k3 = rk_step(L, dt, self.connections, stim, 'k2')
-                #print "k3:"
-                #print L.k3*dt
-
-            # k4
-            for L, inchan in self._layers:
-                #print "Layer {} - k4".format(L.name)
-                stim = 0 if inchan is None else x_stim[2][inchan]
-                L.k4 = rk_step(L, dt, self.connections, stim, 'k3')
-                #print "k4:"
-                #print L.k4*dt
 
             # final RK step
             for L in self.layers():
@@ -509,7 +495,7 @@ class Model(object):
                 #print L.z
 
                 # dispatch update event
-                model_update_event.send(sender=L, z=L.z, t=t[0]+i*dt)
+                model_update_event.send(sender=L, z=L.z, t=t[0]+(i+1)*dt)
 
             # learn connections
             for L in self.layers():
