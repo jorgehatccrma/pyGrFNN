@@ -10,7 +10,10 @@ sys.path.append('../')  # needed to run the examples from within the package fol
 
 import numpy as np
 from scipy.signal import hilbert
-import matplotlib.pyplot as plt
+
+import vis
+if vis.MPL:
+    import matplotlib.pyplot as plt
 
 from scipy.io import loadmat
 
@@ -104,7 +107,7 @@ if __name__ == '__main__':
     s, t, dt = get_stimulus(pattern_name)
 
     # Simulation
-    if RT_display:
+    if vis.MPL and RT_display:
         plt.ion()
         plt.plot(t, s);
         plt.title('Stimulus')
@@ -115,10 +118,12 @@ if __name__ == '__main__':
     model.run(s, t, dt)
     print "Run time: {:0.1f} seconds".format(time() - tic)
 
-    # TF = layer2.Z
-    # r = np.sum(TF, 0)
-    # rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
-    # r *= 0.05/rms
-    # plt.figure()
-    # plt.plot(t, np.real(r))
-    # plt.plot(t, np.real(s))
+    if vis.MPL:
+        TF = layer2.Z
+        r = np.sum(TF, 0)
+        rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
+        r *= 0.05/rms
+        plt.figure()
+        plt.plot(t, np.real(r))
+        plt.plot(t, np.real(s))
+
