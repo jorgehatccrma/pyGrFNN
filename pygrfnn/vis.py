@@ -17,14 +17,11 @@ from grfnn import grfnn_update_event
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-
-MPL = True
-try:
+from . import MPL
+if MPL:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
-except ImportError:
-    MPL = False
 
 
 # plotting decorator (checks for available matplotlib)

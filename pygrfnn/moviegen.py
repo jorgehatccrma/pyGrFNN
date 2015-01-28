@@ -12,7 +12,9 @@ from utils import find_nearest
 from scipy.io.wavfile import write
 from subprocess import call
 
-if vis.MPL:
+from pygrfnn import MPL
+if MPL:
+    import matplotlib.pyplot as plt
     from vis import tf_detail
     from matplotlib import animation
     import matplotlib as mpl

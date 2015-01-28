@@ -11,15 +11,19 @@ import sys
 sys.path.append('../')  # needed to run the examples from within the package folder
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN, grfnn_update_event
+from pygrfnn.defines import COMPLEX
+
+from pygrfnn import MPL
+if MPL:
+    import matplotlib.pyplot as plt
+
 from pygrfnn.vis import plot_connections
 from pygrfnn.vis import tf_detail
 from pygrfnn.vis import GrFNN_RT_plot
-from pygrfnn.defines import COMPLEX
 
 
 # GrFNN params
@@ -72,12 +76,12 @@ layer.save_states = True
 model = Model()
 model.add_layer(layer, input_channel=0)
 
-plt.ion()
 GrFNN_RT_plot(layer, update_interval=0.2, title='Single Layer')
 
 # run the model
 model.run(s, t, dt)
 
 # plot TF representation
-tf_detail(layer.Z, t, layer.f, None, np.max(t), np.real(s), np.abs)
-plt.show()
+if MPL:
+    tf_detail(layer.Z, t, layer.f, None, np.max(t), np.real(s), np.abs)
+    plt.show()

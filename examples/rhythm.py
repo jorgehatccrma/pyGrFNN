@@ -11,18 +11,19 @@ sys.path.append('../')  # needed to run the examples from within the package fol
 import numpy as np
 from scipy.signal import hilbert
 
-import vis
-if vis.MPL:
-    import matplotlib.pyplot as plt
 
 from scipy.io import loadmat
 
 from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
-from pygrfnn.vis import plot_connections
-from pygrfnn.vis import tf_detail
-from pygrfnn.vis import GrFNN_RT_plot
+from pygrfnn import MPL
+
+if MPL:
+    import matplotlib.pyplot as plt
+    from pygrfnn.vis import plot_connections
+    from pygrfnn.vis import tf_detail
+    from pygrfnn.vis import GrFNN_RT_plot
 
 from pyrhythm.library import get_pattern
 from daspy import Signal
@@ -40,8 +41,8 @@ def get_stimulus(pattern_name="iso"):
     else:
         p = get_pattern(pattern_name)
         sr = 22050
-        x, _ = p.as_signal(tempo=120.0,
-                         reps=12.0,
+        x, _ = p.as_signal(tempo=240.0,
+                         reps=1.0,
                          lead_silence=0.0,
                          sr=sr,
                          click_freq=1200.0,
@@ -107,7 +108,7 @@ if __name__ == '__main__':
     s, t, dt = get_stimulus(pattern_name)
 
     # Simulation
-    if vis.MPL and RT_display:
+    if MPL and RT_display:
         plt.ion()
         plt.plot(t, s);
         plt.title('Stimulus')
@@ -118,7 +119,7 @@ if __name__ == '__main__':
     model.run(s, t, dt)
     print "Run time: {:0.1f} seconds".format(time() - tic)
 
-    if vis.MPL:
+    if MPL:
         TF = layer2.Z
         r = np.sum(TF, 0)
         rms = np.sqrt(np.sum(r*np.conj(r))/len(r))

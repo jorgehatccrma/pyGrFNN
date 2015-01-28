@@ -4,7 +4,10 @@ import sys
 sys.path.append('../')  # needed to run the examples from within the package folder
 
 import numpy as np
-import matplotlib.pyplot as plt
+
+from pygrfnn import MPL
+if MPL:
+    import matplotlib.pyplot as plt
 
 from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
@@ -32,10 +35,11 @@ env[-len(ramp):] = ramp[::-1]
 s = s * env
 
 # plot stimulus
-plt.ion()
-plt.plot(t, np.real(s))
-plt.plot(t, np.imag(s))
-plt.title('Stimulus')
+if MPL:
+    plt.ion()
+    plt.plot(t, np.real(s))
+    plt.plot(t, np.imag(s))
+    plt.title('Stimulus')
 
 
 # Explore different parameter sets
@@ -69,8 +73,6 @@ conn = model.connect_layers(layer1, layer2, C, '1freq', self_connect=True)
 # plt.plot(np.angle(C[len(layer2.f)/2,:]))
 # plot_connections(conn, title='Connection matrix (abs)')
 
-
-plt.ion()
 
 GrFNN_RT_plot(layer1, update_interval=0.005, title='First Layer')
 GrFNN_RT_plot(layer2, update_interval=0.005, title='Second Layer')
