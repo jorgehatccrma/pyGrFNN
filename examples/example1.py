@@ -15,10 +15,11 @@ import matplotlib.pyplot as plt
 
 from pygrfnn.network import Model, make_connections
 from pygrfnn.oscillator import Zparam
-from pygrfnn.grfnn import GrFNN
+from pygrfnn.grfnn import GrFNN, grfnn_update_event
 from pygrfnn.vis import plot_connections
 from pygrfnn.vis import tf_detail
 from pygrfnn.vis import GrFNN_RT_plot
+from pygrfnn.defines import COMPLEX
 
 
 # GrFNN params
@@ -61,6 +62,9 @@ layer = GrFNN(params,
               num_oscs=200,
               stimulus_conn_type='linear')
 
+# store layer's states
+layer.save_states = True
+
 # print(layer)
 
 
@@ -71,14 +75,9 @@ model.add_layer(layer, input_channel=0)
 plt.ion()
 GrFNN_RT_plot(layer, update_interval=0.2, title='Single Layer')
 
-
 # run the model
 model.run(s, t, dt)
 
-
-# TF = layer.TF
-# f = layer.f
-# T = 1.0 / f
-
-# tf_detail(TF, t, f, None, np.max(t), np.real(s), np.abs)
-# plt.show()
+# plot TF representation
+tf_detail(layer.Z, t, layer.f, None, np.max(t), np.real(s), np.abs)
+plt.show()

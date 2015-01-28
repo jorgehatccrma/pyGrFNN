@@ -9,9 +9,10 @@ import warnings
 
 import numpy as np
 from functools import wraps
+
 from utils import find_nearest
 from utils import nice_log_values
-from network import model_update_event
+from grfnn import grfnn_update_event
 
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -74,7 +75,7 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
         TF  (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
-        title (str): title of the plot
+        title (string): title of the plot
         x (:class:`numpy.array`): original time domain signal. If *None*, no
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
@@ -135,7 +136,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
         TF (:class:`numpy.array`): time-frequency representation
         t (:class:`numpy.array`): time vector
         f (:class:`numpy.array`): frequency vector
-        title (str): title of the plot
+        title (string): title of the plot
         t_detail (float or list of floats): time instant(s) to be detailed
         x (:class:`numpy.array`): original time domain signal. If *None*, not
             time domain plot is shown
@@ -259,7 +260,7 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
 
     Args:
         connection (:class:`.Connection`): connection object
-        title (str): Title to be displayed
+        title (string): Title to be displayed
         f_detail (float): frequency of the detail plot
         display_op (function): operator to apply to the connection
             matrix (e.g. `numpy.abs`)
@@ -357,29 +358,32 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
     # plt.show()
 
 
-
-
+@check_mpl
 class GrFNN_RT_plot(object):
     """
-    Plot that updates in real time
+    On-line GrFNN state visualization.
+
+    Args:
+        grfnn (:class:`.network.Model`): GrFNN to be plotted
+        update_interval (float): Update interval (in seconds). This is
+            an approximation, as the update will happen as a multiple of the
+            integration step time.
+        fig_name (string): Name of the figure to use. If specified, the same
+            figure will be reused in consecutive runs. If None, a new figure
+            will be created each time the caller script runs.
+        title (string): optional title of the plot
+
+    Note:
+        This function calls ``plt.ion()`` internally to allow for on-line
+        updating of the plot
+
+    Note:
+        There is probably room for optimization here. For example,
+        http://bastibe.de/2013-05-30-speeding-up-matplotlib.html does some
+        interesting analysis/optimizations for updating plots
     """
+
     def __init__(self, grfnn, update_interval=0, fig_name=None, title=''):
-        """
-        Constructor
-
-        Args:
-            grfnn (:class:pygrfnn.network.Model): GrFNN to be plotted
-            update_interval (float): plot update interval (in seconds)
-            fig_name (string): name of the figure to use. If specified, the same
-                figure will be reused in consecutive runs. If None, a new figure
-                will be created each time the caller script runs
-            title (string): optional title of the plot
-
-        Note:
-            There is probably room for optimization here. For example,
-            http://bastibe.de/2013-05-30-speeding-up-matplotlib.html does some
-            interesting analysis/optimizations for updating plots
-        """
         self.grfnn = grfnn
         self.update_interval = update_interval
         self.title = title
@@ -397,7 +401,6 @@ class GrFNN_RT_plot(object):
         self.ax.set_title('{}'.format(self.title))
         self.fig.canvas.draw()
 
-
         self.last_update = 0
 
         def update_callback(sender, **kwargs):
@@ -405,12 +408,18 @@ class GrFNN_RT_plot(object):
             Update the plot when necessary
             """
             t = kwargs['t']
-            if t - self.last_update >= self.update_interval:
+
+            if 'force' in kwargs:
+                force = kwargs['force']
+            else:
+                force = False
+
+            if force or (t - self.last_update >= self.update_interval):
                 z = sender.z
                 self.line1.set_ydata(np.abs(z))
                 self.ax.set_title('{} (t = {:0.2f}s)'.format(self.title, t))
                 self.fig.canvas.draw()
                 self.last_update = t
 
-        model_update_event.connect(update_callback, sender=grfnn, weak=False)
+        grfnn_update_event.connect(update_callback, sender=grfnn, weak=False)
 

@@ -18,14 +18,12 @@ import sys
 
 import numpy as np
 from scipy.stats import norm
-import dispatch
 
 from utils import nl
 from utils import fareyratio
 from defines import COMPLEX, PI, PI_2
 from grfnn import compute_input
-
-model_update_event = dispatch.Signal(providing_args=["z", "t"])
+from grfnn import grfnn_update_event
 
 def make_connections(source, dest, strength=1.0, range=1.02,
                      modes=None, mode_amps=None,
@@ -453,19 +451,19 @@ class Model(object):
         if signal.ndim == 1:
             signal = np.atleast_2d(signal).T
 
-        # 1. prepare all the layers
-        for L, inchan in self._layers:
-            # FIXME
-            L.TF = np.zeros((L.f.size, num_frames), dtype=COMPLEX)
-            L.TF[:,0] = L.z
+        # dispatch update even for the initial state
+        for L in self.layers():
+            if L.save_states:
+                L.prepare_Z(len(t))
+            grfnn_update_event.send(sender=L, t=t[0], index=0)
 
-        # 2. Run "intertwined" RK4
+        # Run "intertwined" RK4
         nc = len(str(num_frames))
         msg = '\r{{0:0{0}d}}/{1}'.format(nc, num_frames)
-        for i in range(num_frames-1):
+        for i in range(1, num_frames):
 
-            s = signal[i, :]
-            s_next = signal[i+1, :]
+            s = signal[i-1, :]
+            s_next = signal[i, :]
             # input signal (need interpolated values for k2 & k3)
             # linear interpolation should be fine
             x_stim = [s, 0.5*(s+s_next), 0.5*(s+s_next), s_next]
@@ -490,12 +488,8 @@ class Model(object):
             # final RK step
             for L in self.layers():
                 L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
-                L.TF[:, i+1] = L.z
-                #print "Layer {} z:".format(L.name)
-                #print L.z
-
                 # dispatch update event
-                model_update_event.send(sender=L, z=L.z, t=t[0]+(i+1)*dt)
+                grfnn_update_event.send(sender=L, t=t[i], index=i)
 
             # learn connections
             for L in self.layers():
@@ -512,6 +506,14 @@ class Model(object):
             sys.stdout.flush()
 
         sys.stdout.write(" done!\n")
+
+        # force final update (mainly to make sure the last state is
+        # reflected in on-line displays)
+        for L in self.layers():
+            grfnn_update_event.send(sender=L,
+                                    t=t[num_frames-1],
+                                    index=num_frames-1,
+                                    force=True)
 
 
 # helper function that performs a single RK4 step (any of them)
@@ -539,6 +541,8 @@ def rk_step(layer, dt, connections, stim, pstep):
 
 
 # helper function that updates connection matrix
+# FIXME: this needs to be updated! It hasn't been touched after getting a hold
+# to Matlab's GrFNN Toolbox
 def learn_step(conn):
     """Update connection matrices
 

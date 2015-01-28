@@ -68,6 +68,11 @@ layer1 = GrFNN(zp1, frequency_range=(.375, 12), num_oscs=321, stimulus_conn_type
 layer2 = GrFNN(zp2, frequency_range=(.375, 12), num_oscs=321)
 layer1.w = 3.0
 
+# store layer's states
+layer1.save_states = True
+layer2.save_states = True
+
+
 # Model
 model = Model()
 model.add_layer(layer1, input_channel=0)
@@ -110,12 +115,10 @@ if __name__ == '__main__':
     model.run(s, t, dt)
     print "Run time: {:0.1f} seconds".format(time() - tic)
 
-    TF = layer2.TF
-    r = np.sum(TF, 0)
-
-    rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
-    r *= 0.05/rms
-
-    plt.figure()
-    plt.plot(t, np.real(r))
-    plt.plot(t, np.real(s))
+    # TF = layer2.Z
+    # r = np.sum(TF, 0)
+    # rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
+    # r *= 0.05/rms
+    # plt.figure()
+    # plt.plot(t, np.real(r))
+    # plt.plot(t, np.real(s))

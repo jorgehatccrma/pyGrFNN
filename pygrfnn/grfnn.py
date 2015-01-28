@@ -16,6 +16,9 @@ import numpy as np
 from oscillator import zdot
 from defines import COMPLEX, FLOAT
 
+import dispatch
+grfnn_update_event = dispatch.Signal(providing_args=["t", "index"])
+
 
 class GrFNN(object):
     """
@@ -77,7 +80,6 @@ class GrFNN(object):
             self.z = z0*np.ones(self.f.shape, dtype=COMPLEX)
         else:
             r0 = 0
-            # r = 0  # GrFNN Toolbox uses spontAmp.m  ...
             f0 = self.f[0]
             a, b1, b2, e = f0*zparams.alpha, f0*zparams.beta1, f0*zparams.beta2, f0*zparams.epsilon
             r = spontaneus_amplitudes(a, b1, b2, e)[-1]
@@ -92,11 +94,25 @@ class GrFNN(object):
         # input scaling factor
         self.w = self.f
 
+        # GrFNN name (e.g. sensory network)
         self.name = name
+
+        # toggle TF representation (history of GrFNN states)
+        self.save_states = False
 
     def __repr__(self):
         # return "GrFNN: {}".format(self.zparams)
         return "GrFNN: {}".format(self.name)
+
+    def prepare_Z(self, num_frames):
+        self.Z = np.zeros((self.f.size, num_frames), dtype=COMPLEX)
+
+        def update_callback(sender, **kwargs):
+            self.Z[:, kwargs['index']] = sender.z
+
+        grfnn_update_event.connect(update_callback,
+                                   sender=self,
+                                   weak=False)
 
 
 def passiveAllFreq(x, sqe):

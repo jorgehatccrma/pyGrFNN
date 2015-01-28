@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Author: jorgeh
 # @Date:   2014-12-10 23:59:17
-# @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-17 21:05:57
+# @Last Modified by:   Jorge Herrera
+# @Last Modified time: 2015-01-27 23:23:07
 
 from setuptools import setup
 
@@ -18,6 +18,7 @@ setup(name='pygrfnn',
       include_package_data=True,
       install_requires=[
           'numpy',
+          'scipy',
 #          'dispatch',
           'dispatcher',
       ],

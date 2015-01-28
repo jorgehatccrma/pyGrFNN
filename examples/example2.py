@@ -54,7 +54,7 @@ layer2 = GrFNN(params2,
                frequency_range=(50,200),
                num_oscs=200)
 
-# C = make_connections(layer1, layer2, 1, 1.005)
+# C = make_connections(layer1, layer2, 1, 1.005, self_connect=True)
 C = np.eye(len(layer2.f), len(layer1.f))
 
 
@@ -62,7 +62,7 @@ model = Model()
 model.add_layer(layer1, input_channel=0)  # layer one will receive the external stimulus
 model.add_layer(layer2)  # layer 2 is a hidden layer (no external input)
 
-conn = model.connect_layers(layer1, layer2, C, '1freq')
+conn = model.connect_layers(layer1, layer2, C, '1freq', self_connect=True)
 
 
 # plt.plot(np.abs(C[len(layer2.f)/2,:]))

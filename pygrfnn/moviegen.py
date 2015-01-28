@@ -1,14 +1,23 @@
+
 from __future__ import print_function
+
 import sys
 from tempfile import NamedTemporaryFile as TmpFile
 import shutil
-from matplotlib import animation
-import matplotlib.pyplot as plt
-from utils import find_nearest
-from vis import tf_detail
+
 import numpy as np
+
+import vis
+from utils import find_nearest
 from scipy.io.wavfile import write
 from subprocess import call
+
+if vis.MPL:
+    from vis import tf_detail
+    from matplotlib import animation
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
 
 
 def animate_tf_detail(TF,
