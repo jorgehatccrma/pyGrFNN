@@ -34,12 +34,12 @@ env[-len(ramp):] = ramp[::-1]
 # apply envelope
 s = s * env
 
-# plot stimulus
-if MPL:
-    plt.ion()
-    plt.plot(t, np.real(s))
-    plt.plot(t, np.imag(s))
-    plt.title('Stimulus')
+# # plot stimulus
+# if MPL:
+#     plt.ion()
+#     plt.plot(t, np.real(s))
+#     plt.plot(t, np.imag(s))
+#     plt.title('Stimulus')
 
 
 # Explore different parameter sets
@@ -74,7 +74,11 @@ conn = model.connect_layers(layer1, layer2, C, '1freq', self_connect=True)
 # plot_connections(conn, title='Connection matrix (abs)')
 
 
-GrFNN_RT_plot(layer1, update_interval=0.005, title='First Layer')
-GrFNN_RT_plot(layer2, update_interval=0.005, title='Second Layer')
+# GrFNN_RT_plot(layer1, update_interval=0.005, title='First Layer')
+# GrFNN_RT_plot(layer2, update_interval=0.005, title='Second Layer')
 
-model.run(s, t, dt)
+# model.run(s, t, dt)
+
+cmd = "model.run(s, t, dt)"
+import cProfile
+results = cProfile.run(cmd)
