@@ -33,7 +33,7 @@ class GrFNN(object):
         size: ``int`` -- number of oscillators in the GrFNN
         stimulus_conn_type (string) -- stimulus connection type. One of the
             following: 'linear', 'active', 'all2freq' or 'all2freq'
-        z: :class:`np.ndarray` -- initial oscillators states
+        z: :class:`np.ndarray` -- instantaneous oscillators states
         zdot: ``function`` -- parametrized oscillator differential equation
         w :class:`np.ndarray` -- input scaling factor (defaults to self.f)
 
@@ -45,7 +45,10 @@ class GrFNN(object):
                  frequency_range=(0.5, 8),
                  num_oscs=100,
                  stimulus_conn_type='linear',
-                 z0=None):
+                 z0=None,
+                 w=None,
+                 save_states=True,
+                 **kwargs):
         """ GrFNN constructor
 
         Args:
@@ -58,7 +61,10 @@ class GrFNN(object):
                 'active')
             z0 (float or :class:`array`): initial state of the GrFNN. If not
                 specified, `spontaneus_amplitudes` will be used
-
+            w (number or :class:`array`): input scaling factor (defaults to
+                `self.f` if w is `None`)
+            save_states (boolean): if `True`, each computed state will be saved
+                in `self.Z` (i.e. TF representation history is stored)
         """
 
         # array of oscillators' frequencies (in Hz)
@@ -82,7 +88,11 @@ class GrFNN(object):
             r0 = 0
             f0 = self.f[0]
             a, b1, b2, e = f0*zparams.alpha, f0*zparams.beta1, f0*zparams.beta2, f0*zparams.epsilon
-            r = spontaneus_amplitudes(a, b1, b2, e)[-1]
+            r = spontaneus_amplitudes(a, b1, b2, e)
+            if len(r) == 0:
+                r = 0
+            elif len(r) > 0:
+                r = r[-1]
             r0 = (r+r0) + 0.01 * np.random.standard_normal(self.f.shape)
             phi0 = 2 * np.pi * np.random.standard_normal(self.f.shape)
             self.z = r0 * np.exp(1j * 2 * np.pi * phi0, dtype=COMPLEX)
@@ -92,13 +102,16 @@ class GrFNN(object):
         self.zdot = zdot
 
         # input scaling factor
-        self.w = self.f
+        if w is None:
+            self.w = self.f
+        else:
+            self.w = w
 
         # GrFNN name (e.g. sensory network)
         self.name = name
 
         # toggle TF representation (history of GrFNN states)
-        self.save_states = False
+        self.save_states = save_states
 
     def __repr__(self):
         # return "GrFNN: {}".format(self.zparams)
@@ -135,6 +148,14 @@ def twoFreq(z, source_z, num, den, matrix, e, weights):
     Z2 **= den-1
     M = (e ** ((num + den - 2)/2.0)) * Z1 * Z2
     return weights * np.sum(matrix * M, 1)  # sum across columns
+
+
+# def twoFreqLog(z, source_z, num, den, matrix, e, weights):
+#     Z1, Z2 = (np.log(x) for x in np.meshgrid(source_z, np.conj(z)))
+#     M = ((num + den - 2)/2.0) * e +  num * Z1 + (den-1) * Z2
+#     M = np.exp(M)
+#     return weights * np.sum(matrix * M, 1)  # sum across columns
+
 
 
 def compute_input(layer, z, connections, x_stim=0):

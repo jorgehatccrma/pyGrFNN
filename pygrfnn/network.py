@@ -15,19 +15,24 @@ To Dos:
 """
 
 import sys
+import json
+import warnings
 
 import numpy as np
 from scipy.stats import norm
 
-from utils import nl
-from utils import fareyratio
-from defines import COMPLEX, PI, PI_2
-from grfnn import compute_input
-from grfnn import grfnn_update_event
+from pygrfnn.utils import nl
+from pygrfnn.utils import fareyratio
+from pygrfnn.defines import COMPLEX, PI, PI_2
+from pygrfnn.grfnn import GrFNN
+from pygrfnn.grfnn import compute_input
+from pygrfnn.grfnn import grfnn_update_event
+from pygrfnn.oscillator import Zparam
+
 
 def make_connections(source, dest, strength=1.0, range=1.02,
                      modes=None, mode_amps=None,
-                     complex_kernel=False, self_connect=True):
+                     complex_kernel=False, self_connect=True, **kwargs):
     """Creates a connection matrix, that connects source layer to destination
     layer.
 
@@ -240,11 +245,35 @@ class Connection(object):
         # this is only for 'log' spaced GrFNNs
         self.weights = weight * destination.f
 
-        # compute integer relationships between frequencies of both layers
-        # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
         [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
         self.RF = FT/FS
-        self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
+        if conn_type == '2freq':
+            # compute integer relationships between frequencies of both layers
+            # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
+            self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
+        elif conn_type == '3freq':
+            # if n1.id == n2.id
+            #     [X1i X2i Zi] = inputShapeInternal(n1.N);
+            #     [N1  N2  D2] = inputExponentsInternal(n1.f, X1i, X2i, Zi);
+            # else
+            #     [X1i X2i Zi] = inputShapeOther(n1.N, n2.N);
+            #     [N1  N2  D2] = inputExponentsOther(n1.f, n2.f, X1i, X2i, Zi);
+            # end
+            # con.IDX1 = X1i;
+            # con.IDX2 = X2i;
+            # con.IDZ  = Zi;
+            # con.CON1 = (N1<0);
+            # con.CON2 = (N2<0);
+            # con.NUM1 = abs(N1);
+            # con.NUM2 = abs(N2);
+            # con.DEN2 = D2;
+            # F = (abs(N1).*n1.f(X1i) + abs(N2).*n1.f(X2i) + D2.*n2.f(Zi)) ...
+            #     ./(abs(N1) + abs(N2) + D2);
+            pass
+
+
+
+
 
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
@@ -267,6 +296,9 @@ class Model(object):
     consist only of internal connections (internal to the layer or from
     other layers in the network).
 
+    Args:
+        name (string): (optional) model name (empty by default)
+
     Attributes:
         layers: ``[layer, input_channel]`` -- list of :class:`.GrFNN`
             layers and its external input channel
@@ -277,8 +309,10 @@ class Model(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, name=""):
         """Model constructor"""
+
+        self.name = name
 
         # list of GrFNN layers (and its corresponding external input channel)
         self._layers = []
@@ -563,3 +597,143 @@ def learn_step(conn):
     return -conn.d*conn.matrix + conn.k*active
 
 
+
+def modelFromJSON(definition=None):
+    """
+    Utility function to create a model (Network) from a JSON object
+
+    Args:
+        definition (string or JSON object): model definition
+    """
+    try:
+        D = json.loads(definition)
+    except TypeError:
+        # assume we received a dict (already parsed JSON)
+        D = dict(definition)
+    except Exception:
+        raise
+
+    model = Model(name=D["name"])
+    layers = dict()
+    # create layers
+    for L in D["layers"]:
+        # print "Creating layer", L["name"]
+        zp = Zparam(**L["zparams"])
+        del L["zparams"]
+
+        layer = GrFNN(zp, **L)
+        if "input_channel" in L:
+            model.add_layer(layer, input_channel=L["input_channel"])
+        else:
+            model.add_layer(layer)
+
+        layers[layer.name] = layer
+
+    # connect layers
+    for C in D["connections"]:
+        # print "Creating connection {} -> {}".format(C["source_name"], C["target_name"])
+        source = layers[C["source_name"]]
+        target = layers[C["target_name"]]
+
+
+        M = make_connections(source, target, **C)
+
+        conn_params = dict()
+        for key in ('weight', 'learn', 'self_connect'):
+            if key in C:
+                conn_params[key] = C[key]
+        c = model.connect_layers(source, target, matrix=M,
+                                 connection_type=C['connection_type'],
+                                 **conn_params)
+
+    return model
+
+
+
+if __name__ == '__main__':
+
+    rhythm_model_definition = """
+    {
+        "name": "Sensory Motor Rhythm model",
+        "layers": [
+            {
+                "name": "sensory network",
+                "zparams": {
+                    "alpha": 0.00001,
+                    "beta1": 0.0,
+                    "beta2": -2.0,
+                    "delta1": 0.0,
+                    "delta2": 0.0,
+                    "epsilon": 1.0
+                },
+                "frequency_range": [0.375, 12.0],
+                "num_oscs": 321,
+                "stimulus_conn_type": "linear",
+                "w": 3.0,
+                "input_channel": 0
+            },
+            {
+                "name": "motor network",
+                "zparams": {
+                    "alpha": -0.4,
+                    "beta1": 1.75,
+                    "beta2": -1.25,
+                    "delta1": 0.0,
+                    "delta2": 0.0,
+                    "epsilon": 1.0
+                },
+                "frequency_range": [0.375, 12.0],
+                "num_oscs": 321,
+                "stimulus_conn_type": "active"
+            }
+        ],
+        "connections": [
+            {
+                "source_name": "sensory network",
+                "target_name": "sensory network",
+                "modes": [0.333333333333, 0.5, 1, 2.0, 3.0],
+                "amps": [1, 1, 1, 1, 1],
+                "strength": 1.0,
+                "range": 1.05,
+                "connection_type": "2freq",
+                "self_connect": false,
+                "weight": 0.1
+            },
+            {
+                "source_name": "sensory network",
+                "target_name": "motor network",
+                "modes": [0.333333333333, 0.5, 1, 2.0, 3.0],
+                "amps": [1, 1, 1, 1, 1],
+                "strength": 1.25,
+                "range": 1.05,
+                "connection_type": "2freq",
+                "self_connect": true,
+                "weight": 0.4
+            },
+            {
+                "source_name": "motor network",
+                "target_name": "motor network",
+                "modes": [0.333333333333, 0.5, 1, 2.0, 3.0],
+                "amps": [1, 1, 1, 1, 1],
+                "strength": 1.0,
+                "range": 1.05,
+                "connection_type": "2freq",
+                "self_connect": false,
+                "weight": 0.1
+            },
+            {
+                "source_name": "motor network",
+                "target_name": "sensory network",
+                "modes": [0.333333333333, 0.5, 1, 2.0, 3.0],
+                "amps": [1, 1, 1, 1, 1],
+                "strength": 0.2,
+                "range": 1.05,
+                "connection_type": "2freq",
+                "self_connect": true,
+                "weight": 0.05
+            }
+        ]
+    }
+    """
+
+    rhythmModel = modelFromJSON(rhythm_model_definition)

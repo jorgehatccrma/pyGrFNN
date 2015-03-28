@@ -20,6 +20,8 @@ except ImportError:
     warnings.warn("Failed to import matplotlib. Plotting functions will be disabled.")
 
 
+from grfnn import GrFNN
+
 # from oscillator import *
 # from grfnn import *
 # from network import *

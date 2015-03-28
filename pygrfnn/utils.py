@@ -193,36 +193,27 @@ def fast_farey_ratio(f, pertol=0.01):
     if frac > 1:
         frac = 1/f
 
-    ln = 0
-    ld = 1
-    rn = 1
-    rd = 1
+    ln, ld = 0, 1
+    rn, rd = 1, 1
     l = 1
 
     if (abs(frac - ln/ld) <= frac*pertol):
-        n = ln
-        d = ld
+        n, d = ln, ld
         e = abs(frac - ln/ld)
     elif (abs(frac - rn/rd) <= frac*pertol):
-        n = rn
-        d = rd
+        n, d = rn, rd
         e = abs(frac - rn/rd)
     else:
-        cn = ln+rn
-        cd = ld+rd
+        cn, cd = ln+rn, ld+rd
         l  = l + 1
         while (abs(frac - cn/cd) > frac*pertol):
             if frac > cn/cd:
-                ln=cn
-                ld=cd
+                ln, ld = cn, cd
             else:
-                rn=cn
-                rd=cd
-            cn = ln+rn
-            cd = ld+rd
+                rn, rd = cn, cd
+            cn, cd = ln+rn, ld+rd
             l  = l + 1
-        n = cn
-        d = cd
+        n, d = cn, cd
         e = abs(frac - cn/cd)
 
     if f > 1:
