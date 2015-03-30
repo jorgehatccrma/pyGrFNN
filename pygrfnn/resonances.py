@@ -386,7 +386,13 @@ def monomialsForVectors(f1, f2, N):
     from time import time
     st = time()
 
-    cart_idx = cartesian((range(len(f1)), range(len(f1)), range(len(f2))))
+    f1 = f1.astype(np.float32)
+    f2 = f2.astype(np.float32)
+    F1, F2 = len(f1), len(f2)
+
+    cart_idx = cartesian((np.arange(F1, dtype=np.uint16),
+                          np.arange(F1, dtype=np.uint16),
+                          np.arange(F2, dtype=np.uint16)))
     print("a) Elapsed: {} secs".format(time() - st))
     cart = np.vstack((f1[cart_idx[:,0]], f1[cart_idx[:,1]], f2[cart_idx[:,2]])).T
     print("b) Elapsed: {} secs".format(time() - st))
@@ -395,46 +401,37 @@ def monomialsForVectors(f1, f2, N):
 
     sorted_idx = np.argsort(cart, axis=1)
     print("c) Elapsed: {} secs".format(time() - st))
-    cart_sorted = np.vstack((cart[range(nr),sorted_idx[:,0]],
-                             cart[range(nr),sorted_idx[:,1]],
-                             cart[range(nr),sorted_idx[:,2]])).T
+    all_points = np.zeros((nr, 2), dtype=np.float32)
+    all_points[:,0] = cart[xrange(nr),sorted_idx[:,0]] / cart[xrange(nr),sorted_idx[:,2]]
+    all_points[:,1] = cart[xrange(nr),sorted_idx[:,1]] / cart[xrange(nr),sorted_idx[:,2]]
     print("d) Elapsed: {} secs".format(time() - st))
-
-    all_points = cart_sorted[:,:2]/np.tile(cart_sorted[:,2],(2,1)).T
-    print("e) Elapsed: {} secs".format(time() - st))
 
     redundancy_map = defaultdict(list)
     for i,(a,b) in enumerate(all_points.tolist()):
         redundancy_map[(a,b)].append(i)
-    print("f) Elapsed: {} secs".format(time() - st))
+    print("e) Elapsed: {} secs".format(time() - st))
 
     points = np.array([[a,b] for a,b in redundancy_map])
-    print("g) Elapsed: {} secs".format(time() - st))
+    print("f) Elapsed: {} secs".format(time() - st))
 
     exponents = findAllMonomials(points, N)
-    print("h) Elapsed: {} secs".format(time() - st))
-
+    print("g) Elapsed: {} secs".format(time() - st))
 
     final_map = {}
     for k in exponents:
         sols = exponents[k]
-        # print sols
         x, y = points[k,0], points[k,1]
         all_points_idx = redundancy_map[(x,y)]
         for idx in all_points_idx:
-            # print idx
-            # print cart_idx[idx,:], cart[idx,:], sorted_idx[idx,:]
             final_map[(cart_idx[idx, sorted_idx[idx,0]],
-                           cart_idx[idx, sorted_idx[idx,1]],
-                           cart_idx[idx, sorted_idx[idx,2]])] = np.zeros((len(sols),3))
+                       cart_idx[idx, sorted_idx[idx,1]],
+                       cart_idx[idx, sorted_idx[idx,2]])] = np.zeros((len(sols),3), dtype=np.int16)
             for i, s in enumerate(sols):
-                # if s[sorted_idx[idx,2]] <= 0:
-                #     print "discarded solution because d <= 0: a,b,c={}; y1,y2,z={}".format(s, sorted_idx[idx])
-                #     continue
+                # TODO: should I remove negative d solutions?
                 final_map[(cart_idx[idx, sorted_idx[idx,0]],
                            cart_idx[idx, sorted_idx[idx,1]],
-                           cart_idx[idx, sorted_idx[idx,2]])][i,:] = np.array([k for k in s])
-    print("i) Elapsed: {} secs".format(time() - st))
+                           cart_idx[idx, sorted_idx[idx,2]])][i,:] = [k for k in s]
+    print("h) Elapsed: {} secs".format(time() - st))
 
     # for k in final_map:
     #     f11, f12, f22 = f1[k[0]], f1[k[1]], f2[k[2]]
