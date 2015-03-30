@@ -1,9 +1,13 @@
 
 from __future__ import division
 import math
-
-from pygrfnn.utils import memoize
 from collections import defaultdict
+
+import numpy as np
+
+from mpl_toolkits.mplot3d import Axes3D
+
+from pygrfnn.utils import memoize, cartesian
 
 # def findResonance(f1, f2, f0):
 #     """
@@ -59,90 +63,6 @@ def fareyRatio(f, tol=0.001, max_order=10):
     return recursion(f, tol=tol)
 
 
-
-from mpl_toolkits.mplot3d import Axes3D
-
-
-import numpy as np
-
-
-
-# got from http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
-def cartesian(arrays, out=None):
-    """
-    Generate a cartesian product of input arrays.
-
-    Parameters
-    ----------
-    arrays : list of array-like
-        1-D arrays to form the cartesian product of.
-    out : ndarray
-        Array to place the cartesian product in.
-
-    Returns
-    -------
-    out : ndarray
-        2-D array of shape (M, len(arrays)) containing cartesian products
-        formed of input arrays.
-
-    Examples
-    --------
-    >>> cartesian(([1, 2, 3], [4, 5], [6, 7]))
-    array([[1, 4, 6],
-           [1, 4, 7],
-           [1, 5, 6],
-           [1, 5, 7],
-           [2, 4, 6],
-           [2, 4, 7],
-           [2, 5, 6],
-           [2, 5, 7],
-           [3, 4, 6],
-           [3, 4, 7],
-           [3, 5, 6],
-           [3, 5, 7]])
-
-    """
-
-    arrays = [np.asarray(x) for x in arrays]
-    dtype = arrays[0].dtype
-
-    n = np.prod([x.size for x in arrays])
-    if out is None:
-        out = np.zeros([n, len(arrays)], dtype=dtype)
-
-    m = n / arrays[0].size
-    out[:,0] = np.repeat(arrays[0], m)
-    if arrays[1:]:
-        cartesian(arrays[1:], out=out[0:m,1:])
-        for j in xrange(1, arrays[0].size):
-            out[j*m:(j+1)*m,1:] = out[0:m,1:]
-    return out
-
-
-# # n1range = range(-16,17)
-# # n2range = range(-16,17)
-# # d_range = range(1,5)
-# n1range = range(-5,6)
-# n2range = range(-5,7)
-# d_range = range(1,5)
-
-# f0, f1, f2 = 2.0, 0.5, 3.0
-
-# lattice = cartesian((n1range, n2range, d_range))
-
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-# ax.scatter(lattice[:,0], lattice[:,1], lattice[:,2])
-
-# ax.set_xlabel('n1')
-# ax.set_ylabel('n2')
-# ax.set_zlabel('d')
-
-# plt.show()
-
-
-
-
 def resonanceSequence(N, k):
     """
     Compute resonance sequence
@@ -156,63 +76,10 @@ def resonanceSequence(N, k):
     return [(k*p, q - k*p) for p, q in pq]
 
 
-def resonancePoints(N):
-    from numpy.linalg import solve
-    from numpy.linalg import LinAlgError
-
-    lines = set([])
-    points = defaultdict(list)
-
-    def findIntersections(m,c):
-        for ml,cl in lines:
-            try:
-                p = solve([[-m, 1],[-ml, 1]], [c, cl])
-                if p[0] >= 0 and p[0] <= 1.0 and p[1] >= 0 and p[1] <= 1.0:
-                    points[(p[0],p[1])].append((m,c))
-                    points[(p[0],p[1])].append((ml,cl))
-            except LinAlgError as e:
-                # print e
-                # print [[-m, 1],[-ml, 1]]
-                pass
-
-
-    for h, k in fareySequence(N, 1):
-        for a, b in resonanceSequence(N, k):
-            if b == 0:
-                # m = np.inf
-                continue
-            else:
-                m = a/b
-                cp, cm = m*h/k, -m*h/k
-
-                if (m,cp) not in lines:
-                    findIntersections(m, cp)
-                    lines.add((m,cp))
-
-                if (m,cm) not in lines:
-                    findIntersections(m, cm)
-                    lines.add((m,cm))
-
-                if m == 0:
-                    continue
-
-                if (-1/m,-cp/m) not in lines:
-                    findIntersections(-1/m, -cp/m)
-                    lines.add((-1/m,-cp/m))
-
-                if (-1/m,-cm/m) not in lines:
-                    findIntersections(-1/m, -cm/m)
-                    lines.add((-1/m,-cm/m))
-
-    return points
-
-
-
-
 def plotResonanceDiagram(N, exclude_inf=True):
     import matplotlib.pyplot as plt
 
-    A = 0.2
+    ALPHA = 0.2
 
     plt.figure()
     ticks = set([])
@@ -221,17 +88,17 @@ def plotResonanceDiagram(N, exclude_inf=True):
         for a, b in resonanceSequence(N, k):
             if b == 0:
                 if not exclude_inf:
-                    plt.plot([h/k, h/k], [0, 1], 'b:', alpha=2*A)
-                    plt.plot([0, 1], [h/k, h/k], 'b:', alpha=2*A)
+                    plt.plot([h/k, h/k], [0, 1], 'b:', alpha=2*ALPHA)
+                    plt.plot([0, 1], [h/k, h/k], 'b:', alpha=2*ALPHA)
                 continue
             m = a/b
             cp, cm = m*h/k, -m*h/k
             x = np.array([0, h/k, 1])
             y = np.array([cp, 0, cm+m])
-            plt.plot(  x,   y, 'b', alpha=A)
-            plt.plot(  y,   x, 'b', alpha=A)
-            plt.plot(  x, 1-y, 'b', alpha=A)
-            plt.plot(1-y,   x, 'b', alpha=A)
+            plt.plot(  x,   y, 'b', alpha=ALPHA)
+            plt.plot(  y,   x, 'b', alpha=ALPHA)
+            plt.plot(  x, 1-y, 'b', alpha=ALPHA)
+            plt.plot(1-y,   x, 'b', alpha=ALPHA)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.xticks([h/k for h,k in ticks], [r"$\frac{{{:d}}}{{{:d}}}$".format(h,k) for h,k in ticks])
@@ -440,141 +307,113 @@ def h(Qx, Qy, M, tol=1e-3):
     return solutions
 
 
-def findMonomials(points, M, tol=1e-3):
+
+def findAllMonomials(points, N, tol=1e-3, return_lowest_only=True):
     """
     Arguments:
         points: 2D (L x 2) points to approximate
-        M: max order
+        N: max order
     """
-    # import matplotlib.pyplot as plt
-
-    N = 1
     L = points.shape[0]
     solutions = defaultdict(set)
 
-    # plt.plot(points[:,0], points[:,1],'ro')
-    # plt.xlim(0,1)
-    # plt.ylim(0,1)
-    # plt.show()
+    sequences = {1: set(fareySequence(1))}
+    for n in range(2, N+1):
+        sequences[n] = set(fareySequence(n)) - sequences[n-1]
 
-    while N <= M:
-        # print N
-        for h,k in fareySequence(N,1):
-            if 0 in (h,k):
+    for h,k in fareySequence(N,1):
+        if 0 in (h,k):
+            continue
+        # print h,k
+        for x,y in resonanceSequence(N, k):
+
+            # avoid 0-solutions
+            if 0 in (x,y):
                 continue
-            # print h,k
-            for x,y in resonanceSequence(N, k):
-                # print "\t", x, y
 
-                # avoid 0-solutions
-                if 0 in (x,y):
-                    continue
+            norm = np.sqrt(x**2+y**2)
 
-                norm = np.sqrt(x**2+y**2)
+            n = np.array([ y/norm, x/norm]) * np.ones_like(points)
+            n[points[:,0] < h/k, 0] *= -1  # points approaching from the left
 
-                n = np.array([ y/norm, x/norm]) * np.ones_like(points)
-                n[points[:,0] < h/k, 0] *= -1  # points approaching from the left
+            # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
+            ap = np.array([h/k, 0]) - points
+            apn = np.zeros((1,L))
+            d = np.zeros_like(points)
 
-                # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
-                av = np.array([h/k, 0]) - points
-                tmp = np.zeros((1,L))
-                d = np.zeros_like(points)
+            # apn = np.sum(n*ap, 1, keepdims=True)
+            apn = np.sum(n*ap, 1, keepdims=True)
+            d = ap - apn*n
 
-                tmp = np.sum(n*av, 1, keepdims=True)
-                d = av - tmp*n
+            ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
+            indices, = np.nonzero(np.sqrt(np.sum(d*d,1)) <= tol)
+            for i in indices:
+                if points[i,0] >= h/k:
+                    solutions[i].add((x,-y, h*x/k))
+                else:
+                    solutions[i].add((x, y, h*x/k))
 
-                # plt.plot([h/k+2*n[0,0], h/k, h/k-2*n[0,0]], [2*n[0,1], 0, 2*n[0,1]], 'k', alpha=0.3)
-                # plt.plot(np.vstack((points[:,0], points[:,0]+d[:,0])),
-                #          np.vstack((points[:,1], points[:,1]+d[:,1])), 'g')
-                # plt.show()
-                # # raw_input("...")
+    if return_lowest_only:
+        # removed = 0
+        for k in solutions:
+            # keep lowest order solutions only
+            lowest_order = 2*N
+            s = set([])
+            for sol in solutions[k]:
+                K = abs(sol[0])+abs(sol[1])+abs(sol[2])
+                if K == lowest_order:
+                    s.add(sol)
+                elif K < lowest_order:
+                    lowest_order = K
+                    # if len(s) > 0:
+                    #     print("point: ({},{}) -> removing {} for {}".format(points[k,0], points[k,1], s, sol))
+                    #     removed += len(s)
+                    s = set([sol])
+        # print("Removed {} solutions".format(removed))
 
-                ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
-                indices, = np.nonzero(np.sqrt(np.sum(d*d,1)) <= tol)
-                for i in indices:
-                    if points[i,0] >= h/k:
-                        solutions[i].add((x,-y, h*x/k))
-                    else:
-                        solutions[i].add((x, y, h*x/k))
-
-        # if len(solutions) > 0:
-        #     print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-        #     return solutions
-        N += 1
-    # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-    # raise Exception("Max order reached")
-    return solutions
-
-def findMonomials2(points, M, tol=1e-3):
-    """
-    Arguments:
-        points: 2D (L x 2) points to approximate
-        M: max order
-    """
-    # import matplotlib.pyplot as plt
-
-    N = M
-    L = points.shape[0]
-    solutions = defaultdict(set)
-
-    # plt.plot(points[:,0], points[:,1],'ro')
-    # plt.xlim(0,1)
-    # plt.ylim(0,1)
-    # plt.show()
-
-    while N <= M:
-        # print N
-        for h,k in fareySequence(N,1):
-            if 0 in (h,k):
-                continue
-            # print h,k
-            for x,y in resonanceSequence(N, k):
-                # print "\t", x, y
-
-                # avoid 0-solutions
-                if 0 in (x,y):
-                    continue
-
-                norm = np.sqrt(x**2+y**2)
-
-                n = np.array([ y/norm, x/norm]) * np.ones_like(points)
-                n[points[:,0] < h/k, 0] *= -1  # points approaching from the left
-
-                # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
-                av = np.array([h/k, 0]) - points
-                tmp = np.zeros((1,L))
-                d = np.zeros_like(points)
-
-                tmp = np.sum(n*av, 1, keepdims=True)
-                d = av - tmp*n
-
-                # plt.plot([h/k+2*n[0,0], h/k, h/k-2*n[0,0]], [2*n[0,1], 0, 2*n[0,1]], 'k', alpha=0.2)
-                # plt.plot(np.vstack((points[:,0], points[:,0]+d[:,0])),
-                #          np.vstack((points[:,1], points[:,1]+d[:,1])), 'g', alpha=0.3)
-                # plt.show()
-                # # raw_input("...")
-
-                ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
-                indices, = np.nonzero(np.sqrt(np.sum(d*d,1)) <= tol)
-                for i in indices:
-                    if points[i,0] >= h/k:
-                        solutions[i].add((x,-y, h*x/k))
-                    else:
-                        solutions[i].add((x, y, h*x/k))
-
-        # if len(solutions) > 0:
-        #     print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-        #     return solutions
-        N += 1
-    # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-    # raise Exception("Max order reached")
     return solutions
 
 
 
-# Test values
-# (1/4,1/3) -> (4,3,2)
-# (1/4,1/4) -> (2,2,1) or (3,1,1)
+def monomialsForVectors(f1, f2, N):
+    """
+    Arguments:
+        f1 (np.array_like): first frequency vector
+        f2 (np.array_like): second frequency vector
+        N: max order
+    """
+    from time import time
+    st = time()
+
+    cart_idx = cartesian((range(len(f1)), range(len(f1)), range(len(f2))))
+    print("Elapsed: {} secs".format(time() - st))
+    cart = np.vstack((f1[cart_idx[:,0]], f1[cart_idx[:,1]], f2[cart_idx[:,2]])).T
+    print("Elapsed: {} secs".format(time() - st))
+
+    nr, _ = cart_idx.shape
+
+    sorted_idx = np.argsort(cart, axis=1)
+    print("Elapsed: {} secs".format(time() - st))
+    cart_sorted = np.vstack((cart[range(nr),sorted_idx[:,0]],
+                             cart[range(nr),sorted_idx[:,1]],
+                             cart[range(nr),sorted_idx[:,2]])).T
+    print("Elapsed: {} secs".format(time() - st))
+
+    all_points = cart_sorted[:,:2]/np.tile(cart_sorted[:,2],(2,1)).T
+    print("Elapsed: {} secs".format(time() - st))
+
+    redundancy_map = defaultdict(list)
+    for i,(a,b) in enumerate(all_points.tolist()):
+        redundancy_map[(a,b)].append(i)
+    print("Elapsed: {} secs".format(time() - st))
+
+    points = np.array([[a,b] for a,b in redundancy_map])
+    print("Elapsed: {} secs".format(time() - st))
+
+    exponents = findAllMonomials(points, N)
+    print("Elapsed: {} secs".format(time() - st))
+
+    return exponents
 
 
 if __name__ == '__main__':
@@ -585,7 +424,7 @@ if __name__ == '__main__':
     max_order = 16
     tol = 1e-3
 
-    points = np.random.rand(10,2)
+    points = np.random.rand(100,2)
     # points = np.array([[ 0.20127775,  0.39311277]])
 
     num_points = points.shape[0]
@@ -598,13 +437,13 @@ if __name__ == '__main__':
             tmp0[i] = set(tmp)
     print("h took {} secs (found {:.2f}%)".format(time()-st, 100*len(tmp0)/num_points))
 
-    st = time()
-    tmp1 = findMonomials(points, max_order, tol=tol)
-    print("findMonomials took {} secs (found {:.2f}%)".format(time()-st, 100*len(tmp1)/num_points))
+    # st = time()
+    # tmp1 = findMonomials(points, max_order, tol=tol)
+    # print("findMonomials took {} secs (found {:.2f}%)".format(time()-st, 100*len(tmp1)/num_points))
 
     st = time()
-    tmp2 = findMonomials2(points, max_order, tol=tol)
-    print("findMonomials2 took {} secs (found {:.2f}%)".format(time()-st, 100*len(tmp2)/num_points))
+    tmp2 = findAllMonomials(points, max_order, tol=tol)
+    print("findAllMonomials took {} secs (found {:.2f}%)".format(time()-st, 100*len(tmp2)/num_points))
 
     # pp.pprint(points)
     # pp.pprint(tmp0)
@@ -617,11 +456,11 @@ if __name__ == '__main__':
     #         print "{:.5f} = {} \t {:.5f} ; {:.5f} ".format(a*px+b*py, c, (a*px+b*py)/c, a*px+b*py-c)
 
     clean = True
-    for k in tmp1:
-        if len(tmp1[k]-tmp2[k]) != 0:
+    for k in tmp0:
+        if len(tmp0[k]-tmp2[k]) != 0:
             clean = False
             print("Error in index {}".format(k))
-            print(tmp1[k])
+            print(tmp0[k])
             print(tmp2[k])
 
     if clean:
