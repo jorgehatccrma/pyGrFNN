@@ -376,7 +376,7 @@ def findAllMonomials(points, N, tol=1e-3, return_lowest_only=True):
 
 
 
-def monomialsForVectors(f1, f2, N):
+def monomialsForVectors(f1, f2, N, tol=1e-3):
     """
     Arguments:
         f1 (np.array_like): first frequency vector
@@ -417,7 +417,7 @@ def monomialsForVectors(f1, f2, N):
     points = np.array([[a,b] for a,b in redundancy_map])
     print("f) Elapsed: {} secs".format(time() - st))
 
-    exponents = findAllMonomials(points, N)
+    exponents = findAllMonomials(points, N, tol=tol)
     print("g) Elapsed: {} secs".format(time() - st))
 
     final_map = {}
