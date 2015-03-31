@@ -393,12 +393,15 @@ def monomialsForVectors(f1, f2, N):
     cart_idx = cartesian((np.arange(F1, dtype=np.uint16),
                           np.arange(F1, dtype=np.uint16),
                           np.arange(F2, dtype=np.uint16)))
-    print("a) Elapsed: {} secs".format(time() - st))
-    cart = np.vstack((f1[cart_idx[:,0]], f1[cart_idx[:,1]], f2[cart_idx[:,2]])).T
-    print("b) Elapsed: {} secs".format(time() - st))
 
+    # we care only when y2 > y1
+    cart_idx = cart_idx[cart_idx[:,1]>cart_idx[:,0]]
+
+    # actual frequency triplets
+    cart = np.vstack((f1[cart_idx[:,0]], f1[cart_idx[:,1]], f2[cart_idx[:,2]])).T
     nr, _ = cart_idx.shape
 
+    # sort in order to get a*x+b*y=c with 0<x,y<1
     sorted_idx = np.argsort(cart, axis=1)
     print("c) Elapsed: {} secs".format(time() - st))
     all_points = np.zeros((nr, 2), dtype=np.float32)
@@ -423,21 +426,25 @@ def monomialsForVectors(f1, f2, N):
         x, y = points[k,0], points[k,1]
         all_points_idx = redundancy_map[(x,y)]
         for idx in all_points_idx:
-            final_map[(cart_idx[idx, sorted_idx[idx,0]],
-                       cart_idx[idx, sorted_idx[idx,1]],
-                       cart_idx[idx, sorted_idx[idx,2]])] = np.zeros((len(sols),3), dtype=np.int16)
+            key = (cart_idx[idx, 0], cart_idx[idx, 1], cart_idx[idx, 2])
+            final_map[key] = np.zeros((len(sols),3), dtype=np.int16)
             for i, s in enumerate(sols):
-                # TODO: should I remove negative d solutions?
-                final_map[(cart_idx[idx, sorted_idx[idx,0]],
-                           cart_idx[idx, sorted_idx[idx,1]],
-                           cart_idx[idx, sorted_idx[idx,2]])][i,:] = [k for k in s]
+                reordered = (sorted_idx[idx,0], sorted_idx[idx,1], sorted_idx[idx,2])
+                if reordered == (0,1,2):
+                    final_map[key][i,reordered] = [s[0], s[1], s[2]]
+                elif reordered == (0,2,1):
+                    final_map[key][i,reordered] = [-s[0], s[1], s[2]]
+                elif reordered == (2,0,1):
+                    final_map[key][i,reordered] = [s[0], -s[1], s[2]]
+                else:
+                    raise Exception("Unimplemented order!")
     print("h) Elapsed: {} secs".format(time() - st))
 
     # for k in final_map:
     #     f11, f12, f22 = f1[k[0]], f1[k[1]], f2[k[2]]
     #     for i in range(final_map[k].shape[0]):
     #         n1, n2, d = final_map[k][i,:].tolist()
-    #         print("({}*{} + {}*{} - {}*{} = {})".format(f11, n1, f12, n2, f22, d, f11*n1+f12*n2-f22*d))
+    #         print("{}, {}, {}    {: 3d},{: 3d},{: 3d}   ->   {:.1f}*{: 3d} + {:.1f}*{: 3d} - {:.1f}*{: 3d} = {: 4.1f}".format(k[0], k[1], k[2], n1, n2, d, f11, n1, f12, n2, f22, d, f11*n1+f12*n2-f22*d))
 
     return final_map
 
