@@ -1,7 +1,7 @@
 
 from __future__ import division
 import math
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 import numpy as np
 
@@ -21,12 +21,12 @@ from pygrfnn.utils import memoize, cartesian
 #     pass
 
 
-# @memoize
+@memoize
 def fareySequence(N, k=1):
     """
     Generate Farey sequence of order N, less than 1/k
     """
-    assert type(N) == int, "Order (N) must be an integer"
+    # assert type(N) == int, "Order (N) must be an integer"
     a, b = 0, 1
     c, d = 1, N
     seq = [(a,b)]
@@ -63,17 +63,35 @@ def fareyRatio(f, tol=0.001, max_order=10):
     return recursion(f, tol=tol)
 
 
+# def resonanceSequenceOld(N, k):
+#     """
+#     Compute resonance sequence
+
+#     Arguments:
+#         - N (int): Order
+#         - k (int): denominator
+#     """
+
+#     pq = fareySequence(N, k)
+#     return [(k*p, q - k*p) for p, q in pq]
+
 def resonanceSequence(N, k):
     """
     Compute resonance sequence
 
     Arguments:
         - N (int): Order
-        - k (int): denominator
+        - k (int): denominator of the farey frequency resonances are attached to
     """
+    a, b = 0, 1
+    c, d = k, N-k
+    seq = [(a,b)]
+    while d >= 0:
+        seq.append((c,d))
+        tmp = int(math.floor((N+b+a)/(d+c)))
+        a, b, c, d = c, d, tmp*c-a, tmp*d-b
+    return seq
 
-    pq = fareySequence(N, k)
-    return [(k*p, q - k*p) for p, q in pq]
 
 
 def plotResonanceDiagram(N, exclude_inf=True):
@@ -376,7 +394,7 @@ def findAllMonomials(points, N, tol=1e-3, return_lowest_only=True):
 
 
 
-def monomialsForVectors(f1, f2, N, tol=1e-3):
+def monomialsForVectors(f1, f2, N=5, tol=1e-10):
     """
     Arguments:
         f1 (np.array_like): first frequency vector
@@ -403,50 +421,60 @@ def monomialsForVectors(f1, f2, N, tol=1e-3):
 
     # sort in order to get a*x+b*y=c with 0<x,y<1
     sorted_idx = np.argsort(cart, axis=1)
-    print("c) Elapsed: {} secs".format(time() - st))
+    print("a) Elapsed: {} secs".format(time() - st))
     all_points = np.zeros((nr, 2), dtype=np.float32)
     all_points[:,0] = cart[xrange(nr),sorted_idx[:,0]] / cart[xrange(nr),sorted_idx[:,2]]
     all_points[:,1] = cart[xrange(nr),sorted_idx[:,1]] / cart[xrange(nr),sorted_idx[:,2]]
-    print("d) Elapsed: {} secs".format(time() - st))
+    print("b) Elapsed: {} secs".format(time() - st))
 
     redundancy_map = defaultdict(list)
     for i,(a,b) in enumerate(all_points.tolist()):
         redundancy_map[(a,b)].append(i)
-    print("e) Elapsed: {} secs".format(time() - st))
+    print("c) Elapsed: {} secs".format(time() - st))
 
     points = np.array([[a,b] for a,b in redundancy_map])
-    print("f) Elapsed: {} secs".format(time() - st))
+    print("d) Elapsed: {} secs".format(time() - st))
 
     exponents = findAllMonomials(points, N, tol=tol)
-    print("g) Elapsed: {} secs".format(time() - st))
+    print("e) Elapsed: {} secs".format(time() - st))
 
-    final_map = {}
+
+    monomials = [defaultdict(list) for x in f2]
+    M = namedtuple('Monomials', ['indices', 'exponents'])
     for k in exponents:
-        sols = exponents[k]
         x, y = points[k,0], points[k,1]
         all_points_idx = redundancy_map[(x,y)]
-        for idx in all_points_idx:
-            key = (cart_idx[idx, 0], cart_idx[idx, 1], cart_idx[idx, 2])
-            final_map[key] = np.zeros((len(sols),3), dtype=np.int16)
-            for i, s in enumerate(sols):
+        sols = exponents[k]
+        for a, b, c in sols:
+            for idx in all_points_idx:
+                j1, j2, i = (cart_idx[idx, 0], cart_idx[idx, 1], cart_idx[idx, 2])
                 reordered = (sorted_idx[idx,0], sorted_idx[idx,1], sorted_idx[idx,2])
                 if reordered == (0,1,2):
-                    final_map[key][i,reordered] = [s[0], s[1], s[2]]
+                    n1, n2, d = a, b, c
                 elif reordered == (0,2,1):
-                    final_map[key][i,reordered] = [-s[0], s[1], s[2]]
+                    n1, d, n2 = -a, b, c
                 elif reordered == (2,0,1):
-                    final_map[key][i,reordered] = [s[0], -s[1], s[2]]
+                    d, n1, n2 = a, -b, c
                 else:
                     raise Exception("Unimplemented order!")
-    print("h) Elapsed: {} secs".format(time() - st))
+                monomials[i]['i']  += [i]
+                monomials[i]['j1'] += [j1]
+                monomials[i]['j2'] += [j2]
+                monomials[i]['d']  += [d]
+                monomials[i]['n1'] += [n1]
+                monomials[i]['n2'] += [n2]
 
-    # for k in final_map:
-    #     f11, f12, f22 = f1[k[0]], f1[k[1]], f2[k[2]]
-    #     for i in range(final_map[k].shape[0]):
-    #         n1, n2, d = final_map[k][i,:].tolist()
-    #         print("{}, {}, {}    {: 3d},{: 3d},{: 3d}   ->   {:.1f}*{: 3d} + {:.1f}*{: 3d} - {:.1f}*{: 3d} = {: 4.1f}".format(k[0], k[1], k[2], n1, n2, d, f11, n1, f12, n2, f22, d, f11*n1+f12*n2-f22*d))
+    print("f) Elapsed: {} secs".format(time() - st))
 
-    return final_map
+    # make them 2d arrays for speed up
+    for i, m in enumerate(monomials):
+        I = np.array([m['i'], m['j1'], m['j2']], dtype=np.uint).T
+        E = np.array([m['d'], m['n1'], m['n2']], dtype=np.int).T
+        monomials[i] = M(indices=I, exponents=E)
+    print("g) Elapsed: {} secs".format(time() - st))
+
+    return monomials
+
 
 
 if __name__ == '__main__':

@@ -28,6 +28,7 @@ from pygrfnn.grfnn import GrFNN
 from pygrfnn.grfnn import compute_input
 from pygrfnn.grfnn import grfnn_update_event
 from pygrfnn.oscillator import Zparam
+from pygrfnn.resonances import findAllMonomials
 
 
 def make_connections(source, dest, strength=1.0, range=1.02,
@@ -269,6 +270,10 @@ class Connection(object):
             # con.DEN2 = D2;
             # F = (abs(N1).*n1.f(X1i) + abs(N2).*n1.f(X2i) + D2.*n2.f(Zi)) ...
             #     ./(abs(N1) + abs(N2) + D2);
+
+            max_order = 10
+            mapping = monomialsForVectors(self.source.f, self.destination.f, N=5, tol=1e-10)
+
             pass
 
 
