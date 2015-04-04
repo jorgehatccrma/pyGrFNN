@@ -272,7 +272,7 @@ class Connection(object):
             #     ./(abs(N1) + abs(N2) + D2);
 
             max_order = 10
-            mapping = monomialsForVectors(self.source.f, self.destination.f, N=5, tol=1e-10)
+            self.monomials = monomialsForVectors(self.source.f, self.destination.f, N=5, tol=1e-10)
 
             pass
 
