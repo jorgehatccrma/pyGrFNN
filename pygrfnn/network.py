@@ -28,7 +28,7 @@ from pygrfnn.grfnn import GrFNN
 from pygrfnn.grfnn import compute_input
 from pygrfnn.grfnn import grfnn_update_event
 from pygrfnn.oscillator import Zparam
-from pygrfnn.resonances import findAllMonomials
+from pygrfnn.resonances import monomialsForVectors
 
 
 def make_connections(source, dest, strength=1.0, range=1.02,
@@ -253,33 +253,11 @@ class Connection(object):
             # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
             self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
         elif conn_type == '3freq':
-            # if n1.id == n2.id
-            #     [X1i X2i Zi] = inputShapeInternal(n1.N);
-            #     [N1  N2  D2] = inputExponentsInternal(n1.f, X1i, X2i, Zi);
-            # else
-            #     [X1i X2i Zi] = inputShapeOther(n1.N, n2.N);
-            #     [N1  N2  D2] = inputExponentsOther(n1.f, n2.f, X1i, X2i, Zi);
-            # end
-            # con.IDX1 = X1i;
-            # con.IDX2 = X2i;
-            # con.IDZ  = Zi;
-            # con.CON1 = (N1<0);
-            # con.CON2 = (N2<0);
-            # con.NUM1 = abs(N1);
-            # con.NUM2 = abs(N2);
-            # con.DEN2 = D2;
-            # F = (abs(N1).*n1.f(X1i) + abs(N2).*n1.f(X2i) + D2.*n2.f(Zi)) ...
-            #     ./(abs(N1) + abs(N2) + D2);
-
             max_order = 10
-            self.monomials = monomialsForVectors(self.source.f, self.destination.f, N=5, tol=1e-10)
-
-            pass
-
-
-
-
-
+            self.monomials = monomialsForVectors(self.source.f,
+                                                 self.destination.f,
+                                                 max_order,
+                                                 1e-5)
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
         if not self.self_connect:

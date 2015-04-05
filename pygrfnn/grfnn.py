@@ -43,7 +43,7 @@ class GrFNN(object):
                  zparams,
                  name='',
                  frequency_range=(0.5, 8),
-                 num_oscs=100,
+                 num_oscs=128,
                  stimulus_conn_type='linear',
                  z0=None,
                  w=None,
@@ -70,7 +70,8 @@ class GrFNN(object):
         # array of oscillators' frequencies (in Hz)
         self.f = np.logspace(np.log10(frequency_range[0]),
                              np.log10(frequency_range[1]),
-                             num_oscs)
+                             num_oscs+1)[:-1]
+
 
         # total number of oscillator in the network
         self.size = self.f.size
@@ -150,11 +151,29 @@ def twoFreq(z, source_z, num, den, matrix, e, weights):
     return weights * np.sum(matrix * M, 1)  # sum across columns
 
 
-# def twoFreqLog(z, source_z, num, den, matrix, e, weights):
-#     Z1, Z2 = (np.log(x) for x in np.meshgrid(source_z, np.conj(z)))
-#     M = ((num + den - 2)/2.0) * e +  num * Z1 + (den-1) * Z2
-#     M = np.exp(M)
-#     return weights * np.sum(matrix * M, 1)  # sum across columns
+def threeFreq(z, source_z, monomials, e):
+    x = np.zeros_like(z, dtype=complex)
+    Z = np.hstack((z, source_z, source_z))
+    for i, zi in enumerate(z):
+        try:
+            ind = monomials[i].indices.copy()
+            if ind.shape[0] == 0:
+                continue
+            exs = monomials[i].exponents.copy()
+            ec = e ** ((np.sum(np.abs(exs), axis=1)-2.0)/2.0)
+            # zm = np.choose(ind, Z)  #  there's a bug on np.choose (which is the natural way to do this, so I had to come up with a workaround)
+            ind[:,1:] += len(z)
+            ind[:,2] += len(source_z)
+            zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
+            zm[exs<0] = np.conj(zm[exs<0])
+            zm[:,0] = np.conj(zm[:,0])
+            exs = np.abs(exs)
+            exs[:,0] -= 1
+            x[i] = np.sum(ec * np.prod(zm ** exs, axis=1))
+        except:
+            import pdb
+            pdb.set_trace()
+    return x
 
 
 
@@ -218,8 +237,7 @@ def compute_input(layer, z, connections, x_stim=0):
                             layer.zparams.e,
                             conn.weights)
         elif conn_type == '3freq':
-            raise "3freq connection type not implemented. Look inside \
-                GrFNN-Toolbox-1.0/zdot.m for details."
+            x = x + threeFreq(z, source_z, conn.monomials, layer.zparams.e)
         elif conn_type == 'allfreq':
             x = x + conn.weights * \
                 matrix.dot(passiveAll2Freq(source_z, layer.zparams.sqe)) * \

@@ -7,7 +7,7 @@ import numpy as np
 
 from mpl_toolkits.mplot3d import Axes3D
 
-from pygrfnn.utils import memoize, cartesian
+from pygrfnn.utils import memoize, MemoizeMutable, cartesian
 
 # def findResonance(f1, f2, f0):
 #     """
@@ -75,6 +75,7 @@ def fareyRatio(f, tol=0.001, max_order=10):
 #     pq = fareySequence(N, k)
 #     return [(k*p, q - k*p) for p, q in pq]
 
+@memoize
 def resonanceSequence(N, k):
     """
     Compute resonance sequence
@@ -127,202 +128,202 @@ def plotResonanceDiagram(N, exclude_inf=True):
 
 
 
-def h_debug(Qx, Qy, M, tol=1e-3, debug=True):
-    """
-    Arguments:
-        Qx, Qy: 2D point to approximate
-        M: max order
-    """
+# def h_debug(Qx, Qy, M, tol=1e-3, debug=True):
+#     """
+#     Arguments:
+#         Qx, Qy: 2D point to approximate
+#         M: max order
+#     """
 
-    bounds = {}
+#     bounds = {}
 
-    if debug:
-        import matplotlib.pyplot as plt
-        plt.figure();
-        plt.plot(Qx, Qy, 'ro');
-        current_line, = plt.plot([0, 1], [0, 0], 'k', alpha=0.4)
-        current_left, = plt.plot([0, 1], [0, 0], 'g:', alpha=0.4)
-        current_right, = plt.plot([0, 1], [0, 0], 'b:', alpha=0.4)
-        current_d, = plt.plot([0, 0], [0, 0], 'm', alpha=0.6)
-        pt_hk, = plt.plot(0, 0, 'mo')
-        lines = {}
-        plt.xlim(0,1)
-        plt.ylim(0,1)
+#     if debug:
+#         import matplotlib.pyplot as plt
+#         plt.figure();
+#         plt.plot(Qx, Qy, 'ro');
+#         current_line, = plt.plot([0, 1], [0, 0], 'k', alpha=0.4)
+#         current_left, = plt.plot([0, 1], [0, 0], 'g:', alpha=0.4)
+#         current_right, = plt.plot([0, 1], [0, 0], 'b:', alpha=0.4)
+#         current_d, = plt.plot([0, 0], [0, 0], 'm', alpha=0.6)
+#         pt_hk, = plt.plot(0, 0, 'mo')
+#         lines = {}
+#         plt.xlim(0,1)
+#         plt.ylim(0,1)
 
-    N = 1
-    solutions = []
-    best_d = [np.array([1,1]), None]
+#     N = 1
+#     solutions = []
+#     best_d = [np.array([1,1]), None]
 
-    if debug:
-        print("Searching for (Qx,Qy)=({},{})".format(Qx,Qy))
+#     if debug:
+#         print("Searching for (Qx,Qy)=({},{})".format(Qx,Qy))
 
-    while N <= M:
-        # if debug:
-        #     print("N={}".format(N))
-        for h,k in fareySequence(N,1):
-            if 0 in (h,k):
-            # if k == 0:
-                # if debug:
-                #     print("skipping h/k={}/{}".format(h,k))
-                continue
-            if debug:
-                # print("h/k={}/{}".format(h,k))
-                pt_hk.set_xdata(h/k);
+#     while N <= M:
+#         # if debug:
+#         #     print("N={}".format(N))
+#         for h,k in fareySequence(N,1):
+#             if 0 in (h,k):
+#             # if k == 0:
+#                 # if debug:
+#                 #     print("skipping h/k={}/{}".format(h,k))
+#                 continue
+#             if debug:
+#                 # print("h/k={}/{}".format(h,k))
+#                 pt_hk.set_xdata(h/k);
 
-            if (h,k) not in bounds:
-                bounds[(h,k)] = {'left':np.array([-1,0]), 'right':np.array([1,0])}
-                if debug:
-                    lines[(h,k)] = {}
-                    lines[(h,k)]['left_line'], = plt.plot(None, None, 'g', alpha=0.2)
-                    lines[(h,k)]['right_line'], = plt.plot(None, None, 'b', alpha=0.2)
+#             if (h,k) not in bounds:
+#                 bounds[(h,k)] = {'left':np.array([-1,0]), 'right':np.array([1,0])}
+#                 if debug:
+#                     lines[(h,k)] = {}
+#                     lines[(h,k)]['left_line'], = plt.plot(None, None, 'g', alpha=0.2)
+#                     lines[(h,k)]['right_line'], = plt.plot(None, None, 'b', alpha=0.2)
 
-            # TODO: use binary search for speed up? Maybe not worth ...
+#             # TODO: use binary search for speed up? Maybe not worth ...
 
-            left = bounds[(h,k)]['left']
-            right = bounds[(h,k)]['right']
+#             left = bounds[(h,k)]['left']
+#             right = bounds[(h,k)]['right']
 
-            for x,y in resonanceSequence(N, k):
+#             for x,y in resonanceSequence(N, k):
 
-                if debug:
-                    current_left.set_xdata([h/k, h/k+left[0]])
-                    current_left.set_ydata([0, left[1]])
-                    current_right.set_xdata([h/k, h/k+right[0]])
-                    current_right.set_ydata([0, right[1]])
+#                 if debug:
+#                     current_left.set_xdata([h/k, h/k+left[0]])
+#                     current_left.set_ydata([0, left[1]])
+#                     current_right.set_xdata([h/k, h/k+right[0]])
+#                     current_right.set_ydata([0, right[1]])
 
-                # avoid 0-solutions
-                if 0 in (x,y):
-                    continue
+#                 # avoid 0-solutions
+#                 if 0 in (x,y):
+#                     continue
 
-                norm = np.sqrt(x**2+y**2)
+#                 norm = np.sqrt(x**2+y**2)
 
-                if h/k >= Qx:        # approach from the right
-                    a, b = x, y
-                else:                # approach from the left
-                    a, b = x,-y
+#                 if h/k >= Qx:        # approach from the right
+#                     a, b = x, y
+#                 else:                # approach from the left
+#                     a, b = x,-y
 
-                n = np.array([ -b/norm, a/norm])
-
-
-                if n.dot(np.array([-left[1], left[0]])) < 0 and \
-                   n.dot(np.array([-right[1], right[0]])) > 0:
-                    if debug:
-                        current_line.set_xdata([h/k, h/k+2*n[0]])
-                        current_line.set_ydata([0, 2*n[1]])
-
-                        plt.plot([h/k, h/k+2*n[0]], [0, 2*n[1]], 'k', alpha=0.3)
-
-                    # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
-                    av = np.array([h/k-Qx, -Qy])
-                    tmp = n.dot(av)
-                    d = av-tmp*n
-
-                    current_d.set_xdata([Qx, Qx+d[0]])
-                    current_d.set_ydata([Qy, Qy+d[1]])
-
-                    if d.dot(d) < best_d[0].dot(best_d[0]):
-                        best_d[0] = d
-                        best_d[1] = ((a, b, h*a/k))
-
-                    if np.sqrt(d.dot(d)) <= tol:
-                        ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
-                        # return (a, b, h*a/k)
-                        solutions.append((a, b, h*a/k))
-                    # the following implicitly assumes we are in the positive quadrant
-                    elif d[0] < 0:
-                        left = bounds[(h,k)]['left'] = n
-
-                        if debug:
-                            lines[(h,k)]['left_line'].set_xdata(current_line.get_xdata())
-                            lines[(h,k)]['left_line'].set_ydata(current_line.get_ydata())
-                    else:
-                        right = bounds[(h,k)]['right'] = n
-                        if debug:
-                            lines[(h,k)]['right_line'].set_xdata(current_line.get_xdata())
-                            lines[(h,k)]['right_line'].set_ydata(current_line.get_ydata())
-                    if debug:
-                        plt.show()
-                        raw_input("Press Enter to continue...")
-
-        if len(solutions) > 0:
-            if debug:
-                for a,b,c in solutions:
-                    plt.plot([c/a, c/a-b], [0, a], 'r')
-            print N, np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-            return solutions
-        N += 1
-    # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-    # raise Exception("Max order reached")
-    return solutions
+#                 n = np.array([ -b/norm, a/norm])
 
 
-def h(Qx, Qy, M, tol=1e-3):
-    """
-    Arguments:
-        Qx, Qy: 2D point to approximate
-        M: max order
-    """
+#                 if n.dot(np.array([-left[1], left[0]])) < 0 and \
+#                    n.dot(np.array([-right[1], right[0]])) > 0:
+#                     if debug:
+#                         current_line.set_xdata([h/k, h/k+2*n[0]])
+#                         current_line.set_ydata([0, 2*n[1]])
 
-    bounds = {}
+#                         plt.plot([h/k, h/k+2*n[0]], [0, 2*n[1]], 'k', alpha=0.3)
 
-    N = 1
-    solutions = []
-    best_d = [np.array([1,1]), None]
+#                     # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
+#                     av = np.array([h/k-Qx, -Qy])
+#                     tmp = n.dot(av)
+#                     d = av-tmp*n
 
-    while N <= M:
-        for h,k in fareySequence(N,1):
-            if 0 in (h,k):
-                continue
+#                     current_d.set_xdata([Qx, Qx+d[0]])
+#                     current_d.set_ydata([Qy, Qy+d[1]])
 
-            if (h,k) not in bounds:
-                bounds[(h,k)] = {'left':np.array([-1,0]), 'right':np.array([1,0])}
+#                     if d.dot(d) < best_d[0].dot(best_d[0]):
+#                         best_d[0] = d
+#                         best_d[1] = ((a, b, h*a/k))
 
-            left = bounds[(h,k)]['left']
-            right = bounds[(h,k)]['right']
+#                     if np.sqrt(d.dot(d)) <= tol:
+#                         ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
+#                         # return (a, b, h*a/k)
+#                         solutions.append((a, b, h*a/k))
+#                     # the following implicitly assumes we are in the positive quadrant
+#                     elif d[0] < 0:
+#                         left = bounds[(h,k)]['left'] = n
 
-            for x,y in resonanceSequence(N, k):
+#                         if debug:
+#                             lines[(h,k)]['left_line'].set_xdata(current_line.get_xdata())
+#                             lines[(h,k)]['left_line'].set_ydata(current_line.get_ydata())
+#                     else:
+#                         right = bounds[(h,k)]['right'] = n
+#                         if debug:
+#                             lines[(h,k)]['right_line'].set_xdata(current_line.get_xdata())
+#                             lines[(h,k)]['right_line'].set_ydata(current_line.get_ydata())
+#                     if debug:
+#                         plt.show()
+#                         raw_input("Press Enter to continue...")
 
-                # avoid 0-solutions
-                if 0 in (x,y):
-                    continue
-
-                norm = np.sqrt(x**2+y**2)
-
-                if h/k >= Qx:        # approach from the right
-                    a, b = x, y
-                else:                # approach from the left
-                    a, b = x,-y
-
-                n = np.array([ -b/norm, a/norm])
+#         if len(solutions) > 0:
+#             if debug:
+#                 for a,b,c in solutions:
+#                     plt.plot([c/a, c/a-b], [0, a], 'r')
+#             print N, np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
+#             return solutions
+#         N += 1
+#     # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
+#     # raise Exception("Max order reached")
+#     return solutions
 
 
-                if n.dot(np.array([-left[1], left[0]])) < 0 and \
-                   n.dot(np.array([-right[1], right[0]])) > 0:
+# def h(Qx, Qy, M, tol=1e-3):
+#     """
+#     Arguments:
+#         Qx, Qy: 2D point to approximate
+#         M: max order
+#     """
 
-                    # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
-                    av = np.array([h/k-Qx, -Qy])
-                    tmp = n.dot(av)
-                    d = av-tmp*n
-                    if d.dot(d) < best_d[0].dot(best_d[0]):
-                        best_d[0] = d
-                        best_d[1] = ((a, b, h*a/k))
+#     bounds = {}
 
-                    if np.sqrt(d.dot(d)) <= tol:
-                        ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
-                        # return (a, b, h*a/k)
-                        solutions.append((a, b, h*a/k))
-                    # the following implicitly assumes we are in the positive quadrant
-                    elif d[0] < 0:
-                        left = bounds[(h,k)]['left'] = n
-                    else:
-                        right = bounds[(h,k)]['right'] = n
+#     N = 1
+#     solutions = []
+#     best_d = [np.array([1,1]), None]
 
-        if len(solutions) > 0:
-            # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-            return solutions
-        N += 1
-    # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
-    # raise Exception("Max order reached")
-    return solutions
+#     while N <= M:
+#         for h,k in fareySequence(N,1):
+#             if 0 in (h,k):
+#                 continue
+
+#             if (h,k) not in bounds:
+#                 bounds[(h,k)] = {'left':np.array([-1,0]), 'right':np.array([1,0])}
+
+#             left = bounds[(h,k)]['left']
+#             right = bounds[(h,k)]['right']
+
+#             for x,y in resonanceSequence(N, k):
+
+#                 # avoid 0-solutions
+#                 if 0 in (x,y):
+#                     continue
+
+#                 norm = np.sqrt(x**2+y**2)
+
+#                 if h/k >= Qx:        # approach from the right
+#                     a, b = x, y
+#                 else:                # approach from the left
+#                     a, b = x,-y
+
+#                 n = np.array([ -b/norm, a/norm])
+
+
+#                 if n.dot(np.array([-left[1], left[0]])) < 0 and \
+#                    n.dot(np.array([-right[1], right[0]])) > 0:
+
+#                     # nomenclature inspired in http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
+#                     av = np.array([h/k-Qx, -Qy])
+#                     tmp = n.dot(av)
+#                     d = av-tmp*n
+#                     if d.dot(d) < best_d[0].dot(best_d[0]):
+#                         best_d[0] = d
+#                         best_d[1] = ((a, b, h*a/k))
+
+#                     if np.sqrt(d.dot(d)) <= tol:
+#                         ## DON'T RETURN IMMEDIATELY; THERE MIGHT BE OTHER SOLUTIONS OF THE SAME ORDER
+#                         # return (a, b, h*a/k)
+#                         solutions.append((a, b, h*a/k))
+#                     # the following implicitly assumes we are in the positive quadrant
+#                     elif d[0] < 0:
+#                         left = bounds[(h,k)]['left'] = n
+#                     else:
+#                         right = bounds[(h,k)]['right'] = n
+
+#         if len(solutions) > 0:
+#             # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
+#             return solutions
+#         N += 1
+#     # print np.sqrt(best_d[0].dot(best_d[0])), best_d[1]
+#     # raise Exception("Max order reached")
+#     return solutions
 
 
 
@@ -392,8 +393,7 @@ def findAllMonomials(points, N, tol=1e-3, return_lowest_only=True):
 
     return solutions
 
-
-
+@MemoizeMutable
 def monomialsForVectors(f1, f2, N=5, tol=1e-10):
     """
     Arguments:
@@ -404,8 +404,8 @@ def monomialsForVectors(f1, f2, N=5, tol=1e-10):
     from time import time
     st = time()
 
-    f1 = f1.astype(np.float32)
-    f2 = f2.astype(np.float32)
+    f1 = np.array([f for f in f1], dtype=np.float32)
+    f2 = np.array([f for f in f2], dtype=np.float32)
     F1, F2 = len(f1), len(f2)
 
     cart_idx = cartesian((np.arange(F1, dtype=np.uint16),
@@ -468,7 +468,7 @@ def monomialsForVectors(f1, f2, N=5, tol=1e-10):
 
     # make them 2d arrays for speed up
     for i, m in enumerate(monomials):
-        I = np.array([m['i'], m['j1'], m['j2']], dtype=np.uint).T
+        I = np.array([m['i'], m['j1'], m['j2']], dtype=np.int).T
         E = np.array([m['d'], m['n1'], m['n2']], dtype=np.int).T
         monomials[i] = M(indices=I, exponents=E)
     print("g) Elapsed: {} secs".format(time() - st))

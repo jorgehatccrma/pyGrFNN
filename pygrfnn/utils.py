@@ -4,6 +4,7 @@
 from __future__ import division
 import time
 import logging
+import cPickle
 
 import numpy as np
 from scipy.special import erf
@@ -169,6 +170,20 @@ def memoize(f):
             ret = self[key] = self.f(*key)
             return ret
     return memodict(f)
+
+
+class MemoizeMutable:
+    def __init__(self, fn):
+        self.fn = fn
+        self.memo = {}
+    def __call__(self, *args, **kwds):
+        import cPickle
+        str = cPickle.dumps(args, 1)+cPickle.dumps(kwds, 1)
+        if not self.memo.has_key(str):
+            self.memo[str] = self.fn(*args, **kwds)
+
+        return self.memo[str]
+
 
 @memoize
 def fast_farey_ratio(f, pertol=0.01):
