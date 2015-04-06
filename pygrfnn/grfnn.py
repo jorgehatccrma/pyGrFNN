@@ -155,24 +155,17 @@ def threeFreq(z, source_z, monomials, e):
     x = np.zeros_like(z, dtype=complex)
     Z = np.hstack((z, source_z, source_z))
     for i, zi in enumerate(z):
-        try:
-            ind = monomials[i].indices.copy()
-            if ind.shape[0] == 0:
-                continue
-            exs = monomials[i].exponents.copy()
-            ec = e ** ((np.sum(np.abs(exs), axis=1)-2.0)/2.0)
-            # zm = np.choose(ind, Z)  #  there's a bug on np.choose (which is the natural way to do this, so I had to come up with a workaround)
-            ind[:,1:] += len(z)
-            ind[:,2] += len(source_z)
-            zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
-            zm[exs<0] = np.conj(zm[exs<0])
-            zm[:,0] = np.conj(zm[:,0])
-            exs = np.abs(exs)
-            exs[:,0] -= 1
-            x[i] = np.sum(ec * np.prod(zm ** exs, axis=1))
-        except:
-            import pdb
-            pdb.set_trace()
+        ind = monomials[i].indices
+        if ind.shape[0] == 0:
+            continue
+        exs = monomials[i].exponents
+        ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
+        zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
+        zm[exs<0] = np.conj(zm[exs<0])
+        zm[:,0] = np.conj(zm[:,0])
+        # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))
+        # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))/ind.shape[0]
+        x[i] = np.sum(5 * ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
     return x
 
 

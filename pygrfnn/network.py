@@ -257,7 +257,7 @@ class Connection(object):
             self.monomials = monomialsForVectors(self.source.f,
                                                  self.destination.f,
                                                  max_order,
-                                                 1e-5)
+                                                 1e-10)
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
         if not self.self_connect:
