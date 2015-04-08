@@ -159,13 +159,14 @@ def threeFreq(z, source_z, monomials, e):
         if ind.shape[0] == 0:
             continue
         exs = monomials[i].exponents
-        ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
+        # ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
+        ec = e ** ((np.sum(exs, axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
         zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
         zm[exs<0] = np.conj(zm[exs<0])
         zm[:,0] = np.conj(zm[:,0])
         # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))
         # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))/ind.shape[0]
-        x[i] = np.sum(5 * ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
+        x[i] = np.sum(1 * ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
     return x
 
 

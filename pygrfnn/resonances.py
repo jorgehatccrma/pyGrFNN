@@ -345,7 +345,7 @@ def h(Qx, Qy, M, tol=1e-3):
 
 
 
-def rationalApproximation(points, N, tol=1e-3, return_lowest_only=True):
+def rationalApproximation(points, N, tol=1e-3, lowest_order_only=True):
     """
     Arguments:
         points: 2D (L x 2) points to approximate
@@ -410,7 +410,7 @@ def rationalApproximation(points, N, tol=1e-3, return_lowest_only=True):
                         solutions[i-L].add((y, x, h*x/k))
                         # print (y, x, h*x/k)
 
-    if return_lowest_only:
+    if lowest_order_only:
         # removed = 0
         for k in solutions:
             # keep lowest order solutions only
@@ -431,8 +431,8 @@ def rationalApproximation(points, N, tol=1e-3, return_lowest_only=True):
 
     return solutions
 
-@MemoizeMutable
-def monomialsForVectors(f1, f2, N=5, tol=1e-10):
+# @MemoizeMutable
+def monomialsForVectors(f1, f2, N=5, tol=1e-10, lowest_order_only=True):
     """
     Arguments:
         f1 (np.array_like): first frequency vector
@@ -463,17 +463,19 @@ def monomialsForVectors(f1, f2, N=5, tol=1e-10):
     all_points = np.zeros((nr, 2), dtype=np.float32)
     all_points[:,0] = cart[xrange(nr),sorted_idx[:,0]] / cart[xrange(nr),sorted_idx[:,2]]
     all_points[:,1] = cart[xrange(nr),sorted_idx[:,1]] / cart[xrange(nr),sorted_idx[:,2]]
+    del cart
     print("b) Elapsed: {} secs".format(time() - st))
 
     redundancy_map = defaultdict(list)
-    for i,(a,b) in enumerate(all_points.tolist()):
-        redundancy_map[(a,b)].append(i)
+    for i in xrange(all_points.shape[0]):
+        redundancy_map[(all_points[i,0],all_points[i,1])].append(i)
+    del all_points
     print("c) Elapsed: {} secs".format(time() - st))
 
     points = np.array([[a,b] for a,b in redundancy_map])
     print("d) Elapsed: {} secs".format(time() - st))
 
-    exponents = rationalApproximation(points, N, tol=tol)
+    exponents = rationalApproximation(points, N, tol=tol, lowest_order_only=lowest_order_only)
     print("e) Elapsed: {} secs".format(time() - st))
 
 
