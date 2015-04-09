@@ -391,24 +391,25 @@ def rationalApproximation(points, N, tol=1e-3, lowest_order_only=True):
             indices, = np.nonzero(np.sqrt(np.sum(d*d,1)) <= tol)
             for i in indices:
                 # print "h/k:", h , "/", k
+                # print "point:", points[i,:]
                 if points[i,0] >= h/k:
                     if i<L:
                         # print "non-flipped >= h/k"
                         solutions[i].add((x,-y, h*x/k))
-                        # print (x,-y, h*x/k)
+                        # print i, (x,-y, h*x/k)
                     elif x*(-y)<0:  # only consider solutions where (a,b) have different sign for the "flipped" points (the other solutions should have already been found for the non-flipped points)
                         # print "flipped >= h/k"
                         solutions[i-L].add((-y, x, h*x/k))
-                        # print (-y, x, h*x/k)
+                        # print i-L, (-y, x, h*x/k)
                 else:
                     if i<L:
                         # print "non-flipped < h/k"
                         solutions[i].add((x, y, h*x/k))
-                        # print (x, y, h*x/k)
-                    elif x*y<0:  # only consider solutions where (a,b) have different sign for the "flipped" points (the other solutions should have already been found for the non-flipped points)
+                        # print i, (x, y, h*x/k)
+                    elif x*y>0:  # only consider solutions where (a,b) have different sign for the "flipped" points (the other solutions should have already been found for the non-flipped points)
                         # print "flipped < h/k"
                         solutions[i-L].add((y, x, h*x/k))
-                        # print (y, x, h*x/k)
+                        # print i-L, (y, x, h*x/k)
 
     if lowest_order_only:
         # removed = 0
@@ -432,38 +433,39 @@ def rationalApproximation(points, N, tol=1e-3, lowest_order_only=True):
     return solutions
 
 # @MemoizeMutable
-def monomialsForVectors(f1, f2, N=5, tol=1e-10, lowest_order_only=True):
+def monomialsForVectors(fj, fi, N=5, tol=1e-10, lowest_order_only=True):
     """
     Arguments:
-        f1 (np.array_like): first frequency vector
-        f2 (np.array_like): second frequency vector
+        fj (np.array_like): frequency vector of the source (j in the paper)
+        fi (np.array_like): frequency vector of the target (i in the paper)
         N: max order
     """
     from time import time
     st = time()
 
-    f1 = np.array([f for f in f1], dtype=np.float32)
-    f2 = np.array([f for f in f2], dtype=np.float32)
-    F1, F2 = len(f1), len(f2)
+    fj = np.array([f for f in fj], dtype=np.float32)
+    fi = np.array([f for f in fi], dtype=np.float32)
+    Fj, Fi = len(fj), len(fi)
 
-    cart_idx = cartesian((np.arange(F1, dtype=np.uint16),
-                          np.arange(F1, dtype=np.uint16),
-                          np.arange(F2, dtype=np.uint16)))
+    cart_idx = cartesian((np.arange(Fj),
+                          np.arange(Fj),
+                          np.arange(Fi)))
 
     # we care only when y2 > y1
     cart_idx = cart_idx[cart_idx[:,1]>cart_idx[:,0]]
 
     # actual frequency triplets
-    cart = np.vstack((f1[cart_idx[:,0]], f1[cart_idx[:,1]], f2[cart_idx[:,2]])).T
+    cart = np.vstack((fj[cart_idx[:,0]], fj[cart_idx[:,1]], fi[cart_idx[:,2]])).T
     nr, _ = cart_idx.shape
 
     # sort in order to get a*x+b*y=c with 0<x,y<1
     sorted_idx = np.argsort(cart, axis=1)
+    cart.sort()
     print("a) Elapsed: {} secs".format(time() - st))
     all_points = np.zeros((nr, 2), dtype=np.float32)
-    all_points[:,0] = cart[xrange(nr),sorted_idx[:,0]] / cart[xrange(nr),sorted_idx[:,2]]
-    all_points[:,1] = cart[xrange(nr),sorted_idx[:,1]] / cart[xrange(nr),sorted_idx[:,2]]
-    del cart
+    all_points[:,0] = cart[:,0] / cart[:,2]
+    all_points[:,1] = cart[:,1] / cart[:,2]
+    # del cart
     print("b) Elapsed: {} secs".format(time() - st))
 
     redundancy_map = defaultdict(list)
@@ -479,7 +481,7 @@ def monomialsForVectors(f1, f2, N=5, tol=1e-10, lowest_order_only=True):
     print("e) Elapsed: {} secs".format(time() - st))
 
 
-    monomials = [defaultdict(list) for x in f2]
+    monomials = [defaultdict(list) for x in fi]
     M = namedtuple('Monomials', ['indices', 'exponents'])
     for k in exponents:
         x, y = points[k,0], points[k,1]
@@ -492,27 +494,31 @@ def monomialsForVectors(f1, f2, N=5, tol=1e-10, lowest_order_only=True):
                 if reordered == (0,1,2):
                     n1, n2, d = a, b, c
                 elif reordered == (0,2,1):
-                    n1, d, n2 = -a, b, c
+                    # n1, d, n2 = -a, b, c
+                    n1, n2, d = -a, c, b
                 elif reordered == (2,0,1):
-                    d, n1, n2 = a, -b, c
+                    # d, n1, n2 = a, -b, c
+                    n1, n2, d = -b, c, a
                 else:
                     raise Exception("Unimplemented order!")
-                monomials[i]['i']  += [i]
-                # monomials[i]['j1'] += [j1]
-                # monomials[i]['j2'] += [j2]
-                monomials[i]['j1'] += [j1+len(f1)]
-                monomials[i]['j2'] += [j2+len(f1)+len(f2)]
-                # monomials[i]['d']  += [d]
-                monomials[i]['d']  += [d-1]
+                if d < 0:
+                    n1, n2, d = -n1, -n2, -d
+                monomials[i]['j1'] += [j1]
+                monomials[i]['j2'] += [j2+len(fj)]  # add offset for fast look-up at run time (will use a flattened array)
+                monomials[i]['i']  += [i+len(fj)+len(fi)]   # add offset for fast look-up at run time (will use a flattened array)
                 monomials[i]['n1'] += [n1]
                 monomials[i]['n2'] += [n2]
+                # monomials[i]['d']  += [d]
+                monomials[i]['d']  += [d-1]
+
+                # print i, (a,b,c), (n1, n2, d)
 
     print("f) Elapsed: {} secs".format(time() - st))
 
     # make them 2d arrays for speed up
     for i, m in enumerate(monomials):
-        I = np.array([m['i'], m['j1'], m['j2']], dtype=np.int).T
-        E = np.array([m['d'], m['n1'], m['n2']], dtype=np.int).T
+        I = np.array([m['j1'], m['j2'], m['i']], dtype=np.int).T
+        E = np.array([m['n1'], m['n2'], m['d']], dtype=np.int).T
         monomials[i] = M(indices=I, exponents=E)
     print("g) Elapsed: {} secs".format(time() - st))
 

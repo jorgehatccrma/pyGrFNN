@@ -143,30 +143,29 @@ def active(z, sqe):
     return 1.0 / (1.0 - np.conj(z) * sqe)
 
 
-def twoFreq(z, source_z, num, den, matrix, e, weights):
+def twoFreq(z, source_z, num, den, matrix, e):
     Z1, Z2 = np.meshgrid(source_z, np.conj(z))
     Z1 **= num
     Z2 **= den-1
     M = (e ** ((num + den - 2)/2.0)) * Z1 * Z2
-    return weights * np.sum(matrix * M, 1)  # sum across columns
+    return np.sum(matrix * M, 1)  # sum across columns
 
 
 def threeFreq(z, source_z, monomials, e):
     x = np.zeros_like(z, dtype=complex)
-    Z = np.hstack((z, source_z, source_z))
+    Z = np.hstack((source_z, source_z, z))
     for i, zi in enumerate(z):
         ind = monomials[i].indices
         if ind.shape[0] == 0:
             continue
         exs = monomials[i].exponents
-        # ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
-        ec = e ** ((np.sum(exs, axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
+        ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
         zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
-        zm[exs<0] = np.conj(zm[exs<0])
-        zm[:,0] = np.conj(zm[:,0])
+        zm[exs<0] = np.conj(zm[exs<0])  # conjugate where there is a negative exponent
+        zm[:,2] = np.conj(zm[:,2])      # also conjugate the last column (z_i)
         # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))
-        # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))/ind.shape[0]
-        x[i] = np.sum(1 * ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
+        # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1)) / ind.shape[0]
+        x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
     return x
 
 
@@ -225,13 +224,14 @@ def compute_input(layer, z, connections, x_stim=0):
         if conn_type == '1freq':
             x = x + conn.weights * matrix.dot(source_z)
         elif conn_type == '2freq':
-            x = x + twoFreq(z, source_z,
-                            conn.farey_num, conn.farey_den,
-                            matrix,
-                            layer.zparams.e,
-                            conn.weights)
+            x = x + conn.weights * twoFreq(z, source_z,
+                                           conn.farey_num, conn.farey_den,
+                                           matrix,
+                                           layer.zparams.e)
         elif conn_type == '3freq':
-            x = x + threeFreq(z, source_z, conn.monomials, layer.zparams.e)
+            x = x + conn.weights * threeFreq(z, source_z,
+                                             conn.monomials,
+                                             layer.zparams.e)
         elif conn_type == 'allfreq':
             x = x + conn.weights * \
                 matrix.dot(passiveAll2Freq(source_z, layer.zparams.sqe)) * \
