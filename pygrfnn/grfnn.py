@@ -164,8 +164,8 @@ def threeFreq(z, source_z, monomials, e):
         zm[exs<0] = np.conj(zm[exs<0])  # conjugate where there is a negative exponent
         zm[:,2] = np.conj(zm[:,2])      # also conjugate the last column (z_i)
         # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))
-        # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1)) / ind.shape[0]
-        x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
+        x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1)) / ind.shape[0]
+        # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
     return x
 
 

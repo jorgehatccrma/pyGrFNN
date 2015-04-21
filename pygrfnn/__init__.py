@@ -21,6 +21,8 @@ except ImportError:
 
 
 from grfnn import GrFNN
+from oscillator import Zparam
+from network import Model
 
 # from oscillator import *
 # from grfnn import *

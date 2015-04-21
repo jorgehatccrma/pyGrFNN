@@ -432,8 +432,8 @@ def rationalApproximation(points, N, tol=1e-3, lowest_order_only=True):
 
     return solutions
 
-# @MemoizeMutable
-def monomialsForVectors(fj, fi, N=5, tol=1e-10, lowest_order_only=True):
+@MemoizeMutable
+def monomialsForVectors(fj, fi, allow_self_connect=True, N=5, tol=1e-10, lowest_order_only=True):
     """
     Arguments:
         fj (np.array_like): frequency vector of the source (j in the paper)
@@ -453,6 +453,9 @@ def monomialsForVectors(fj, fi, N=5, tol=1e-10, lowest_order_only=True):
 
     # we care only when y2 > y1
     cart_idx = cart_idx[cart_idx[:,1]>cart_idx[:,0]]
+
+    if not allow_self_connect:
+        cart_idx = cart_idx[(cart_idx[:,0] != cart_idx[:,2]) & (cart_idx[:,1] != cart_idx[:,2])]
 
     # actual frequency triplets
     cart = np.vstack((fj[cart_idx[:,0]], fj[cart_idx[:,1]], fi[cart_idx[:,2]])).T
