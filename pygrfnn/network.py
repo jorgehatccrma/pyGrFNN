@@ -250,7 +250,6 @@ class Connection(object):
         self.RF = FT/FS
         if conn_type == '2freq':
             # compute integer relationships between frequencies of both layers
-            # using Farey sequences (http://en.wikipedia.org/wiki/Farey_sequence)
             self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
         elif conn_type == '3freq':
             max_order = 10
@@ -258,7 +257,7 @@ class Connection(object):
                                                  self.destination.f,
                                                  self_connect,
                                                  max_order,
-                                                 0.5e-4, # 1e-10,
+                                                 1e-4,
                                                  lowest_order_only=False)
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0

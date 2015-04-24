@@ -432,6 +432,7 @@ def rationalApproximation(points, N, tol=1e-3, lowest_order_only=True):
 
     return solutions
 
+
 @MemoizeMutable
 def monomialsForVectors(fj, fi, allow_self_connect=True, N=5, tol=1e-10, lowest_order_only=True):
     """
@@ -508,7 +509,7 @@ def monomialsForVectors(fj, fi, allow_self_connect=True, N=5, tol=1e-10, lowest_
                     n1, n2, d = -n1, -n2, -d
                 monomials[i]['j1'] += [j1]
                 monomials[i]['j2'] += [j2+len(fj)]  # add offset for fast look-up at run time (will use a flattened array)
-                monomials[i]['i']  += [i+len(fj)+len(fi)]   # add offset for fast look-up at run time (will use a flattened array)
+                monomials[i]['i']  += [i+2*len(fj)]   # add offset for fast look-up at run time (will use a flattened array)
                 monomials[i]['n1'] += [n1]
                 monomials[i]['n2'] += [n2]
                 # monomials[i]['d']  += [d]
@@ -522,6 +523,9 @@ def monomialsForVectors(fj, fi, allow_self_connect=True, N=5, tol=1e-10, lowest_
     for i, m in enumerate(monomials):
         I = np.array([m['j1'], m['j2'], m['i']], dtype=np.int).T
         E = np.array([m['n1'], m['n2'], m['d']], dtype=np.int).T
+        # add trivial solution (1,0,1)
+        I = np.vstack((I,[i, i+Fj, i+2*Fj]))
+        E = np.vstack((E,[1, 0, 0]))
         monomials[i] = M(indices=I, exponents=E)
     print("g) Elapsed: {} secs".format(time() - st))
 
