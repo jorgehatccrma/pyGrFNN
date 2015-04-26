@@ -524,8 +524,9 @@ def monomialsForVectors(fj, fi, allow_self_connect=True, N=5, tol=1e-10, lowest_
         I = np.array([m['j1'], m['j2'], m['i']], dtype=np.int).T
         E = np.array([m['n1'], m['n2'], m['d']], dtype=np.int).T
         # add trivial solution (1,0,1)
-        I = np.vstack((I,[i, i+Fj, i+2*Fj]))
-        E = np.vstack((E,[1, 0, 0]))
+        if allow_self_connect:
+            I = np.vstack((I,[i, i+Fj, i+2*Fj]))
+            E = np.vstack((E,[1, 0, 0]))
         monomials[i] = M(indices=I, exponents=E)
     print("g) Elapsed: {} secs".format(time() - st))
 

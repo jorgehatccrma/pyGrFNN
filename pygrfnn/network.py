@@ -252,13 +252,13 @@ class Connection(object):
             # compute integer relationships between frequencies of both layers
             self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
         elif conn_type == '3freq':
-            max_order = 10
+            max_order = 3
             self.monomials = monomialsForVectors(self.source.f,
                                                  self.destination.f,
                                                  self_connect,
                                                  max_order,
-                                                 1e-4,
-                                                 lowest_order_only=False)
+                                                 5e-3,
+                                                 lowest_order_only=True)
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
         if not self.self_connect:
