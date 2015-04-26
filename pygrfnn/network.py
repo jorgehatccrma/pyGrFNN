@@ -642,7 +642,7 @@ def modelFromJSON(definition=None):
         M = make_connections(source, target, **C)
 
         conn_params = dict()
-        for key in ('weight', 'learn', 'self_connect'):
+        for key in ('weight', 'learn', 'self_connect', 'connection_params'):
             if key in C:
                 conn_params[key] = C[key]
         c = model.connect_layers(source, target, matrix=M,
