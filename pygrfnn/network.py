@@ -259,13 +259,13 @@ class Connection(object):
             tol = 5e-3
             lowest_order_only = True
 
-            if params is not None:
-                if 'max_order' in params:
-                    max_order = params['max_order']
-                if 'tol' in params:
-                    tol = params['tol']
-                if 'lowest_order_only' in params:
-                    lowest_order_only = params['lowest_order_only']
+            if conn_params is not None:
+                if 'max_order' in conn_params:
+                    max_order = conn_params['max_order']
+                if 'tol' in conn_params:
+                    tol = conn_params['tol']
+                if 'lowest_order_only' in conn_params:
+                    lowest_order_only = conn_params['lowest_order_only']
 
             print "Calculating 3freq with params: N={}, tol={}, lowest_order_only={}".format(max_order, tol, lowest_order_only)
 
