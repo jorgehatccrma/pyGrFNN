@@ -236,7 +236,7 @@ class Connection(object):
                  self_connect,
                  weight=1.0,
                  learn_params=None,
-                 params=None):
+                 conn_params=None):
         self.source = source
         self.destination = destination
         self.matrix = matrix.copy()
@@ -365,7 +365,7 @@ class Model(object):
                        weight=1.0,
                        learn=None,
                        self_connect=False,
-                       params=None):
+                       connection_params=None):
         """
         Connect two layers.
 
@@ -383,7 +383,7 @@ class Model(object):
                 learning will be performed
             self_connect (bool): whether or not to connect oscillators of the
                 same frequency. By default is `False`
-            params (dict): dictionary with connection_type specific parameters
+            connection_params (dict): dictionary with connection_type specific parameters
 
         Returns:
             :class:`.Connection`: connection object created
@@ -398,7 +398,7 @@ class Model(object):
         conn = Connection(source, destination, matrix, connection_type,
                           weight=weight, learn_params=learn,
                           self_connect=self_connect,
-                          params=params)
+                          conn_params=connection_params)
         self.connections[destination].append(conn)
 
         return conn
