@@ -235,7 +235,8 @@ class Connection(object):
                  conn_type,
                  self_connect,
                  weight=1.0,
-                 learn_params=None):
+                 learn_params=None,
+                 params=None):
         self.source = source
         self.destination = destination
         self.matrix = matrix.copy()
@@ -252,13 +253,28 @@ class Connection(object):
             # compute integer relationships between frequencies of both layers
             self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
         elif conn_type == '3freq':
+
+            # default params
             max_order = 3
+            tol = 5e-3
+            lowest_order_only = True
+
+            if params is not None:
+                if 'max_order' in params:
+                    max_order = params['max_order']
+                if 'tol' in params:
+                    tol = params['tol']
+                if 'lowest_order_only' in params:
+                    lowest_order_only = params['lowest_order_only']
+
+            print "Calculating 3freq with params: N={}, tol={}, lowest_order_only={}".format(max_order, tol, lowest_order_only)
+
             self.monomials = monomialsForVectors(self.source.f,
                                                  self.destination.f,
                                                  self_connect,
-                                                 max_order,
-                                                 5e-3,
-                                                 lowest_order_only=True)
+                                                 N=max_order,
+                                                 tol=tol,
+                                                 lowest_order_only=lowest_order_only)
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
         if not self.self_connect:
@@ -348,7 +364,8 @@ class Model(object):
                        connection_type,
                        weight=1.0,
                        learn=None,
-                       self_connect=False):
+                       self_connect=False,
+                       params=None):
         """
         Connect two layers.
 
@@ -366,6 +383,7 @@ class Model(object):
                 learning will be performed
             self_connect (bool): whether or not to connect oscillators of the
                 same frequency. By default is `False`
+            params (dict): dictionary with connection_type specific parameters
 
         Returns:
             :class:`.Connection`: connection object created
@@ -379,7 +397,8 @@ class Model(object):
 
         conn = Connection(source, destination, matrix, connection_type,
                           weight=weight, learn_params=learn,
-                          self_connect=self_connect)
+                          self_connect=self_connect,
+                          params=params)
         self.connections[destination].append(conn)
 
         return conn
