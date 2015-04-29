@@ -63,7 +63,8 @@ def check_mpl(fun):
 
 
 @check_mpl
-def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
+def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs,
+              cmap='binary', vmin=None, vmax=None):
     """tf_simple(TF, t, f, x=None, display_op=np.abs)
 
     Simple time-frequency representation. It shows the TF in the top plot and
@@ -78,6 +79,9 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
             `numpy.abs`)
+        cmap (`string`): colormap to use in the TF representation
+        vmin (float): if not `None`, defines the lower limit of the colormap
+        vmax (float): if not `None`, defines the upper limit of the colormap
 
     Note:
         Is responsibility of the caller to issue the ``plt.show()`` command if
@@ -101,7 +105,7 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
         axTF = fig.add_subplot(gs[0])
         axOnset = fig.add_subplot(gs[1], sharex=axTF)
 
-    axTF.pcolormesh(t, f, opTF, cmap='binary')
+    axTF.pcolormesh(t, f, opTF, cmap=cmap, vmin=vmin, vmax=vmax)
 
     if title is not None:
         axTF.set_title(title)
@@ -267,7 +271,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
 
 @check_mpl
 def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
-                     detail_type='polar', cmap='binary'):
+                     detail_type='polar', cmap='binary', vmin=None, vmax=None):
     """plot_connections(connection, t_detail=None, display_op=np.abs,
                         detail_type='polar')
 
@@ -280,6 +284,8 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
         detail_type (string): detail complex display type ('cartesian',
             'polar', 'magnitude' or 'phase')
         cmap (`string`): colormap to use in the TF representation
+        vmin (float): if not `None`, defines the lower limit of the colormap
+        vmax (float): if not `None`, defines the upper limit of the colormap
 
     Note:
         Is responsibility of the caller to issue the ``plt.show()``
@@ -309,6 +315,8 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
     axConn.imshow(opMat,
                      extent=[min(f_source), max(f_source), min(f_dest), max(f_dest)],
                      cmap=cmap,
+                     vmin=vmin,
+                     vmax=vmax,
                      origin='lower'
                      )
     with warnings.catch_warnings():
@@ -348,10 +356,16 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
             axDetailb.set_ylim([-np.pi, np.pi])
             axDetail.axis('tight')
         elif detail_type is 'magnitude':
+            y_min, y_max = 0, np.abs(conn)
+            if vmin is not None:
+                y_min = vmin
+            if vmax is not None:
+                y_max = vmax
             axDetail.semilogx(f_source, np.abs(conn))
             axDetail.set_xticks(nice_log_values(f_source))
             axDetail.get_xaxis().set_major_formatter(scalar_formatter)
-            axDetail.axis('tight')
+            # axDetail.axis('tight')
+            axDetail.set_ylim([y_min, y_max])
         elif detail_type is 'phase':
             axDetail.semilogx(f_source, np.angle(conn), color='r')
             axDetail.set_xticks(nice_log_values(f_source))
