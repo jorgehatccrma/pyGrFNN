@@ -464,6 +464,12 @@ def phase_portrait(alpha=0, beta1=0, beta2=0, delta1=0, delta2=0, epsilon=1.0, F
 
     """
     colormap = plt.cm.gist_heat
+
+    try:
+        len(F)
+    except:
+        F = [F]
+
     colors = [colormap(i) for i in np.linspace(0, 0.7, len(F))]
 
     alpha, beta1, beta2 = regimes[regime]
