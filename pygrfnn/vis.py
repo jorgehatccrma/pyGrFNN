@@ -482,7 +482,7 @@ def phase_portrait(alpha=0, beta1=0, beta2=0, delta1=0, delta2=0, epsilon=1.0, F
 
     # assymptote
     # plt.vlines(x=1/np.sqrt(epsilon), ymin=-1, ymax=2, color='r', linestyle=':')
-    plt.ylim(-5,5)
+    # plt.ylim(-5,5)
     ax.axhline(y=0,xmin=min(r),xmax=max(r),c="k",zorder=5, alpha=0.5)
     plt.title(r'$\alpha={:.3g}, \; \beta_1={:.3g}, \; \beta_2={:.3g}$'.format(alpha, beta1, beta2))
 
