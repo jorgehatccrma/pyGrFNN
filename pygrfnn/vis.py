@@ -9,6 +9,7 @@ import warnings
 
 import numpy as np
 from functools import wraps
+from numpy.polynomial.polynomial import polyroots
 
 from utils import find_nearest
 from utils import nice_log_values
@@ -121,7 +122,7 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs):
 
 @check_mpl
 def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
-              cmap='binary', figsize=None):
+              figsize=None, cmap='binary', vmin=None, vmax=None):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
 
     Detailed time-frequency representation. It shows the TF in the top plot. It
@@ -139,12 +140,19 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
             time domain plot is shown
         display_op (function): operator to apply to the TF representation (e.g.
             `numpy.abs`)
-        cmap (`string`): colormap to use in the TF representation
         figsize (tuple, optional): matplotlib's figure size
+        cmap (`string`): colormap to use in the TF representation
+        vmin (float): if not `None`, defines the lower limit of the colormap
+        vmax (float): if not `None`, defines the upper limit of the colormap
 
     Returns:
         (handles, ...): tuple of handles to plotted elements. They can be used
             to create animations
+
+    Note:
+        `vmin` and `vmax` are useful when comparing different time-frequency
+        representations, so thay all share the same color scale.
+
 
     Note:
         Is responsibility of the caller to issue the ``plt.show()`` command if
@@ -192,6 +200,8 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
     im = axTF.imshow(opTF,
                      extent=[min(t), max(t), min(f), max(f)],
                      cmap=cmap,
+                     vmin=vmin,
+                     vmax=vmax,
                      origin='lower'
                      )
     with warnings.catch_warnings():
@@ -211,6 +221,12 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
     # TF detail
     # find detail index
     tf_line = None
+    tf_x_min, tf_x_max = 0, np.max(opTF)
+    if vmin is not None:
+        tf_x_min = vmin
+    if vmax is not None:
+        tf_x_max = vmax
+
     if t_detail is not None:
         if isinstance(t_detail, np.ndarray):
             t_detail = t_detail.tolist()
@@ -223,7 +239,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
         axF.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
         axF.xaxis.set_ticks_position('top')
         axF.axis('tight')
-        axF.set_xlim(0, np.max(opTF))
+        axF.set_xlim(tf_x_min, tf_x_max)
         axF.yaxis.set_ticks_position('right')
         plt.setp(axF.get_xaxis().get_ticklabels(), rotation=-90 )
         axTF.hold(True)
@@ -420,3 +436,51 @@ class GrFNN_RT_plot(object):
 
         grfnn_update_event.connect(update_callback, sender=grfnn, weak=False)
 
+
+def phase_portrait(alpha, beta1, beta2, delta1, delta2, epsilon, F):
+    """
+    Args:
+        alpha (float):
+        beta1 (float):
+        beta2 (float):
+        delta1 (float):
+        delta2 (float):
+        epsilon (float):
+        F (scalar or array_like):
+
+    """
+    colormap = plt.cm.gist_heat
+    colors = [colormap(i) for i in np.linspace(0, 0.7, len(F))]
+
+    alpha, beta1, beta2 = regimes[regime]
+
+    r = np.arange(0, 1/np.sqrt(epsilon), 0.01)
+    rdot = np.add.outer(alpha * r + beta1 * r**3 + ((epsilon* beta2 * r**5)/(1 - epsilon * r**2)), F)
+
+    plt.figure()
+    ax = plt.gca()
+    ax.set_color_cycle(colors)
+    plt.plot(r, rdot, zorder=0, linewidth=2)
+
+    # assymptote
+    # plt.vlines(x=1/np.sqrt(epsilon), ymin=-1, ymax=2, color='r', linestyle=':')
+    plt.ylim(-5,5)
+    ax.axhline(y=0,xmin=min(r),xmax=max(r),c="k",zorder=5, alpha=0.5)
+    plt.title(r'$\alpha={:.3g}, \; \beta_1={:.3g}, \; \beta_2={:.3g}$'.format(alpha, beta1, beta2))
+
+    plt.xlabel(r'$r$')
+    plt.ylabel(r'$\dot{r}$', labelpad=-10)
+
+    # find roots
+    roots = [None] * len(F)
+    for i in xrange(len(F)):
+        r = polyroots([F[i], alpha, -epsilon*F[i], beta1-epsilon*alpha, 0, epsilon*(beta2-beta1)])
+        r = np.real(r[np.abs(np.imag(r)) < 1e-20])
+        r = r[(r>=0) & (r < 1/np.sqrt(epsilon))]
+        roots[i] = r
+    # print roots
+
+    plt.gca().set_color_cycle(colors)
+
+    for r in roots:
+        plt.plot(r, np.zeros_like(r), 'o', markersize=4, zorder=10)
