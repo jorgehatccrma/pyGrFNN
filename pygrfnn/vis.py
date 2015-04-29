@@ -451,7 +451,7 @@ class GrFNN_RT_plot(object):
         grfnn_update_event.connect(update_callback, sender=grfnn, weak=False)
 
 
-def phase_portrait(alpha, beta1, beta2, delta1, delta2, epsilon=1.0, F=1.0):
+def phase_portrait(alpha=0, beta1=0, beta2=0, delta1=0, delta2=0, epsilon=1.0, F=1.0):
     """
     Args:
         alpha (float):
