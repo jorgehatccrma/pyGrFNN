@@ -472,8 +472,6 @@ def phase_portrait(alpha=0, beta1=0, beta2=0, delta1=0, delta2=0, epsilon=1.0, F
 
     colors = [colormap(i) for i in np.linspace(0, 0.7, len(F))]
 
-    alpha, beta1, beta2 = regimes[regime]
-
     r = np.arange(0, 1/np.sqrt(epsilon), 0.01)
     rdot = np.add.outer(alpha * r + beta1 * r**3 + ((epsilon* beta2 * r**5)/(1 - epsilon * r**2)), F)
 
