@@ -634,20 +634,24 @@ def modelFromJSON(definition=None):
 
     # connect layers
     for C in D["connections"]:
-        # print "Creating connection {} -> {}".format(C["source_name"], C["target_name"])
-        source = layers[C["source_name"]]
-        target = layers[C["target_name"]]
+        try:
+            # print "Creating connection {} -> {}".format(C["source_name"], C["target_name"])
+            source = layers[C["source_name"]]
+            target = layers[C["target_name"]]
 
 
-        M = make_connections(source, target, **C)
+            M = make_connections(source, target, **C)
 
-        conn_params = dict()
-        for key in ('weight', 'learn', 'self_connect', 'connection_params'):
-            if key in C:
-                conn_params[key] = C[key]
-        c = model.connect_layers(source, target, matrix=M,
-                                 connection_type=C['connection_type'],
-                                 **conn_params)
+            conn_params = dict()
+            for key in ('weight', 'learn', 'self_connect', 'connection_params'):
+                if key in C:
+                    conn_params[key] = C[key]
+            c = model.connect_layers(source, target, matrix=M,
+                                     connection_type=C['connection_type'],
+                                     **conn_params)
+        except Exception as e:
+            print "Error creating connection {}".format(C)
+            print e
 
     return model
 
