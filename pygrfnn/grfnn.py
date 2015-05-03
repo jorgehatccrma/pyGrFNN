@@ -218,7 +218,7 @@ def compute_input(layer, z, connections, x_stim=0):
     #print "Processed stimulus"
     #print x
 
-    # process other inputs (internal, afferent and efferent)
+    # process coupled GrFNNs (internal, afferent and efferent)
     for (source_z, conn) in connections:
         matrix, conn_type = conn.matrix, conn.conn_type
         if conn_type == '1freq':

@@ -50,7 +50,7 @@ class Zparam(object):
         self.delta2 = delta2
         self.epsilon = epsilon
 
-        self.a = alpha + 1j * TWO_PI
+        self.a = alpha + 1j * TWO_PI  # frequency scaled, to better handle log-spacing
         self.b1 = beta1 + 1j * delta1
         self.b2 = beta2 + 1j * delta2
         self.e = epsilon
@@ -98,6 +98,9 @@ def zdot(x, z, f, zp):
     Note:
         Can work with vectors (i.e. simultaneously compute multiple oscillators).
         In that case, ``x``, ``z``, and ``f`` must have the same shape.
+
+    Todo:
+        Revise equations in the docs
 
     """
 
