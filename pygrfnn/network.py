@@ -621,10 +621,8 @@ def modelFromJSON(definition=None):
     # create layers
     for L in D["layers"]:
         # print "Creating layer", L["name"]
-        zp = Zparam(**L["zparams"])
-        del L["zparams"]
 
-        layer = GrFNN(zp, **L)
+        layer = GrFNN(**L)
         if "input_channel" in L:
             model.add_layer(layer, input_channel=L["input_channel"])
         else:

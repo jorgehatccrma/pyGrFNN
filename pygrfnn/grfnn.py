@@ -13,7 +13,7 @@ from __future__ import division
 
 import numpy as np
 
-from oscillator import zdot
+from oscillator import zdot, Zparam
 from defines import COMPLEX, FLOAT
 
 import dispatch
@@ -40,7 +40,7 @@ class GrFNN(object):
     """
 
     def __init__(self,
-                 zparams,
+                 zparams=None,
                  name='',
                  frequency_range=(0.5, 8),
                  num_oscs=128,
@@ -52,7 +52,7 @@ class GrFNN(object):
         """ GrFNN constructor
 
         Args:
-            zparams (:class:`.Zparam`): oscillator parameters
+            zparams (:class:`.Zparam` or `dict`): oscillator intrinsic parameters
             name (string): name give to the GrFNN
             frequency_range (tuple or list): lower and upper limits of the GrFNN
                 frequency range
@@ -66,6 +66,10 @@ class GrFNN(object):
             save_states (boolean): if `True`, each computed state will be saved
                 in `self.Z` (i.e. TF representation history is stored)
         """
+
+        # if zparams is not a Zparam instance, assume it's a dictionary
+	if not isinstance(zparams, Zparam):
+            zparams = Zparam(**zparams)
 
         # array of oscillators' frequencies (in Hz)
         self.f = np.logspace(np.log10(frequency_range[0]),
