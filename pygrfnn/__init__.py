@@ -6,18 +6,12 @@ A canonical model for gradient frequency neural networks.
 Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
 """
 
-__version_info__ = ('0', '0', '1')
+__version_info__ = ('0', '1', '0')
 __version__ = '.'.join(__version_info__)
 
-import warnings
-
-MPL = False
-try:
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    MPL = True
-except ImportError:
-    warnings.warn("Failed to import matplotlib. Plotting functions will be disabled.")
+import logging
+pygrfnn_logger = logging.getLogger('pygrfnn')
+pygrfnn_logger.addHandler(logging.NullHandler())
 
 
 from grfnn import GrFNN

@@ -3,8 +3,10 @@
 
 from __future__ import division
 import time
-import logging
 import cPickle
+
+import logging
+logger = logging.getLogger('pygrfnn.utils')
 
 import numpy as np
 from scipy.special import erf
@@ -12,8 +14,6 @@ from scipy.special import erf
 from defines import TWO_PI
 from defines import EPS
 from defines import FLOAT
-
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 def nl(x, gamma):
@@ -39,45 +39,9 @@ def nl(x, gamma):
     return 1.0/(1.0-gamma*x)
 
 
-def ff(x, gamma):
-    """
-    Nonlinearity of the form
-
-    .. math::
-
-        f_{\\gamma}(x) = \\frac{x}{1-\\sqrt{\\gamma} x}
-        \\frac{1}{1-\\sqrt{\\gamma} \\bar{x}}
-
-    Args:
-        x (:class:`numpy.array`): signal
-        gamma (float): Nonlinearity parameter
-
-    """
-    a = np.sqrt(gamma)
-    return x * nl(x, a) * nl(np.conj(x), a)
-
-
-def nml(x, m=0.4, gamma=1.0):
-    """
-    Nonlinearity of the form
-
-    .. math::
-
-        f_{m,\\gamma}(x) = m\\;\\mathrm{tanh}\\left(\\gamma |x|\\right)
-        \\frac{x}{|x|}
-
-    Args:
-        x (:class:`numpy.array`): signal
-        m (float): gain
-        gamma (float): Nonlinearity parameter
-    """
-    # return m * np.tanh(g*x)
-    a = np.abs(x)+EPS
-    return m*np.tanh(gamma*a)*x/a
-
-
 def nextpow2(n):
-    """Similarly to Matlab's ``nextpow2``, returns the power of 2 ``>= n``
+    """
+    Return the power of 2 ``>= n``, similarly to Matlab's ``nextpow2``
     """
     return 2 ** np.ceil(np.log2(n))
 

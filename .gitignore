@@ -5,6 +5,8 @@ vEnv/
 pygfnn_docs/_build/
 pygrfnn_docs/_build/
 docs/_build/
+docs/_static/
+docs/_templates/
 
 # random test files
 test.py

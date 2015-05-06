@@ -7,6 +7,9 @@ Note:
 
 import warnings
 
+import logging
+logger = logging.getLogger('pygrfnn.vis')
+
 import numpy as np
 from functools import wraps
 from numpy.polynomial.polynomial import polyroots
@@ -15,54 +18,46 @@ from utils import find_nearest
 from utils import nice_log_values
 from grfnn import grfnn_update_event
 
-import logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-
-from . import MPL
-if MPL:
+try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
+except ImportError:
+    warnings.warn("Failed to import matplotlib. Plotting functions will be disabled.")
 
 
-# plotting decorator (checks for available matplotlib)
-def check_mpl(fun):
-    """Decorator to check for Matplotlib availability
+
+# graphical output decorator
+def check_display(fun):
+    """Decorator to check for display capability
 
     Args:
-        fun (function): Plotting function
+        fun (function): Function to be timed
 
     Returns:
         (function): decorated function
-
-    Example: ::
-
-        from pygrfnn.vis import check_mpl
-
-        # decorate a function
-        @check_mpl
-        def my_plot(x, y):
-            plt.plot(x,y)
-
-
-        # use it as you would normally would
-        my_plot(np.arange(10), np.random.rand(10))
-
     """
     @wraps(fun)
-    def mpl_wrapper(*args, **kwargs):
-        if MPL:
-            output = fun(*args, **kwargs)
-        else:
-            logging.info('Skipping call to %s() (couldn\'t import Matplotib'
-                         ' or one of its modules)' % (fun.__name__,))
-            output = None
-        return output
+    def display_wrapper(*args, **kwargs):
+        try:
+            import matplotlib as mpl
+            import os
+            if "DISPLAY" in os.environ:
+                return fun(*args, **kwargs)
+            else:
+                warnings.warn("Couldn't find a DISPLAY, so visualizations are disabled")
+                # logging.info("Couldn't find a DISPLAY, so visualizations are disabled")
+                # FIXME: we could use Agg backend and save to file
+                # (see http://stackoverflow.com/questions/8257385/automatic-detection-of-display-availability-with-matplotlib)
+        except ImportError:
+            warnings.warn("Couldn't find a DISPLAY, so visualizations are disabled")
+            # logging.info("Couldn't import matplotlib, so visualizations are disabled")
 
-    return mpl_wrapper
+    return display_wrapper
 
 
-@check_mpl
+
+@check_display
 def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs,
               cmap='binary', vmin=None, vmax=None):
     """tf_simple(TF, t, f, x=None, display_op=np.abs)
@@ -124,7 +119,7 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs,
     # plt.show()
 
 
-@check_mpl
+@check_display
 def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
               figsize=None, cmap='binary', vmin=None, vmax=None):
     """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
@@ -269,7 +264,7 @@ def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
     return (fig, im, tf_line, t_line, detail)
 
 
-@check_mpl
+@check_display
 def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
                      detail_type='polar', cmap='binary', vmin=None, vmax=None):
     """plot_connections(connection, t_detail=None, display_op=np.abs,
@@ -313,7 +308,8 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
 
     # axConn.pcolormesh(f_source, f_dest, opMat, cmap=cmap)
     axConn.imshow(opMat,
-                     extent=[min(f_source), max(f_source), min(f_dest), max(f_dest)],
+                     extent=[min(f_source), max(f_source),
+                             min(f_dest), max(f_dest)],
                      cmap=cmap,
                      vmin=vmin,
                      vmax=vmax,
@@ -385,7 +381,7 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
     # plt.show()
 
 
-@check_mpl
+@check_display
 class GrFNN_RT_plot(object):
     """
     On-line GrFNN state visualization.
@@ -451,17 +447,15 @@ class GrFNN_RT_plot(object):
         grfnn_update_event.connect(update_callback, sender=grfnn, weak=False)
 
 
-def vector_field(alpha=0, beta1=0, beta2=0, delta1=0, delta2=0, epsilon=1.0, F=1.0):
+@check_display
+def vector_field(params, F=1.0):
     """
     Args:
-        alpha (float):
-        beta1 (float):
-        beta2 (float):
-        delta1 (float):
-        delta2 (float):
-        epsilon (float):
-        F (scalar or array_like):
+        params (`.Zparam`): oscillator's intrinsic parameters
+        F (scalar or array_like): Forcing values to plot
 
+    ToDo:
+        Add reference
     """
     colormap = plt.cm.gist_heat
 
@@ -470,35 +464,51 @@ def vector_field(alpha=0, beta1=0, beta2=0, delta1=0, delta2=0, epsilon=1.0, F=1
     except:
         F = [F]
 
+    # FIXME: customizable?
     colors = [colormap(i) for i in np.linspace(0, 0.7, len(F))]
 
-    r = np.arange(0, 1/np.sqrt(epsilon), 0.01)
-    rdot = np.add.outer(alpha * r + beta1 * r**3 + ((epsilon* beta2 * r**5)/(1 - epsilon * r**2)), F)
+    # \dot{r} = f(r, F)
+    r = np.arange(0, 1/np.sqrt(params.epsilon), 0.01)
+    rdot = np.add.outer(params.alpha * r +
+                        params.beta1 * r**3 +
+                        ((params.epsilon* params.beta2 * r**5) /
+                            (1 - params.epsilon * r**2)),
+                        F)
 
+    # plot it
     plt.figure()
     ax = plt.gca()
     ax.set_color_cycle(colors)
     plt.plot(r, rdot, zorder=0, linewidth=2)
+    plt.title(r'$\alpha={:.3g},'
+              r'\beta_1={:.3g},'
+              r'\beta_2={:.3g}$'.format(params.alpha,
+                                        params.beta1,
+                                        params.beta2))
 
-    # assymptote
+    ## assymptote
     # plt.vlines(x=1/np.sqrt(epsilon), ymin=-1, ymax=2, color='r', linestyle=':')
     # plt.ylim(-5,5)
     ax.axhline(y=0,xmin=min(r),xmax=max(r),c="k",zorder=5, alpha=0.5)
-    plt.title(r'$\alpha={:.3g}, \; \beta_1={:.3g}, \; \beta_2={:.3g}$'.format(alpha, beta1, beta2))
 
     plt.xlabel(r'$r$')
     plt.ylabel(r'$\dot{r}$', labelpad=-10)
 
-    # find roots
+    # find roots (r^*)
     roots = [None] * len(F)
     for i in xrange(len(F)):
-        r = polyroots([F[i], alpha, -epsilon*F[i], beta1-epsilon*alpha, 0, epsilon*(beta2-beta1)])
+        r = polyroots([F[i],  # ^0
+                       params.alpha,  # ^1
+                       -params.epsilon*F[i],  # ^2
+                       params.beta1-params.epsilon*params.alpha,  # ^3
+                       0,  # ^4
+                       params.epsilon*(params.beta2-params.beta1)])  # ^5
         r = np.real(r[np.abs(np.imag(r)) < 1e-20])
-        r = r[(r>=0) & (r < 1/np.sqrt(epsilon))]
+        r = r[(r>=0) & (r < 1/params.sqe)]
         roots[i] = r
     # print roots
 
+    # plot the roots
     plt.gca().set_color_cycle(colors)
-
     for r in roots:
         plt.plot(r, np.zeros_like(r), 'o', markersize=4, zorder=10)

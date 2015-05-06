@@ -16,10 +16,13 @@ import numpy as np
 from utils import nl
 from defines import TWO_PI
 
+import logging
+logger = logging.getLogger('pygrfnn.oscillator')
+
 
 class Zparam(object):
 
-    """Convenience class to encapsulate oscillator parameters.
+    """Convenience class to encapsulate oscillator intrinsic parameters.
 
     Attributes:
          a: :class:`float` -- Dampening parameter :math:`\\alpha`
@@ -99,7 +102,7 @@ def zdot(x, z, f, zp):
         Can work with vectors (i.e. simultaneously compute multiple oscillators).
         In that case, ``x``, ``z``, and ``f`` must have the same shape.
 
-    Todo:
+    ToDo:
         Revise equations in the docs
 
     """

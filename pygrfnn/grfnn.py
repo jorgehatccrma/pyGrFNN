@@ -16,6 +16,9 @@ import numpy as np
 from oscillator import zdot, Zparam
 from defines import COMPLEX, FLOAT
 
+import logging
+logger = logging.getLogger('pygrfnn.grfnn')
+
 import dispatch
 grfnn_update_event = dispatch.Signal(providing_args=["t", "index"])
 
@@ -89,10 +92,11 @@ class GrFNN(object):
         # initial oscillators states
         if z0 is not None:
             self.z = z0*np.ones(self.f.shape, dtype=COMPLEX)
-        else:
+        else:  # initialize using spontaneous amplitude
             r0 = 0
             f0 = self.f[0]
-            a, b1, b2, e = f0*zparams.alpha, f0*zparams.beta1, f0*zparams.beta2, f0*zparams.epsilon
+            a, b1, b2, e = (f0*zparams.alpha, f0*zparams.beta1,
+                            f0*zparams.beta2, f0*zparams.epsilon)
             r = spontaneus_amplitudes(a, b1, b2, e)
             if len(r) == 0:
                 r = 0
@@ -118,11 +122,21 @@ class GrFNN(object):
         # toggle TF representation (history of GrFNN states)
         self.save_states = save_states
 
+        logger.info('Created GrFNN with params {}'.format(self.zparams))
+
+
     def __repr__(self):
         # return "GrFNN: {}".format(self.zparams)
         return "GrFNN: {}".format(self.name)
 
-    def prepare_Z(self, num_frames):
+    def _prepare_Z(self, num_frames):
+        """
+        Allocate a 2D array to handle the time-frequency representation
+
+        (it is internally called upon running Model.run(), if the GrFNN's
+        `save_states == True`)
+
+        """
         self.Z = np.zeros((self.f.size, num_frames), dtype=COMPLEX)
 
         def update_callback(sender, **kwargs):
@@ -131,23 +145,46 @@ class GrFNN(object):
         grfnn_update_event.connect(update_callback,
                                    sender=self,
                                    weak=False)
+        logger.debug('Created 2D array for TFR storage in {}'.format(self.name))
 
 
 def passiveAllFreq(x, sqe):
-    # New passive function (P_new) from GrFNN-Toolbox-1.0
+    """
+    Compute passive coupling, (multi frequency signal, of unknown frequencies)
+
+    ToDo:
+        Improve documentation (add equation)
+    """
     return x / ((1.0 - x * sqe) * (1.0 - np.conj(x) * sqe))
 
 
 def passiveAll2Freq(x, sqe):
-    # passive function (P) from GrFNN-Toolbox-1.0
+    """
+    Compute passive coupling, (single frequency signal, of unknown frequency)
+
+    ToDo:
+        Improve documentation (add equation)
+    """
     return x / (1.0 - x * sqe)
 
 
 def active(z, sqe):
+    """
+    Compute active coupling
+
+    ToDo:
+        Improve documentation (add equation)
+    """
     return 1.0 / (1.0 - np.conj(z) * sqe)
 
 
 def twoFreq(z, source_z, num, den, matrix, e):
+    """
+    Compute 2-frequency coupling
+
+    ToDo:
+        Improve documentation (add equation)
+    """
     Z1, Z2 = np.meshgrid(source_z, np.conj(z))
     Z1 **= num
     Z2 **= den-1
@@ -156,6 +193,12 @@ def twoFreq(z, source_z, num, den, matrix, e):
 
 
 def threeFreq(z, source_z, monomials, e):
+    """
+    Compute 3-frequency coupling
+
+    ToDo:
+        Improve documentation (add equation)
+    """
     x = np.zeros_like(z, dtype=complex)
     Z = np.hstack((source_z, source_z, z))
     for i, zi in enumerate(z):
@@ -191,6 +234,10 @@ def compute_input(layer, z, connections, x_stim=0):
     Returns:
         :class:`numpy.array` -- array of inputs, one element per
         oscillator in the GrFNN
+
+    Note:
+        This is one of the bottlenecks, as it is called 4 times per GrFNN per
+        sample in the input
 
     Note:
         Here ``connections`` refer to inter-layer connections,

@@ -21,6 +21,9 @@ import warnings
 import numpy as np
 from scipy.stats import norm
 
+import logging
+logger = logging.getLogger('pygrfnn.network')
+
 from pygrfnn.utils import nl
 from pygrfnn.utils import fareyratio
 from pygrfnn.defines import COMPLEX, PI, PI_2
@@ -90,9 +93,12 @@ def make_connections(source, dest, strength=1.0, range=1.02,
 
     if modes is None:
         modes = [1]
+        logger.info('No modes received. Setting single mode 1:1')
 
     if mode_amps is None:
         mode_amps = [1.0] * len(modes)
+        logger.info('No mode amplitudes received. '
+                    'Setting all modes to amplitude of 1')
 
     assert len(modes) == len(mode_amps)
 
@@ -115,6 +121,11 @@ def make_connections(source, dest, strength=1.0, range=1.02,
             Q[RF == 1] = 0
 
         conns += R * np.exp(1j*Q)
+
+    logger.info(("Created connection matrix between"
+                     " '{}' and '{}' ({}x{})").format(source.name,
+                                                      dest.name,
+                                                      *conns.shape))
 
     return strength * conns
 
@@ -159,6 +170,10 @@ class Cparam(object):
         k: :class:`float` -- learning rate :math:`\\kappa`
         e: :class:`float` -- Coupling strength :math:`\\varepsilon`
 
+    ToDo:
+        Revise this (learning is probably broke, as I haven't updated it in a
+        while)
+
     """
 
     def __init__(self, lmbda=-1.0, mu1=0.0, mu2=0.0,
@@ -175,14 +190,15 @@ class Cparam(object):
             epsilon (float): :math:`\\varepsilon` (defaults to: 1.0)
 
         """
-
+        logger.warning('Apparently you want to use learning (plasticity). '
+                       'This feature is probably not working properly '
+                       '(if at all). YOU HAVE BEEN WARNED!')
         self.l = lmbda
         self.m1 = mu1
         self.m2 = mu2
         self.k = kappa
         self.e = epsilon
         self.sqe = np.sqrt(self.e)
-
 
     def __repr__(self):
         return  "Cparams:\n" \
@@ -249,11 +265,26 @@ class Connection(object):
 
         [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
         self.RF = FT/FS
+
+        # if not self.self_connect:
+        #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
+        if not self.self_connect:
+            self.matrix[self.RF==1.0] = 0
+
+
         if conn_type == '2freq':
             # compute integer relationships between frequencies of both layers
-            self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, 0.05)
-        elif conn_type == '3freq':
+            tol = 0.05
+            if conn_params is not None:
+                if 'tol' in connection_params:
+                    tol = connection_params['tol']
+            logger.info('Setting up 2-freq coupling between '
+                         '"{}" and "{}", using tol={}'.format(source.name,
+                                                              destination.name,
+                                                              tol))
+            self.farey_num, self.farey_den, _, _ = fareyratio(self.RF, tol)
 
+        elif conn_type == '3freq':
             # default params
             max_order = 3
             tol = 5e-3
@@ -267,7 +298,14 @@ class Connection(object):
                 if 'lowest_order_only' in conn_params:
                     lowest_order_only = conn_params['lowest_order_only']
 
-            print "Calculating 3freq with params: N={}, tol={}, lowest_order_only={}".format(max_order, tol, lowest_order_only)
+            logger.info('Setting up 3-freq coupling between '
+                        '"{}" and "{}", with params N={}, '
+                        'tol = {} and '
+                        'lowest_order_only = {}'.format(source.name,
+                                                        destination.name,
+                                                        max_order,
+                                                        tol,
+                                                        lowest_order_only))
 
             self.monomials = monomialsForVectors(self.source.f,
                                                  self.destination.f,
@@ -275,10 +313,15 @@ class Connection(object):
                                                  N=max_order,
                                                  tol=tol,
                                                  lowest_order_only=lowest_order_only)
-        # if not self.self_connect:
-        #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
-        if not self.self_connect:
-            self.matrix[self.RF==1.0] = 0
+
+            def avg():
+                a = 0
+                for i, m in enumerate(self.monomials):
+                    a += m.indices.shape[0]
+                    # logger.debug("{}: {}".format(i, m.indices.shape))
+                return a/len(self.monomials)
+            logger.info('Found {} monomials per oscillator (avg)'.format(avg()))
+
 
     def __repr__(self):
         return "Connection from {0} " \
@@ -327,6 +370,9 @@ class Model(object):
                                              len(self.connections))
 
     def layers(self):
+        """
+        Return a list of GrFNNs in the model
+        """
         return [t[0] for t in self._layers]
 
     def add_layer(self, layer, input_channel=None):
@@ -491,10 +537,11 @@ class Model(object):
         # dispatch update even for the initial state
         for L in self.layers():
             if L.save_states:
-                L.prepare_Z(len(t))
+                L._prepare_Z(len(t))
+                logger.info('"{}" ready to store TFR'.format(L.name))
             grfnn_update_event.send(sender=L, t=t[0], index=0)
 
-        # Run "intertwined" RK4
+        # Run fixed step RK4
         nc = len(str(num_frames))
         msg = '\r{{0:0{0}d}}/{1}'.format(nc, num_frames)
         for i in range(1, num_frames):
@@ -589,6 +636,10 @@ def learn_step(conn):
     Returns:
         (:class:`np.ndarray`): derivative of connections (to use in
             connection update rule)
+
+    ToDo:
+        Revise (learning needs to be updated)
+
     """
     # TODO: test
     e = conn.destination.zparams.e
