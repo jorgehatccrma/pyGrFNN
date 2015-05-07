@@ -50,7 +50,8 @@ class Zparam(object):
         self.delta2 = delta2
         self.epsilon = epsilon
 
-        self.a = alpha + 1j * TWO_PI  # frequency scaled, to better handle log-spacing
+        # frequency scaled, to better handle log-spacing
+        self.a = alpha + 1j * TWO_PI
         self.b1 = beta1 + 1j * delta1
         self.b2 = beta2 + 1j * delta2
         self.e = epsilon

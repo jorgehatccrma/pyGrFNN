@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Author: jorgeh
 # @Date:   2014-12-10 23:59:17
-# @Last Modified by:   Jorge Herrera
-# @Last Modified time: 2015-01-27 23:23:07
+# @Last Modified by:   jorgeh
+# @Last Modified time: 2015-05-06 23:32:39
 
 from setuptools import setup
 
@@ -13,15 +13,20 @@ setup(name='pygrfnn',
       url='jorgeh@ccrma-stanford.edu:/user/j/jorgeh/git/pygrfnn.git',
       author='Jorge Herrera',
       author_email='jorgeh@ccrma.stanford.edu',
-      license='MIT',
+      license='BSD',
       packages=['pygrfnn'],
       include_package_data=True,
       install_requires=[
           'numpy',
           'scipy',
-#          'dispatch',
+          # 'matplolib',  # we'll not make this a requirement, as sometimes it is problematic to install
           'dispatcher',
       ],
+      extras_require = {
+        'mpl':  ["matplotlib",],
+        'tests':  ["nose",],
+        'docs':  ["sphinx", "sphinxcontrib-napoleon", "sphinx_rtd_theme",],
+      }
       # setup_requires=...,
       # dependency_links=...,
       zip_safe=False
