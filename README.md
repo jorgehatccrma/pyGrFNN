@@ -8,8 +8,6 @@ Date    : May, 2014
 Dependencies
 ------------
 
- <!-- - PyDSTool -->
- <!-- - Numba? -->
  - NumPy
  - SciPy
  - Matplotlib
