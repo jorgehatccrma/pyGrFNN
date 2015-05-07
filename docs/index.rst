@@ -6,26 +6,25 @@
 pyGrFNN documentation
 =====================
 
-**pyGrFNN** is a pure Python implementation of a Gradient Frequency Neural
-Network (GrFNN), introduced by Large, Almonte and Velasco in
+**pyGrFNN** (pronounced "pie-griffin") is a pure Python implementation of a
+Gradient Frequency Neural Network (GrFNN), introduced by Large, Almonte and
+Velasco in
 
    Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
    *A canonical model for gradient frequency neural networks.*
    **Physica D: Nonlinear Phenomena**, 239(12):905-911, 2010.
 
-These networks can be used to compute a time-frequency representation (TFR) of
-an input signal (e.g. audio or an onset signal). Unlike other TFRs, GrFNNs can
-generate energy at frequencies not present in the input signal via mode-locking.
-This property allows them to show behaviors similar to ones documented in music
-perception literature, making them good candidates for computational models of
-human perception.
+These networks are perceptual models that can be used to compute a
+time-frequency representation (TFR) of an input signal (e.g. audio or an onset
+signal). Unlike other TFRs, GrFNNs can generate energy at frequencies not
+present in the input signal via mode-locking.
 
+If you need to cite this package, please use the following reference:
 
-The code is loosely based on the *Nonlinear Time-Frequency Transformation
-Workbench* (unpublished), Matlab code obtained from Marc Velasco on early 2014.
-Compared to that code, this code base is incomplete, as I'm primarily interested
-in rhythm processing. That said, the package has been designed to be easily
-extended.
+   Jorge Herrera, Ge Wang and Edward Large. *GrFNNs as a Framework For Nonlinear
+   Audio Signal Processing.* **Proceedings of the 16th International Society for
+   Music Information Retrieval Conference (ISMIR 2015)**, Malaga, Spain.
+
 
 .. Contents:
 
