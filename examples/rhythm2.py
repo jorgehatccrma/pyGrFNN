@@ -17,13 +17,11 @@ from scipy.io import loadmat
 from pygrfnn.network import Model, make_connections, modelFromJSON
 from pygrfnn.oscillator import Zparam
 from pygrfnn.grfnn import GrFNN
-from pygrfnn import MPL
 
-if MPL:
-    import matplotlib.pyplot as plt
-    from pygrfnn.vis import plot_connections
-    from pygrfnn.vis import tf_detail
-    from pygrfnn.vis import GrFNN_RT_plot
+import matplotlib.pyplot as plt
+from pygrfnn.vis import plot_connections
+from pygrfnn.vis import tf_detail
+from pygrfnn.vis import GrFNN_RT_plot
 
 from pyrhythm.library import get_pattern
 from daspy import Signal
@@ -163,7 +161,7 @@ if __name__ == '__main__':
     layer1, layer2 = model.layers()
 
     # Simulation
-    if MPL and RT_display:
+    if RT_display:
         plt.ion()
         plt.plot(t, s);
         plt.title('Stimulus')
@@ -174,12 +172,11 @@ if __name__ == '__main__':
     model.run(s, t, dt)
     print "Run time: {:0.1f} seconds".format(time() - tic)
 
-    if MPL:
-        TF = layer2.Z
-        r = np.sum(TF, 0)
-        rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
-        r *= 0.06/rms
-        plt.figure()
-        plt.plot(t, np.real(r))
-        plt.plot(t, np.real(s))
+    TF = layer2.Z
+    r = np.sum(TF, 0)
+    rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
+    r *= 0.06/rms
+    plt.figure()
+    plt.plot(t, np.real(r))
+    plt.plot(t, np.real(s))
 

@@ -16,7 +16,7 @@ pygrfnn_logger.addHandler(logging.NullHandler())
 
 from grfnn import GrFNN
 from oscillator import Zparam
-from network import Model
+from network import Model, make_connections
 
 # from oscillator import *
 # from grfnn import *

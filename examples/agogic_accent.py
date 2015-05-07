@@ -12,16 +12,14 @@ import matplotlib.pyplot as plt
 from daspy import Signal
 from daspy.audioio import play_signal
 from daspy.processing import onset_detection_signal
-from pygrfnn import MPL
 from pyrhythm import Pattern
 
 from rhythm import rhythm_model
 
-if MPL:
-    import matplotlib.pyplot as plt
-    from pygrfnn.vis import plot_connections
-    from pygrfnn.vis import tf_detail
-    from pygrfnn.vis import GrFNN_RT_plot
+import matplotlib.pyplot as plt
+from pygrfnn.vis import plot_connections
+from pygrfnn.vis import tf_detail
+from pygrfnn.vis import GrFNN_RT_plot
 
 
 N = 4       # numerator
@@ -68,7 +66,7 @@ layer1, layer2 = model.layers()
 
 # Simulation
 RT_display = True
-if MPL and RT_display:
+if RT_display:
     plt.ion()
     plt.plot(t, s);
     plt.title('Stimulus')
@@ -79,12 +77,11 @@ tic = time()
 model.run(s, t, dt)
 print "Run time: {:0.1f} seconds".format(time() - tic)
 
-if MPL:
-    TF = layer2.Z
-    r = np.sum(TF, 0)
-    rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
-    r *= 0.06/rms
-    plt.figure()
-    plt.plot(t, np.real(r))
-    plt.plot(t, np.real(s))
+TF = layer2.Z
+r = np.sum(TF, 0)
+rms = np.sqrt(np.sum(r*np.conj(r))/len(r))
+r *= 0.06/rms
+plt.figure()
+plt.plot(t, np.real(r))
+plt.plot(t, np.real(s))
 

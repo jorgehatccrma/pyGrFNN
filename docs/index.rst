@@ -75,6 +75,7 @@ Modules
    resonances
    defines
    utils
+   todos
 
 
 Indices and tables

@@ -1,5 +1,5 @@
 """
-Mimic Ed Large's GrFNN-Toobox1.0 example1.m
+Mimic GrFNN-Toobox1.0 example1.m
 
 A one layer network driven with a sinusoidal input. Several parameter
 sets are provided for experimentation with different types of intrinsic
@@ -11,15 +11,9 @@ import sys
 sys.path.append('../')  # needed to run the examples from within the package folder
 
 import numpy as np
+import matplotlib.pyplot as plt
 
-from pygrfnn.network import Model, make_connections
-from pygrfnn.oscillator import Zparam
-from pygrfnn.grfnn import GrFNN, grfnn_update_event
-from pygrfnn.defines import COMPLEX
-
-from pygrfnn import MPL
-if MPL:
-    import matplotlib.pyplot as plt
+from pygrfnn import Zparam, GrFNN, Model, make_connections
 
 from pygrfnn.vis import plot_connections
 from pygrfnn.vis import tf_detail
@@ -36,8 +30,7 @@ params = Zparam( 0, -1, -1, 0, 0, 1)  # Critical
 
 
 
-# Stimulus:
-# Complex sinusoid
+# Stimulus: Complex sinusoid
 
 sr = 40.0  # sample rate
 dt = 1.0/sr
@@ -67,21 +60,21 @@ layer = GrFNN(params,
               stimulus_conn_type='linear')
 
 # store layer's states
-layer.save_states = True
-
-# print(layer)
+layer.save_states = True  # True by default, but it can be disabled to save memory
+print(layer)
 
 
 # create the model and add the layer
 model = Model()
 model.add_layer(layer, input_channel=0)
 
+# setup real-time plot
 GrFNN_RT_plot(layer, update_interval=0.2, title='Single Layer')
 
 # run the model
 model.run(s, t, dt)
 
-# plot TF representation
-if MPL:
-    tf_detail(layer.Z, t, layer.f, None, np.max(t), np.real(s), np.abs)
-    plt.show()
+# plot time-frequency representation (magnitude and phase)
+tf_detail(layer.Z, t, layer.f, t_detail=[np.max(t)/2, np.max(t)], x=np.real(s))
+tf_detail(layer.Z, t, layer.f, x=np.real(s), display_op=np.angle)
+plt.show()

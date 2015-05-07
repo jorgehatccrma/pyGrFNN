@@ -12,14 +12,12 @@ from utils import find_nearest
 from scipy.io.wavfile import write
 from subprocess import call
 
-from pygrfnn import MPL
-if MPL:
-    import matplotlib.pyplot as plt
-    from vis import tf_detail
-    from matplotlib import animation
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+from vis import tf_detail
+from matplotlib import animation
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 
 def animate_tf_detail(TF,
