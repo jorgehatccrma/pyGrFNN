@@ -5,10 +5,6 @@ Basic functions implementing a nonlinear neural oscillator, as described in
     *A canonical model for gradient frequency neural networks.*
     **Physica D: Nonlinear Phenomena**, 239(12):905-911, 2010.
 
-
-To Dos:
-    - Implement variations of :math:`\dot{z}`
-
 """
 
 import numpy as np
@@ -22,19 +18,20 @@ logger = logging.getLogger('pygrfnn.oscillator')
 
 class Zparam(object):
 
-    """Convenience class to encapsulate oscillator intrinsic parameters.
+    """
+    Convenience class to encapsulate oscillator intrinsic parameters.
 
     Attributes:
-         a: :class:`float` -- Dampening parameter :math:`\\alpha`
-         b1: :class:`.COMPLEX` -- :math:`b_1 = \\beta_1 + j\\delta_1`
-         b2: :class:`.COMPLEX` -- :math:`b_2 = \\beta_2 + j\\delta_2`
-         e: :class:`float` -- Coupling strength :math:`\\varepsilon`
+        a (float): :math:`a = \\alpha + j2\\pi`
+        b1 (float): :math:`b_1 = \\beta_1 + j\\delta_1`
+        b2 (float): :math:`b_2 = \\beta_2 + j\\delta_2`
+        e (float): Coupling strength :math:`\\varepsilon`
 
     """
 
     def __init__(self, alpha=0.0, beta1=-1.0, beta2=-0.25,
                  delta1=0.0, delta2=0.0, epsilon=1.0):
-        """Constructor.
+        """ **Zparam constructor**
 
         Args:
             alpha (float): :math:`\\alpha` (defaults to: 0.0)
@@ -61,49 +58,54 @@ class Zparam(object):
 
     def __repr__(self):
         return  "Zparams: " \
-                "alpha: {0:0.3g}, " \
+                "a: {0:0.3g}, " \
                 "b1: {1:0.3g}+{2:0.3g}j, " \
                 "b2: {3:0.3g}+{4:0.3g}j, " \
                 "e: {5:0.3g}".format(self.alpha, self.beta1, self.delta1,
-                                           self.beta2, self.delta2, self.e)
+                                     self.beta2, self.delta2, self.e)
 
 
 def zdot(x, z, f, zp):
     """Dynamics of a neural oscillator.
 
     Implements the dynamical system described in equation 20 of the paper
-    referenced above.
-
-    .. math::
-
-        \\tau_i\\dot{z} = z \\Bigg(\\alpha + j\\omega + b_1 |z|^2 +
-            \\frac{b_2\\varepsilon |z|^4}{1-\\varepsilon |z|^2} \\Bigg) +
-            \\frac{x}{1-\\sqrt{\\varepsilon} x} \\frac{1}{1-\\sqrt{\\varepsilon}
-            \\bar{z}}
-
-    where
-
-    .. math::
-
-        b_1 &= \\beta_1 + j \\delta_1 \\\\
-        b_2 &= \\beta_2 + j \\delta_2 \\\\
+    referenced above, but using a **frequency scaled** version.
 
     Args:
-        x (:class:`numpy.array`): input signal
-        z (:class:`numpy.array`): oscillator state
-        f (:class:`numpy.array`): natural frequency of the oscillator
+        x (:class:`numpy.ndarray`): input signal, that is, the combined external
+            stimulus and other coupled GrFNNs (see :func:`grfnn.compute_input`)
+        z (:class:`numpy.ndarray`): oscillator state
+        f (:class:`numpy.ndarray`): natural frequency of the oscillator
         zp (:class:`.Zparam`): oscillator parameters: :math:`\\alpha,
             \\beta_1, \\delta_1, \\beta_2, \\delta_2` and :math:`\\varepsilon`
 
     Returns:
-         (:class:`numpy.array`): The evaluated time derivative (:math:`\\dot{z}`)
+         :class:`numpy.ndarray`: The evaluated time derivative (:math:`\\dot{z}`)
 
     Note:
         Can work with vectors (i.e. simultaneously compute multiple oscillators).
         In that case, ``x``, ``z``, and ``f`` must have the same shape.
 
-    ToDo:
-        Revise equations in the docs
+    Note:
+
+        The equation implemented is
+
+        .. math::
+
+            \\dot{z} = z \\Big(a + b_1 |z|^2 +
+                \\frac{b_2\\varepsilon |z|^4}{1-\\varepsilon |z|^2} \\Big) f +
+                \\mathcal{X}(x, z, \\varepsilon)
+
+        where :math:`f=2\\pi\\omega` is the natural frequency of oscillation and
+
+        .. math::
+
+            a &= \\alpha + j 2 \\pi \\\\
+            b_1 &= \\beta_1 + j \\delta_1 \\\\
+            b_2 &= \\beta_2 + j \\delta_2 \\\\
+
+        :math:`\\mathcal{X}(x, z, \\varepsilon)` is the total input to the
+        GrFNN, which comprise external stimulus and coupled GrFNNs.
 
     """
 

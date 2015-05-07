@@ -8,9 +8,8 @@ More importantly, it provides a method to run the model (process an
 stimulus), including the ability to learn the connections between
 GrFNNs.
 
-To Dos:
-    - Implement other types of connectivities
-    - Implement learning?
+To Do:
+    - Re-implement learning
 
 """
 
@@ -31,7 +30,7 @@ from pygrfnn.grfnn import GrFNN
 from pygrfnn.grfnn import compute_input
 from pygrfnn.grfnn import grfnn_update_event
 from pygrfnn.oscillator import Zparam
-from pygrfnn.resonances import monomialsForVectors
+from pygrfnn.resonances import threeFreqMonomials
 
 
 def make_connections(source, dest, strength=1.0, range=1.02,
@@ -42,35 +41,31 @@ def make_connections(source, dest, strength=1.0, range=1.02,
 
     Args:
         source (:class:`.GrFNN`): source GrFNN (connections will be made
-            between this and *dest*)
+            between ``source`` and ``dest``)
         dest (:class:`.GrFNN`): destination GrFNN (connections will be
-            made between *source* and *this*)
-        strength (float): connection strength (multiplicative real
+            made between ``source`` and ``dest``)
+        strength (``float``): connection strength (multiplicative real
             factor)
-        range (float): defines the standard deviation to use in the connections
+        range (``float``): defines the standard deviation to use in the connections
             ("spread" them with neighbors). It is expressed as a ratio, to
             account for the log scale of the oscillators' frequency
-        modes (:class:`numpy.array`): frequency modes to connect
-            (e.g. [1/3, 1/2, 1, 2, 3]). If *None*, it will be set to
+        modes (:class:`numpy.ndarray`): frequency modes to connect
+            (e.g. [1/3, 1/2, 1, 2, 3]). If ``None``, it will be set to
             ``[1]``
-        mode_amplitudes (:class:`numpy.array`): amplitude for each mode in
-            `modes` (e.g. [.5, .75, 1, .75, .5]). If *None*, it will be set to
+        mode_amplitudes (:class:`numpy.ndarray`): amplitude for each mode in
+            ``modes`` (e.g. [.5, .75, 1, .75, .5]). If ``None``, it will be set to
             ``[1] * len(modes)``
-        complex_kernel (bool): If *True*, the connections will be
+        complex_kernel (``bool``): If ``True``, the connections will be
             complex (i.e. include phase information). Otherwise, the
             connections will be real-valued weights.
-        self_connect (bool): if *False*, the connection from source_f[i]
-            to dest_f[j] (where source_f[i] == dest_f[j]) will be set to
+        self_connect (``bool``): if ``False``, the connection from ``source.f[i]``
+            to ``dest.f[j]`` (where ``source_f[i] == dest_f[j]``) will be set to
             0
 
-    ToDo:
-        - Revise the units of ``stdev``
-        - Possibly handle different stdevs for different modes?
-
     Returns:
-        :class:`numpy.array`: Connection matrix (rows index destination and
+        :class:`numpy.ndarray`: Connection matrix (rows index destination and
             columns index source). In other words, to obtain the state at the
-            destination, you must use `M.dot(source.z)`, where `M` is the
+            destination, you must use ``C.dot(source.z)``, where ``C`` is the
             connection matrix.
 
     """
@@ -135,7 +130,7 @@ class DuplicatedLayer(Exception):
     Raised when attempting to add a previously added layer to a network
 
     Attributes:
-        layer: :class:`.GrFNN` -- duplicated layer
+        layer (:class:`.GrFNN`): duplicated layer
     """
 
     def __init__(self, layer):
@@ -147,7 +142,7 @@ class UnknownLayer(Exception):
     Raised when attempting to use a layer unknown to the network
 
     Attributes:
-        layer: :class:`.GrFNN` -- unknown layer
+        layer (:class:`.GrFNN`): unknown layer
     """
 
     def __init__(self, layer):
@@ -161,18 +156,19 @@ class UnknownLayer(Exception):
 class Cparam(object):
     """Convenience class to encapsulate connectivity learning parameters.
 
-    lambda = .001; mu1 = -1; mu2 = -50; ceps = 16, kappa =
-
     Attributes:
-        l: :class:`float` -- linear forgetting rate :math:`\\lambda`
-        m1: :class:`float` --  non-linear forgetting rate 1 :math:`\\mu_1
-        m2: :class:`float` -- non-linear forgetting rate 2 :math:`\\mu_2
-        k: :class:`float` -- learning rate :math:`\\kappa`
-        e: :class:`float` -- Coupling strength :math:`\\varepsilon`
+        l: (``float``): linear forgetting rate :math:`\\lambda`
+        m1: (``float``):  non-linear forgetting rate 1 :math:`\\mu_1`
+        m2: (``float``): non-linear forgetting rate 2 :math:`\\mu_2`
+        k: (``float``): learning rate :math:`\\kappa`
+        e: (``float``): Coupling strength :math:`\\varepsilon`
 
     ToDo:
         Revise this (learning is probably broke, as I haven't updated it in a
         while)
+
+    Note:
+        This class is analogous to :class:`.Zparam`
 
     """
 
@@ -181,13 +177,13 @@ class Cparam(object):
         """Constructor.
 
         Args:
-            lmbda (float): :math:`\\lambda` (defaults to: -1.0) (**this is not
-                a typo: `lambda` is a keyword in python, so we used a slight
-                variation of the word**)
-            mu1 (float): :math:`\\mu_1` (defaults to: -1.0)
-            mu2 (float): :math:`\\mu_2` (defaults to: -0.25)
-            kappa (float): :math:`\\kappa` (defaults to: 0.0)
-            epsilon (float): :math:`\\varepsilon` (defaults to: 1.0)
+            lmbda (``float``): :math:`\\lambda` (defaults to: -1.0) (**this is
+                not a typo: `lambda` is a keyword in python, so we used a
+                misspelled version of the word**)
+            mu1 (``float``): :math:`\\mu_1` (defaults to: -1.0)
+            mu2 (``float``): :math:`\\mu_2` (defaults to: -0.25)
+            kappa (``float``): :math:`\\kappa` (defaults to: 0.0)
+            epsilon (``float``): :math:`\\varepsilon` (defaults to: 1.0)
 
         """
         logger.warning('Apparently you want to use learning (plasticity). '
@@ -220,28 +216,43 @@ class Connection(object):
     Args:
         source (:class:`.GrFNN`): source layer
         destination (:class:`.GrFNN`): destination layer
-        matrix (:class:`np.ndarray`): connection matrix
-        conn_type (string): type of GrFNN connections to use. Possible values:
-            'allfreq', 'all2freq', '1freq', '2freq', '3freq'
-        self_connect (bool): if ``False``, the diagonal of the
+        matrix (:class:`numpy.ndarray`): connection matrix
+        conn_type (``string``): type of GrFNN connections to use. Possible values:
+            ``allfreq``, ``all2freq``, ``1freq``, ``2freq``, ``3freq``
+        self_connect (``bool``): if ``False``, the diagonal of the
             matrix is kept to 0 (even when learning is enabled)
-        weight (float): frequency weight factor
+        weight (``float``): frequency weight factor
         learn_params (:class:`.Cparam`): learning params. No learning is performed
-            when set to `None`
+            when set to ``None``.
 
     Attributes:
-        source: :class:`.GrFNN` -- source layer
-        destination: :class:`.GrFNN` -- destination layer
-        matrix: :class:`np.ndarray` -- connection matrix
-        cparams: :class:`.Cparam` -- Learning params (`None` means no learning)
-        d: ``float`` -- "passive" learning rate (i.e. forgetting factor)
-        k: ``float`` -- "active" learning rate
-        RF: :class:`np.ndarray` -- array of frequency ratio.
-            `R(i,j) = dest(i)/source.f(j)`
-        farey_num: :class:`np.ndarray` -- Farey numerator for the
-            frequency relationship RF(i,j)
-        farey_den: :class:`np.ndarray` -- Farey denominator for the
-            frequency relationship RF(i,j)
+        source (:class:`.GrFNN`): source layer
+        destination (:class:`.GrFNN`): destination layer
+        matrix (:class:`numpy.ndarray`): connection matrix
+        cparams (:class:`.Cparam`): Learning params (`None` means no learning)
+        self_connect (``bool``): If ``False``, the connection weights connecting
+            two oscillators of the same frequency will be set to 0
+        RF (:class:`numpy.ndarray`): array of frequency ratio.
+            ``RF[i,j] = dest.f[i]/source.f[j]``
+        farey_num (:class:`numpy.ndarray`): Farey numerator for the
+            frequency relationship ``RF[i,j]`` (only set one using ``2freq``
+            coupling).
+        farey_den (:class:`numpy.ndarray`): Farey denominator for the
+            frequency relationship ``RF[i,j]`` (only set one using ``2freq``
+            coupling).
+        monomials (``list``): List of :class:`python.namedtuples` of the from
+            ``(indices, exponents)``. There is one ``namedtuple`` for each
+            oscillator in ``destination`` GrFNN. Each tuple is formed by of two
+            :class:`numpy.ndarray` with indices and exponents of a 3-freq
+            monomial, each one of size Nx3, where N is the number of monomials
+            associated to the corresponding oscillator in ``destination``. This
+            attribute is only set for ``3freq`` connection type.
+
+    Warning:
+        Learning has not been updated lately, so it is probably broken.
+
+    Warning:
+        ``1freq`` connectivity is not implemented
     """
 
     def __init__(self,
@@ -266,6 +277,9 @@ class Connection(object):
         [FS, FT] = np.meshgrid(self.source.f, self.destination.f)
         self.RF = FT/FS
 
+        self.farey_num, self.farey_den = None, None
+        self.monomials = None
+
         # if not self.self_connect:
         #     self.matrix[np.logical_and(self.farey_num==1, self.farey_den==1)] = 0
         if not self.self_connect:
@@ -286,13 +300,13 @@ class Connection(object):
 
         elif conn_type == '3freq':
             # default params
-            max_order = 3
+            N = 3
             tol = 5e-3
             lowest_order_only = True
 
             if conn_params is not None:
-                if 'max_order' in conn_params:
-                    max_order = conn_params['max_order']
+                if 'N' in conn_params:
+                    N = conn_params['N']
                 if 'tol' in conn_params:
                     tol = conn_params['tol']
                 if 'lowest_order_only' in conn_params:
@@ -303,16 +317,16 @@ class Connection(object):
                         'tol = {} and '
                         'lowest_order_only = {}'.format(source.name,
                                                         destination.name,
-                                                        max_order,
+                                                        N,
                                                         tol,
                                                         lowest_order_only))
 
-            self.monomials = monomialsForVectors(self.source.f,
-                                                 self.destination.f,
-                                                 self_connect,
-                                                 N=max_order,
-                                                 tol=tol,
-                                                 lowest_order_only=lowest_order_only)
+            self.monomials = threeFreqMonomials(self.source.f,
+                                                self.destination.f,
+                                                self_connect,
+                                                N=N,
+                                                tol=tol,
+                                                lowest_order_only=lowest_order_only)
 
             def avg():
                 a = 0
@@ -339,22 +353,22 @@ class Model(object):
     consist only of internal connections (internal to the layer or from
     other layers in the network).
 
-    Args:
-        name (string): (optional) model name (empty by default)
-
     Attributes:
-        layers: ``[layer, input_channel]`` -- list of :class:`.GrFNN`
-            layers and its external input channel
-        connections: ``{layer: [connections]}`` -- dictionary of
-            connections. *Keys* correspond to destination layers
-            (:class:`.GrFNN`). *Values* are a list of connections
-            (:class:`.Connection`).
+        connections (``dict``): dictionary of
+            connections. *Keys* are destination layers (:class:`.GrFNN`) and
+            *values* are a list of connections (:class:`.Connection`).
 
     """
 
     def __init__(self, name=""):
-        """Model constructor"""
+        """
+        **Model constructor**
 
+        Args:
+            name (``string``): (optional) model name (empty by default). This
+                argument is required when defining a model from a dictionary or
+                JSON object (see :func:`.modelFromJSON`)
+        """
         self.name = name
 
         # list of GrFNN layers (and its corresponding external input channel)
@@ -371,17 +385,17 @@ class Model(object):
 
     def layers(self):
         """
-        Return a list of GrFNNs in the model
+        Return a list of GrFNNs in the model.
         """
         return [t[0] for t in self._layers]
 
     def add_layer(self, layer, input_channel=None):
         """
-        Add a GrFNN layer.
+        Add a GrFNN (layer) to the model
 
         Args:
             layer (:class:`.GrFNN`): the GrFNN to add to the model
-            input_channel (`int` or `None`): If *None*, no external
+            input_channel (`int` or `None`): If ``None`` (default), no external
                 signal (stimulus) will be fed into this layer.
                 Otherwise identifies the input channel to be fed into
                 the layer.
@@ -413,7 +427,7 @@ class Model(object):
                        self_connect=False,
                        connection_params=None):
         """
-        Connect two layers.
+        Connect two layers in a :class:`Model`.
 
         Args:
             source (:class:`.GrFNN`): source layer (connections will be
@@ -422,17 +436,21 @@ class Model(object):
                 (connections will be made from *source* layer to this
                 layer)
             matrix (:class:`numpy.array`): connection matrix
-            connection_type (string): type of connection (e.g. '1freq', '2freq',
-                '3freq', 'allfreq', 'all2freq')
-            weight (float): connection weight factor.
-            learn (:class:`.Cparmas`): Learning parameters. Is `None`, no
-                learning will be performed
-            self_connect (bool): whether or not to connect oscillators of the
-                same frequency. By default is `False`
-            connection_params (dict): dictionary with connection_type specific parameters
+            connection_type (``string``): type of connection (e.g. ``1freq``,
+                ``2freq``, ``3freq``, ``allfreq``, ``all2freq``)
+            weight (``float``): connection weight factor.
+            learn (:class:`.Cparams`): Learning parameters. Is ``None``, no
+                learning will occur.
+            self_connect (``bool``): whether or not to connect oscillators of the
+                same frequency (defaults to ``False``).
+            connection_params (``dict``): dictionary with connection_type
+                specific parameters
 
         Returns:
             :class:`.Connection`: connection object created
+
+        Warning:
+            ``1freq`` connection is not implemented.
 
         """
         if source not in self.layers():
@@ -453,13 +471,17 @@ class Model(object):
         """Run the model for a given stimulus, using "intertwined" RK4
 
         Args:
-            signal (:class:`np.array_like`): external stimulus. If
+            signal (:class:`numpy.ndarray`): external stimulus. If
                 multichannel, the first dimension indexes time and the
                 second one indexes channels
-            t (:class:`np.array_like`): time vector corresponding to the
+            t (:class:`numpy.ndarray`): time vector corresponding to the
                 signal
-            dt (float): sampling period of `signal`
-            learn (bool): enable connection learning
+            dt (``float``): sampling period of ``signal``
+            learn (``bool``): enable connection learning
+
+        Warning:
+            Learning has not been updated lately, so it is probably broken.
+
 
         Note:
             Intertwined means that a singe RK4 step needs to be run for
@@ -520,7 +542,7 @@ class Model(object):
             the afore mentioned reference (:math:`j` was used as
             subscript in the last fractional term, instead of :math:`i`,
             as is in the paper). It seems there it was a typo in the
-            reference, but this **must be confirmed** with the author.
+            reference, but this **must be verified** with the author.
 
             Furthermore, the current implementation assumes that :math:`i`
             indexes the source layer and :math:`j` indexes the destination
@@ -528,7 +550,6 @@ class Model(object):
 
 
         """
-
         num_frames = signal.shape[0]
 
         if signal.ndim == 1:
@@ -560,13 +581,13 @@ class Model(object):
                     # version implemented using setattr() didn't give the same
                     # results?!
                     if k==0:
-                        L.k1 = rk_step(L, dt, self.connections, stim, 'k0')
+                        L.k1 = _rk_step(L, dt, self.connections, stim, 'k0')
                     elif k==1:
-                        L.k2 = rk_step(L, dt, self.connections, stim, 'k1')
+                        L.k2 = _rk_step(L, dt, self.connections, stim, 'k1')
                     elif k==2:
-                        L.k3 = rk_step(L, dt, self.connections, stim, 'k2')
+                        L.k3 = _rk_step(L, dt, self.connections, stim, 'k2')
                     elif k==3:
-                        L.k4 = rk_step(L, dt, self.connections, stim, 'k3')
+                        L.k4 = _rk_step(L, dt, self.connections, stim, 'k3')
 
 
             # final RK step
@@ -601,16 +622,20 @@ class Model(object):
 
 
 # helper function that performs a single RK4 step (any of them)
-def rk_step(layer, dt, connections, stim, pstep):
+def _rk_step(layer, dt, connections, stim, pstep):
     """Single RK4 step
 
     Args:
         layer (:class:`grfnn.GrFNN`): layer to be integrated
-        dt (float): integration step (in seconds)
-        connections (dict): connection dictionary (see :class:`Model`)
-        stim (float): external stimulus sample
-        pstep (string): string identifying the previous RK step
+        dt (``float``): integration step (in seconds)
+        connections (``dict``): connection dictionary (see :class:`Model`)
+        stim (``float``): external stimulus sample
+        pstep (``string``): string identifying the previous RK step
             ``{'', 'k1', 'k2', 'k3'}``
+
+    Returns:
+        :class:`numpy.ndarray`: :math:`\\dot{z}` updated for the input
+            :class:`.GrFNN` (``layer``).
     """
     h = dt if pstep is 'k3' else 0.5*dt
     k = getattr(layer, pstep, 0)
@@ -634,7 +659,7 @@ def learn_step(conn):
         conn (:class:`.Connection`): connection object
 
     Returns:
-        (:class:`np.ndarray`): derivative of connections (to use in
+        :class:`np.ndarray`: derivative of connections (to use in
             connection update rule)
 
     ToDo:
@@ -654,10 +679,14 @@ def learn_step(conn):
 
 def modelFromJSON(definition=None):
     """
-    Utility function to create a model (Network) from a JSON object
+    Utility function to create a model (Network) from a JSON object (or a python
+    ``dict``)
 
     Args:
-        definition (string or JSON object): model definition
+        definition (``string``, ``JSON`` or ``dict``): model definition
+
+    Returns:
+        :class:`.Model`: Model, as specified in the input object.
     """
     try:
         D = json.loads(definition)

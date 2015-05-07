@@ -72,6 +72,7 @@ Modules
    grfnn
    network
    vis
+   resonances
    defines
    utils
 

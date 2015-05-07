@@ -4,6 +4,7 @@ Note:
     It relies on Matplotlib
 
 """
+from __future__ import division
 
 import warnings
 
@@ -17,6 +18,7 @@ from numpy.polynomial.polynomial import polyroots
 from utils import find_nearest
 from utils import nice_log_values
 from grfnn import grfnn_update_event
+from resonances import fareySequence, resonanceSequence
 
 try:
     import matplotlib as mpl
@@ -32,10 +34,10 @@ def check_display(fun):
     """Decorator to check for display capability
 
     Args:
-        fun (function): Function to be timed
+        fun (``function``): Function to be timed
 
     Returns:
-        (function): decorated function
+        ``function``: decorated function
     """
     @wraps(fun)
     def display_wrapper(*args, **kwargs):
@@ -60,28 +62,27 @@ def check_display(fun):
 @check_display
 def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs,
               cmap='binary', vmin=None, vmax=None):
-    """tf_simple(TF, t, f, x=None, display_op=np.abs)
+    """Simple time-frequency representation (TFR).
 
-    Simple time-frequency representation. It shows the TF in the top plot and
-    the original time signal in the bottom plot, is specified.
+    Show the TFR in the top plot and the original time signal in the bottom
+    plot, if ``x`` is passed.
 
     Args:
-        TF  (:class:`numpy.array`): time-frequency representation
-        t (:class:`numpy.array`): time vector
-        f (:class:`numpy.array`): frequency vector
-        title (string): title of the plot
-        x (:class:`numpy.array`): original time domain signal. If *None*, no
+        TF  (:class:`numpy.ndarray`): time-frequency representation
+        t (:class:`numpy.ndarray`): time vector
+        f (:class:`numpy.ndarray`): frequency vector
+        title (``string``): title of the plot
+        x (:class:`numpy.array`): original time domain signal. If ``None``, no
             time domain plot is shown
-        display_op (function): operator to apply to the TF representation (e.g.
-            `numpy.abs`)
-        cmap (`string`): colormap to use in the TF representation
-        vmin (float): if not `None`, defines the lower limit of the colormap
-        vmax (float): if not `None`, defines the upper limit of the colormap
+        display_op (``function``): operator to apply to the TF representation (e.g.
+            :func:`numpy.abs`)
+        cmap (``string``): colormap to use in the TF representation
+        vmin (``float``): lower limit of the colormap
+        vmax (``float``): upper limit of the colormap
 
     Note:
-        Is responsibility of the caller to issue the ``plt.show()`` command if
-        necessary
-
+        Is the caller's responsibility to issue :func:`matplotlib.pyplot.show()`
+        if necessary.
     """
 
     opTF = display_op(TF)
@@ -122,40 +123,40 @@ def tf_simple(TF, t, f, title=None, x=None, display_op=np.abs,
 @check_display
 def tf_detail(TF, t, f, title=None, t_detail=None, x=None, display_op=np.abs,
               figsize=None, cmap='binary', vmin=None, vmax=None):
-    """tf_detail(TF, t, f, t_detail=None, x=None, display_op=np.abs)
+    """
+    Detailed time-frequency representation (TFR).
 
-    Detailed time-frequency representation. It shows the TF in the top plot. It
-    also shows the frequency representation at a specific time (last time by
-    default) on the plot at the right. If specified, the original time signal
-    is shown the bottom plot.
+    Show the TFR in the top plot. Also show the frequency representation at a
+    specific time instants (last time by default) on the plot on the right. If
+    specified, the original time signal ``x`` is shown the bottom plot.
 
     Args:
-        TF (:class:`numpy.array`): time-frequency representation
-        t (:class:`numpy.array`): time vector
-        f (:class:`numpy.array`): frequency vector
-        title (string): title of the plot
-        t_detail (float or list of floats): time instant(s) to be detailed
-        x (:class:`numpy.array`): original time domain signal. If *None*, not
+        TF (:class:`numpy.ndarray`): time-frequency representation
+        t (:class:`numpy.ndarray`): time vector
+        f (:class:`numpy.ndarray`): frequency vector
+        title (``string``): title of the plot
+        t_detail (``float`` or ``list``): time instant(s) to be detailed
+        x (:class:`numpy.ndarray`): original time domain signal. If *None*, not
             time domain plot is shown
-        display_op (function): operator to apply to the TF representation (e.g.
-            `numpy.abs`)
-        figsize (tuple, optional): matplotlib's figure size
-        cmap (`string`): colormap to use in the TF representation
-        vmin (float): if not `None`, defines the lower limit of the colormap
-        vmax (float): if not `None`, defines the upper limit of the colormap
+        display_op (``function``): operator to apply to the TF representation
+            (e.g. :func:`numpy.angle`)
+        figsize (``tuple``): matplotlib's figure size (optional)
+        cmap (``string``): colormap to use in the TF representation
+        vmin (``float``): lower limit of the colormap
+        vmax (``float``): upper limit of the colormap
 
     Returns:
-        (handles, ...): tuple of handles to plotted elements. They can be used
-            to create animations
+        ``(handles, ...)``: tuple of handles to plotted elements. They can be
+            used to create animations
 
     Note:
-        `vmin` and `vmax` are useful when comparing different time-frequency
-        representations, so thay all share the same color scale.
+        ``vmin`` and ``vmax`` are useful when comparing different time-frequency
+        representations, so they all share the same color scale.
 
 
     Note:
-        Is responsibility of the caller to issue the ``plt.show()`` command if
-        necessary
+        Is the caller's responsibility to issue :func:`matplotlib.pyplot.show()`
+        if necessary.
 
     """
     if figsize is not None:
@@ -272,19 +273,19 @@ def plot_connections(connection, title=None, f_detail=None, display_op=np.abs,
 
     Args:
         connection (:class:`.Connection`): connection object
-        title (string): Title to be displayed
-        f_detail (float): frequency of the detail plot
-        display_op (function): operator to apply to the connection
-            matrix (e.g. `numpy.abs`)
-        detail_type (string): detail complex display type ('cartesian',
-            'polar', 'magnitude' or 'phase')
-        cmap (`string`): colormap to use in the TF representation
-        vmin (float): if not `None`, defines the lower limit of the colormap
-        vmax (float): if not `None`, defines the upper limit of the colormap
+        title (``string``): Title to be displayed
+        f_detail (``float``): frequency of the detail plot
+        display_op (``function``): operator to apply to the connection
+            matrix (e.g. :func:`numpy.abs`)
+        detail_type (``string``): detail complex display type (``'cartesian',
+            'polar', 'magnitude'`` or ``'phase'``)
+        cmap (``string``): colormap to use in the TF representation
+        vmin (``float``): lower limit of the colormap
+        vmax (``float``): upper limit of the colormap
 
     Note:
-        Is responsibility of the caller to issue the ``plt.show()``
-        command if necessary
+        Is the caller's responsibility to issue :func:`matplotlib.pyplot.show()`
+        if necessary.
 
     """
 
@@ -387,23 +388,28 @@ class GrFNN_RT_plot(object):
     On-line GrFNN state visualization.
 
     Args:
-        grfnn (:class:`.network.Model`): GrFNN to be plotted
-        update_interval (float): Update interval (in seconds). This is
+        grfnn (:class:`.Model`): GrFNN to be plotted
+        update_interval (``float``): Update interval (in seconds). This is
             an approximation, as the update will happen as a multiple of the
             integration step time.
-        fig_name (string): Name of the figure to use. If specified, the same
+        fig_name (``string``): Name of the figure to use. If specified, the same
             figure will be reused in consecutive runs. If None, a new figure
             will be created each time the caller script runs.
-        title (string): optional title of the plot
+        title (``string``): optional title of the plot
 
     Note:
-        This function calls ``plt.ion()`` internally to allow for on-line
-        updating of the plot
+        This function probably won't work on an iPython Notebook. A possible
+        implementation using mpld3 should be possible to code, but is not in the
+        short term planning.
+
+    Note:
+        This function calls :func:`matplotlib.pyplot.ion` internally to allow
+        for on-line updating of the plot.
 
     Note:
         There is probably room for optimization here. For example,
-        http://bastibe.de/2013-05-30-speeding-up-matplotlib.html does some
-        interesting analysis/optimizations for updating plots
+        http://goo.gl/J7Yyor does some interesting analysis/optimizations for
+        updating plots
     """
 
     def __init__(self, grfnn, update_interval=0, fig_name=None, title=''):
@@ -450,12 +456,14 @@ class GrFNN_RT_plot(object):
 @check_display
 def vector_field(params, F=1.0):
     """
-    Args:
-        params (`.Zparam`): oscillator's intrinsic parameters
-        F (scalar or array_like): Forcing values to plot
+    Display the vector field of an oscillator.
 
-    ToDo:
-        Add reference
+    For a given set of intrinsic parameters, show the vector field for an
+    oscillator as the one defined by :func:`.zdot`.
+
+    Args:
+        params (:class:`.Zparam`): oscillator intrinsic parameters
+        F (``scalar`` or ``iterable``): Forcing values to plot
     """
     colormap = plt.cm.gist_heat
 
@@ -512,3 +520,42 @@ def vector_field(params, F=1.0):
     plt.gca().set_color_cycle(colors)
     for r in roots:
         plt.plot(r, np.zeros_like(r), 'o', markersize=4, zorder=10)
+
+
+def plotResonanceDiagram(N, exclude_inf=True):
+    """
+    Generate resonance plot.
+
+    As the one shown in http://goo.gl/dOSV2z
+
+    To Do:
+        Complete documentation
+    """
+
+    ALPHA = 0.2
+
+    plt.figure()
+    ticks = set([])
+    for h, k in fareySequence(N, 1):
+        ticks.add((h,k))
+        for a, b in resonanceSequence(N, k):
+            if b == 0:
+                if not exclude_inf:
+                    plt.plot([h/k, h/k], [0, 1], 'b:', alpha=2*ALPHA)
+                    plt.plot([0, 1], [h/k, h/k], 'b:', alpha=2*ALPHA)
+                continue
+            m = a/b
+            cp, cm = m*h/k, -m*h/k
+            x = np.array([0, h/k, 1])
+            y = np.array([cp, 0, cm+m])
+            plt.plot(  x,   y, 'b', alpha=ALPHA)
+            plt.plot(  y,   x, 'b', alpha=ALPHA)
+            plt.plot(  x, 1-y, 'b', alpha=ALPHA)
+            plt.plot(1-y,   x, 'b', alpha=ALPHA)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.xticks([h/k for h,k in ticks], [r"$\frac{{{:d}}}{{{:d}}}$".format(h,k) for h,k in ticks])
+    plt.yticks([h/k for h,k in ticks], [r"$\frac{{{:d}}}{{{:d}}}$".format(h,k) for h,k in ticks])
+    # plt.xticks([h/k for h,k in ticks], [r"${:d}/{:d}$".format(h,k) for h,k in ticks])
+    # plt.yticks([h/k for h,k in ticks], [r"${:d}/{:d}$".format(h,k) for h,k in ticks])
+    plt.title("N = {:d}".format(N))

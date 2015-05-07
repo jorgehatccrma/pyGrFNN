@@ -4,6 +4,7 @@
 from __future__ import division
 import time
 import cPickle
+from functools import update_wrapper
 
 import logging
 logger = logging.getLogger('pygrfnn.utils')
@@ -51,10 +52,10 @@ def timed(fun):
     """Decorator to measure execution time of a function
 
     Args:
-        fun (function): Function to be timed
+        fun (``function``): Function to be timed
 
     Returns:
-        (function): decorated function
+        ``function``: decorated function
 
     Example: ::
 
@@ -94,7 +95,7 @@ def find_nearest(arr, value):
         value (dtype of list): value(s) being searched
 
     Returns:
-        (dtype, int): tuple (nearest value, nearest value index)
+        ``(dtype, int)``: tuple (nearest value, nearest value index)
     """
     # arr must be sorted
     idx = arr.searchsorted(value)
@@ -137,15 +138,23 @@ def memoize(f):
 
 
 class MemoizeMutable:
+    """
+    Decorator to memoize function with mutable arguments.
+    """
     def __init__(self, fn):
+        """
+        Args:
+            fn (``function``): function to decorate
+        """
         self.fn = fn
         self.memo = {}
+        update_wrapper(self, fn)  ## so sphinx can find the docstring
+
     def __call__(self, *args, **kwds):
         import cPickle
         str = cPickle.dumps(args, 1)+cPickle.dumps(kwds, 1)
         if not self.memo.has_key(str):
             self.memo[str] = self.fn(*args, **kwds)
-
         return self.memo[str]
 
 
@@ -162,7 +171,7 @@ def fast_farey_ratio(f, pertol=0.01):
         pertol (float): tolerance
 
     Returns:
-        tuple: `(n, d, l, e)` for numerator, denominator, level and error
+        ``(n, d, l, e)``: tuple of (numerator, denominator, level, error)
 
     ToDo: optimize? Look into fractions module of the standard library. It
         seems to be exactly what we need. In particular, look at
@@ -209,15 +218,12 @@ def fareyratio(fractions, pertol=.01):
         pertol (float): tolerance
 
     Returns:
-        tuple: `(n, d, l, e)` for numerator np.array, denominator np.array,
-            level np.array and error np.array
-
-    Note:
-        Implementation note: `frompyfunc` is just syntactic sugar, but it
-        doesn't speed up vector computation. There's probably a way to optimize
-        this
-
+        ``(n, d, l, e)``: tuple of 4 :class:`numpy.ndarray` (numerator,
+            denominator, level, error)
     """
+    # Implementation note: :class:`numpy.frompyfunc` is just syntactic sugar,
+    # but it does not speed up vector computation. There's probably a way to
+    # optimize this.
     vFarey = np.frompyfunc(fast_farey_ratio, 2, 4)
     sel = fractions > 1
     # fractions[sel] = 1.0/fractions[sel]
@@ -227,48 +233,30 @@ def fareyratio(fractions, pertol=.01):
     return n.astype(FLOAT), d.astype(FLOAT), l.astype(FLOAT), e.astype(FLOAT)
 
 
-# got from http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
-def cartesian(arrays, out=None):
+def cartesian(arrays):
     """
     Generate a cartesian product of input arrays.
 
-    Parameters
-    ----------
-    arrays : list of array-like
-        1-D arrays to form the cartesian product of.
-    out : ndarray
-        Array to place the cartesian product in.
+    This Implementation is faster the numpy's built-in version
 
-    Returns
-    -------
-    out : ndarray
-        2-D array of shape (M, len(arrays)) containing cartesian products
-        formed of input arrays.
+    Obtained from http://goo.gl/arVNNv
 
-    Examples
-    --------
-    >>> cartesian(([1, 2, 3], [4, 5], [6, 7]))
-    array([[1, 4, 6],
-           [1, 4, 7],
-           [1, 5, 6],
-           [1, 5, 7],
-           [2, 4, 6],
-           [2, 4, 7],
-           [2, 5, 6],
-           [2, 5, 7],
-           [3, 4, 6],
-           [3, 4, 7],
-           [3, 5, 6],
-           [3, 5, 7]])
 
+    Args:
+        arrays (``list`` or :class:`numpy.ndarray`) : list of array-like
+            1-D arrays to form the cartesian product of.
+
+    Returns:
+        out:
+            :class:`numpy.ndarray`: 2-D array of shape ``(M, len(arrays))``
+            containing cartesian products formed of input arrays.
     """
 
     arrays = [np.asarray(x) for x in arrays]
     dtype = arrays[0].dtype
 
     n = np.prod([x.size for x in arrays])
-    if out is None:
-        out = np.zeros([n, len(arrays)], dtype=dtype)
+    out = np.zeros([n, len(arrays)], dtype=dtype)
 
     m = n / arrays[0].size
     out[:,0] = np.repeat(arrays[0], m)

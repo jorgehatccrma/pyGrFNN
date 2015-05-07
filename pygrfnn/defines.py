@@ -3,8 +3,10 @@
 
 import numpy as np
 
-#: complex datatype (hopefully) used in all complex operation
+#: complex datatype (hopefully) used in all complex operation (need to verify)
 COMPLEX = np.complex128
+
+#: float datatype (hopefully) used to carry GrFNN operations (need to verify)
 FLOAT = np.float64
 
 # Constants

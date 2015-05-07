@@ -4,9 +4,6 @@ Edward W. Large, Felix V. Almonte, and Marc J. Velasco.
 A canonical model for gradient frequency neural networks.
 Physica D: Nonlinear Phenomena, 239(12):905-911, 2010.
 
-To Dos:
-    - Implement linear frequency spacing
-
 """
 
 from __future__ import division
@@ -31,14 +28,15 @@ class GrFNN(object):
         Currently only log-frequency spacing implemented
 
     Attributes:
-        f: :class:`np.ndarray` -- ordered array of oscillators' natural
-            frequencies (in Hz)
-        size: ``int`` -- number of oscillators in the GrFNN
-        stimulus_conn_type (string) -- stimulus connection type. One of the
-            following: 'linear', 'active', 'all2freq' or 'all2freq'
-        z: :class:`np.ndarray` -- instantaneous oscillators states
-        zdot: ``function`` -- parametrized oscillator differential equation
-        w :class:`np.ndarray` -- input scaling factor (defaults to self.f)
+        name (`string`): Name of the GrFNN (necessary when using `modelFromJSON`)
+        f (:class:`numpy.ndarray`): sorted array of natural frequencies (in Hz)
+        size (`int`): number of oscillators in the GrFNN
+        zparams (:class:`.Zparam`): intrinsic oscillation parameters
+        stimulus_conn_type (`string`): stimulus connection type. One of the
+            following: `linear`, `active`, `all2freq` or `all2freq`
+        z (:class:`numpy.ndarray`): instantaneous oscillators states
+        zdot (`function`): parametrized oscillator differential equation
+        w (:class:`numpy.ndarray`): input scaling factor (defaults to `f`)
 
     """
 
@@ -52,22 +50,33 @@ class GrFNN(object):
                  w=None,
                  save_states=True,
                  **kwargs):
-        """ GrFNN constructor
+        """ **GrFNN constructor**
 
         Args:
-            zparams (:class:`.Zparam` or `dict`): oscillator intrinsic parameters
-            name (string): name give to the GrFNN
-            frequency_range (tuple or list): lower and upper limits of the GrFNN
+            zparams (:class:`.Zparam` or ``dict``): oscillator intrinsic parameters
+            name (``string``): name give to the GrFNN
+            frequency_range (``iterable``): lower and upper limits of the GrFNN
                 frequency range
-            num_oscs (int): number of oscillators in the GrFFN
-            stimulus_conn_type (string): type of stimulus connection (default
-                'active')
-            z0 (float or :class:`array`): initial state of the GrFNN. If not
+            num_oscs (``int``): number of oscillators in the GrFFN
+            stimulus_conn_type (``string``): type of **external stimulus** connection
+                (default 'active')
+            z0 (float or :class:`numpy.ndarray`): initial state of the GrFNN. If not
                 specified, `spontaneus_amplitudes` will be used
-            w (number or :class:`array`): input scaling factor (defaults to
+            w (number or :class:`numpy.ndarray`): input scaling factor (defaults to
                 `self.f` if w is `None`)
-            save_states (boolean): if `True`, each computed state will be saved
+            save_states (``bool``): if `True`, each computed state will be saved
                 in `self.Z` (i.e. TF representation history is stored)
+
+        Note:
+            **Stimulus Connection** only refers to how **external stimulus** is
+            coupled. The overall input to a GrFNN is a combination of external
+            stimulus and inter- and intra-layer coupling (see
+            :func:`compute_input`). Inter- and intra-layer connection types are
+            specified in :meth:`.Model.connect_layers`.
+
+        ToDo:
+            Describe initialization of ``self.z``
+
         """
 
         # if zparams is not a Zparam instance, assume it's a dictionary
@@ -94,7 +103,7 @@ class GrFNN(object):
             self.z = z0*np.ones(self.f.shape, dtype=COMPLEX)
         else:  # initialize using spontaneous amplitude
             r0 = 0
-            f0 = self.f[0]
+            f0 = self.f[0]  # FIXME: This is a hack!
             a, b1, b2, e = (f0*zparams.alpha, f0*zparams.beta1,
                             f0*zparams.beta2, f0*zparams.epsilon)
             r = spontaneus_amplitudes(a, b1, b2, e)
@@ -150,30 +159,31 @@ class GrFNN(object):
 
 def passiveAllFreq(x, sqe):
     """
-    Compute passive coupling, (multi frequency signal, of unknown frequencies)
+    Compute passive coupling, (multi frequency signal, of unknown frequencies):
 
-    ToDo:
-        Improve documentation (add equation)
+    .. math::
+        \\mathcal{P}(x,\\varepsilon) = \\frac{x}{1-x\\sqrt{\\varepsilon}}
+        \\frac{1}{1-\\bar{x}\\sqrt{\\varepsilon}}
     """
     return x / ((1.0 - x * sqe) * (1.0 - np.conj(x) * sqe))
 
 
 def passiveAll2Freq(x, sqe):
     """
-    Compute passive coupling, (single frequency signal, of unknown frequency)
+    Compute passive coupling, (single frequency signal, of unknown frequency):
 
-    ToDo:
-        Improve documentation (add equation)
+    .. math::
+        \\mathcal{P}(x,\\varepsilon) = \\frac{x}{1-x\\sqrt{\\varepsilon}}
     """
     return x / (1.0 - x * sqe)
 
 
 def active(z, sqe):
     """
-    Compute active coupling
+    Compute active coupling:
 
-    ToDo:
-        Improve documentation (add equation)
+    .. math::
+        \\mathcal{A}(z,\\varepsilon) = \\frac{1}{1-\\bar{z}\\sqrt{\\varepsilon}}
     """
     return 1.0 / (1.0 - np.conj(z) * sqe)
 
@@ -182,8 +192,11 @@ def twoFreq(z, source_z, num, den, matrix, e):
     """
     Compute 2-frequency coupling
 
+    .. math::
+        n_{ij} f_j \\approx d_{ij} f_{i}
+
     ToDo:
-        Improve documentation (add equation)
+        Improve documentation (add coupling equation)
     """
     Z1, Z2 = np.meshgrid(source_z, np.conj(z))
     Z1 **= num
@@ -196,8 +209,11 @@ def threeFreq(z, source_z, monomials, e):
     """
     Compute 3-frequency coupling
 
+    .. math::
+        n_{ij1} f_{j1} + n_{ij2} f_{j2} \\approx d_{ij1j2} f_{i}
+
     ToDo:
-        Improve documentation (add equation)
+        Improve documentation (add coupling equation)
     """
     x = np.zeros_like(z, dtype=complex)
     Z = np.hstack((source_z, source_z, z))
@@ -206,7 +222,7 @@ def threeFreq(z, source_z, monomials, e):
         if ind.shape[0] == 0:
             continue
         exs = monomials[i].exponents
-        ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.monomialsForVectors
+        ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.threeFreqMonomials
         zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
         zm[exs<0] = np.conj(zm[exs<0])  # conjugate where there is a negative exponent
         zm[:,2] = np.conj(zm[:,2])      # also conjugate the last column (z_i)
@@ -218,34 +234,35 @@ def threeFreq(z, source_z, monomials, e):
 
 
 def compute_input(layer, z, connections, x_stim=0):
-    """Compute the overall input to a GrFNN (:math:`x` in equation
-    15 in the cited paper)
+    """
+    Compute the overall input to a GrFNN (see
+    :math:`\\mathcal{X}(x, z, \\varepsilon)` in :func:`oscillator.zdot`)
 
     Args:
-        layer (:class:`grfnn`): layer which will be receiving this input
-        z (:class:`numpy.array`): state of the GrFNN at the instant
+        layer (:class:`GrFNN`): layer which will be receiving this input
+        z (:class:`numpy.ndarray`): state of the GrFNN at the instant
             when the input needs to be computed.
-        connections (list): list of tuples of the form
-            (*source_z*, *connection*) where *source_z* is the
-            state of the source :class:.`GrFNN` and *connection* is a
-            connection object (:class:`Connection`)
-        x_stim (:class:`numpy.array`): external stimulus
+        connections (``list``): list of tuples of the form
+            ``(source_z, connection)`` where ``source_z`` is the
+            state of the source :class:`GrFNN` and ``connection`` is a
+            :class:`.Connection` object
+        x_stim (:class:`numpy.ndarray`): external stimulus
 
-    Returns:
-        :class:`numpy.array` -- array of inputs, one element per
-        oscillator in the GrFNN
+    Return:
+        :class:`numpy.ndarray`: array of inputs, one element per
+        oscillator in the :class:`GrFNN`
+
+    Note:
+        ``z`` does not necessarily correspond to `self.z`, as this method
+        might be called at in "intermediate" integration (RK4) step. For this
+        reason this is not a :class:`GrFNN` method.
 
     Note:
         This is one of the bottlenecks, as it is called 4 times per GrFNN per
         sample in the input
 
     Note:
-        Here ``connections`` refer to inter-layer connections,
-        as well as intra-layer connections (self connected layers)
-
-    Note:
-        `z` does not necessarily correspond to `self.z`, as this method
-        might be called at in "intermediate" integration (RK4) step
+        Here ``connections`` refer to inter- and intra-layer connections.
 
     """
     #print "Stimulus"
@@ -254,14 +271,18 @@ def compute_input(layer, z, connections, x_stim=0):
     # process external signal (stimulus)
     if layer.stimulus_conn_type == 'linear':
         x = layer.w * x_stim
+
     elif layer.stimulus_conn_type == 'active':
         x = layer.w * x_stim * active(z, layer.zparams.sqe)
+
     elif layer.stimulus_conn_type == 'allfreq':
         x = layer.w * passiveAllFreq(x_stim, layer.zparams.sqe) * \
             active(z, layer.zparams.sqe)
+
     elif layer.stimulus_conn_type == 'all2freq':
         x = layer.w * passiveAll2Freq(x_stim, layer.zparams.sqe) * \
             active(z, layer.zparams.sqe)
+
     else:
         raise Exception("Unknown stimulus connection type '{}'".format(
             layer.stimulus_conn_type))
@@ -269,35 +290,40 @@ def compute_input(layer, z, connections, x_stim=0):
     #print "Processed stimulus"
     #print x
 
-    # process coupled GrFNNs (internal, afferent and efferent)
+    # process coupled GrFNNs (internal, afferent and efferent
     for (source_z, conn) in connections:
         matrix, conn_type = conn.matrix, conn.conn_type
         if conn_type == '1freq':
-            x = x + conn.weights * matrix.dot(source_z)
+            coupling = conn.weights * matrix.dot(source_z)
+
         elif conn_type == '2freq':
-            x = x + conn.weights * twoFreq(z, source_z,
-                                           conn.farey_num, conn.farey_den,
-                                           matrix,
-                                           layer.zparams.e)
+            coupling = conn.weights * twoFreq(z, source_z,
+                                              conn.farey_num, conn.farey_den,
+                                              matrix,
+                                              layer.zparams.e)
+
         elif conn_type == '3freq':
-            x = x + conn.weights * threeFreq(z, source_z,
-                                             conn.monomials,
-                                             layer.zparams.e)
+            coupling = conn.weights * threeFreq(z, source_z,
+                                                conn.monomials,
+                                                layer.zparams.e)
+
         elif conn_type == 'allfreq':
-            x = x + conn.weights * \
-                matrix.dot(passiveAll2Freq(source_z, layer.zparams.sqe)) * \
-                active(z, layer.zparams.sqe)
-        elif conn_type == 'all2freq':
-            x = x + conn.weights * \
+            coupling = conn.weights * \
                 matrix.dot(passiveAllFreq(source_z, layer.zparams.sqe)) * \
                 active(z, layer.zparams.sqe)
+
+        elif conn_type == 'all2freq':
+            coupling = conn.weights * \
+                matrix.dot(passiveAll2Freq(source_z, layer.zparams.sqe)) * \
+                active(z, layer.zparams.sqe)
+
         else:
             raise Exception("Unknown connection type '{}'".format(conn_type))
 
     #print "Total Input"
     #print x
 
-    return x
+    return x + coupling
 
 
 def spontaneus_amplitudes(alpha, beta1, beta2, epsilon):
@@ -311,6 +337,7 @@ def spontaneus_amplitudes(alpha, beta1, beta2, epsilon):
         epsilon (float): :math:`\\varepsilon` parameter of the canonical model
 
     Returns:
+        :class:`numpy.ndarray`: Spontaneous amplitudes for the oscillator
 
     """
 
