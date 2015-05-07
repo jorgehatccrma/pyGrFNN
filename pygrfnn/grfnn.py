@@ -296,26 +296,26 @@ def compute_input(layer, z, connections, x_stim=0):
     for (source_z, conn) in connections:
         matrix, conn_type = conn.matrix, conn.conn_type
         if conn_type == '1freq':
-            coupling = conn.weights * matrix.dot(source_z)
+            coupling += conn.weights * matrix.dot(source_z)
 
         elif conn_type == '2freq':
-            coupling = conn.weights * twoFreq(z, source_z,
+            coupling += conn.weights * twoFreq(z, source_z,
                                               conn.farey_num, conn.farey_den,
                                               matrix,
                                               layer.zparams.e)
 
         elif conn_type == '3freq':
-            coupling = conn.weights * threeFreq(z, source_z,
+            coupling += conn.weights * threeFreq(z, source_z,
                                                 conn.monomials,
                                                 layer.zparams.e)
 
         elif conn_type == 'allfreq':
-            coupling = conn.weights * \
+            coupling += conn.weights * \
                 matrix.dot(passiveAllFreq(source_z, layer.zparams.sqe)) * \
                 active(z, layer.zparams.sqe)
 
         elif conn_type == 'all2freq':
-            coupling = conn.weights * \
+            coupling += conn.weights * \
                 matrix.dot(passiveAll2Freq(source_z, layer.zparams.sqe)) * \
                 active(z, layer.zparams.sqe)
 
