@@ -86,7 +86,7 @@ class GrFNN(object):
         # array of oscillators' frequencies (in Hz)
         self.f = np.logspace(np.log10(frequency_range[0]),
                              np.log10(frequency_range[1]),
-                             num_oscs+1)[:-1]
+                             num_oscs)
 
 
         # total number of oscillator in the network

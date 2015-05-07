@@ -3,7 +3,7 @@
 # @Author: jorgeh
 # @Date:   2015-01-25 11:07:19
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-26 20:16:40
+# @Last Modified time: 2015-05-07 00:09:27
 
 from __future__ import division
 
@@ -64,5 +64,5 @@ M.run(s, np.arange(len(s), dtype=float)/sr, 1./sr)
 
 plt.ion()
 plt.clf()
-plt.plot(n1.f, np.abs(n1.TF),'b')
-plt.plot(n2.f, np.abs(n2.TF),'g')
+plt.plot(n1.f, np.abs(n1.z),'b')
+plt.plot(n2.f, np.abs(n2.z),'g')

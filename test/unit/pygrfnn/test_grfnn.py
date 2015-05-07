@@ -3,7 +3,7 @@
 # @Author: Jorge Herrera
 # @Date:   2015-01-19 21:18:30
 # @Last Modified by:   jorgeh
-# @Last Modified time: 2015-01-20 16:56:05
+# @Last Modified time: 2015-05-07 00:07:19
 
 import numpy as np
 
@@ -62,7 +62,7 @@ def test_two_layer_network():
     model.add_layer(critical_layer)
 
     # simmetric connections
-    conn = model.connect_layers(linear_layer, critical_layer, C, '1freq')
-    conn = model.connect_layers(critical_layer, linear_layer, C, '1freq')
+    conn = model.connect_layers(linear_layer, critical_layer, C, 'allfreq')
+    conn = model.connect_layers(critical_layer, linear_layer, C, 'allfreq')
 
     model.run(s, t, dt)

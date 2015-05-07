@@ -33,7 +33,7 @@ extended.
 LICENCE
 -------
 
-TBD
+.. literalinclude:: ../LICENSE
 
 
 Examples

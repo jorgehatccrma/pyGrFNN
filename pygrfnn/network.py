@@ -48,7 +48,8 @@ def make_connections(source, dest, strength=1.0, range=1.02,
             factor)
         range (``float``): defines the standard deviation to use in the connections
             ("spread" them with neighbors). It is expressed as a ratio, to
-            account for the log scale of the oscillators' frequency
+            account for the log scale of the oscillators' frequency. Must be
+            ``> 1.0``
         modes (:class:`numpy.ndarray`): frequency modes to connect
             (e.g. [1/3, 1/2, 1, 2, 3]). If ``None``, it will be set to
             ``[1]``
@@ -286,7 +287,10 @@ class Connection(object):
             self.matrix[self.RF==1.0] = 0
 
 
-        if conn_type == '2freq':
+        if conn_type == '1freq':
+            raise(Exception("1freq connection not yet implemented"))
+
+        elif conn_type == '2freq':
             # compute integer relationships between frequencies of both layers
             tol = 0.05
             if conn_params is not None:
