@@ -233,7 +233,7 @@ def fareyratio(fractions, pertol=.01):
     return n.astype(FLOAT), d.astype(FLOAT), l.astype(FLOAT), e.astype(FLOAT)
 
 
-def cartesian(arrays):
+def cartesian(arrays, out=None):
     """
     Generate a cartesian product of input arrays.
 
@@ -245,6 +245,8 @@ def cartesian(arrays):
     Args:
         arrays (``list`` or :class:`numpy.ndarray`) : list of array-like
             1-D arrays to form the cartesian product of.
+        out (:class:`numpy.ndarray`): Array to place the cartesian product in.
+
 
     Returns:
         out:
@@ -256,7 +258,8 @@ def cartesian(arrays):
     dtype = arrays[0].dtype
 
     n = np.prod([x.size for x in arrays])
-    out = np.zeros([n, len(arrays)], dtype=dtype)
+    if out is None:
+        out = np.zeros([n, len(arrays)], dtype=dtype)
 
     m = n / arrays[0].size
     out[:,0] = np.repeat(arrays[0], m)
