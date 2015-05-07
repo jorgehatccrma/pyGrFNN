@@ -268,6 +268,7 @@ def compute_input(layer, z, connections, x_stim=0):
     #print "Stimulus"
     #print x_stim
 
+    x = 0
     # process external signal (stimulus)
     if layer.stimulus_conn_type == 'linear':
         x = layer.w * x_stim
@@ -291,6 +292,7 @@ def compute_input(layer, z, connections, x_stim=0):
     #print x
 
     # process coupled GrFNNs (internal, afferent and efferent
+    coupling = 0
     for (source_z, conn) in connections:
         matrix, conn_type = conn.matrix, conn.conn_type
         if conn_type == '1freq':
