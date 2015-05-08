@@ -5,6 +5,24 @@ Author  : Jorge Herrera (jorgeh@ccrma.stanford.edu)
 Date    : May, 2014
 
 
+Installation
+------------
+
+Clone the repo to a local directory. Inside the director run
+
+    python setup.py develop
+
+This will install the package in development mode, so every time you pull changes to the repo, they should be automatically reflected in the installed version.
+
+Alternatively, you could run 
+
+    python setup.py install
+
+which performs a normal installation.
+
+In either case, if all goes well, all dependencies should be installed.
+
+
 Dependencies
 ------------
 
