@@ -4,6 +4,11 @@ Gradient Frequency Neural Networks in Python
 Author  : Jorge Herrera (jorgeh@ccrma.stanford.edu)
 Date    : May, 2014
 
+Requirements
+------------
+
+This package has been developed and tested exclusively on Python 2.7. Other than that, you will need [`setuptools`]() and [`pip`]()
+
 
 Installation
 ------------
