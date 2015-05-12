@@ -128,30 +128,45 @@ def make_connections(source, dest, strength=1.0, range=1.02,
 
 class DuplicatedLayer(Exception):
     """
-    Raised when attempting to add a previously added layer to a network
+    Raise when attempting to add a previously added layer to a network
 
     Attributes:
         layer (:class:`.GrFNN`): duplicated layer
     """
-
     def __init__(self, layer):
         self.layer = layer
 
 
 class UnknownLayer(Exception):
     """
-    Raised when attempting to use a layer unknown to the network
+    Raise when attempting to use a layer unknown to the network
 
     Attributes:
         layer (:class:`.GrFNN`): unknown layer
     """
-
     def __init__(self, layer):
         self.layer = layer
 
     def __str__(self):
         return "Unknown layer %s. Did you forget to call " \
                "'add_layer(layer)'?" % (repr(self.layer))
+
+
+class GrFNNExplosion(Exception):
+    """
+    Raise when an oscillator in a GrFNN explodes (becomes `inf` or `nan`)
+
+    Attributes:
+        explosion_type (`string`): `inf` or `nan`
+        layer (:class:`.GrFNN`): exploding GrFNN
+    """
+    def __init__(self, explosion_type, layer):
+        self.explosion_type = explosion_type
+        self.layer = layer
+
+    def __str__(self):
+        return "At least one oscillator in layer {} " \
+            "exploded ({})".format(repr(self.layer), self.explosion_type)
 
 
 class Cparam(object):
@@ -597,6 +612,11 @@ class Model(object):
             # final RK step
             for L in self.layers():
                 L.z += dt*(L.k1 + 2.0*L.k2 + 2.0*L.k3 + L.k4)/6.0
+                if np.isnan(L.z).any():
+                    raise GrFNNExplosion('nan', L)
+                if np.isinf(L.z).any():
+                    raise GrFNNExplosion('inf', L)
+
                 # dispatch update event
                 grfnn_update_event.send(sender=L, t=t[i], index=i)
 
