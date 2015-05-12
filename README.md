@@ -48,6 +48,16 @@ Documentation
 
 Documentation is generated with [Sphinx](http://sphinx-doc.org/) directly from the docstrings in the code. The theme is the *ReadTheDocs* theme, that can be found [here](https://github.com/snide/sphinx_rtd_theme) (it includes instructions on how to install and use it)
 
+### Build docs
+
+    cd <pygrfnn_dir>/docs
+    make html
+    open _build/html/index.html
+
+The last line is an OS X way of opening a file on a browser from the command line. On other systems, simply open `file://<absolute_path_to_pygrfnn>/docs/_build/html/index.html`.
+
+If something goes wrong, you can optionally run `make clean` to build from scratch.
+
 
 Notes
 -----

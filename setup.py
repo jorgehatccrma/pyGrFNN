@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Author: jorgeh
 # @Date:   2014-12-10 23:59:17
-# @Last Modified by:   jorgeh
-# @Last Modified time: 2015-05-06 23:32:39
+# @Last Modified by:   Jorge Herrera
+# @Last Modified time: 2015-05-12 08:19:38
 
 from setuptools import setup
 
@@ -26,7 +26,7 @@ setup(name='pygrfnn',
         'mpl':  ["matplotlib",],
         'tests':  ["nose",],
         'docs':  ["sphinx", "sphinxcontrib-napoleon", "sphinx_rtd_theme",],
-      }
+      },
       # setup_requires=...,
       # dependency_links=...,
       zip_safe=False
