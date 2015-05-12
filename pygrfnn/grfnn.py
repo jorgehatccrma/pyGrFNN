@@ -205,7 +205,7 @@ def twoFreq(z, source_z, num, den, matrix, e):
     return np.sum(matrix * M, 1)  # sum across columns
 
 
-def threeFreq(z, source_z, monomials, e):
+def threeFreq(z, source_z, monomials, e, conn_matrix):
     """
     Compute 3-frequency coupling
 
@@ -217,6 +217,10 @@ def threeFreq(z, source_z, monomials, e):
     """
     x = np.zeros_like(z, dtype=complex)
     Z = np.hstack((source_z, source_z, z))
+
+    Lsource, Ltarget = len(source_z), len(z)
+    assert (Ltarget, Lsource) == conn_matrix.shape
+
     for i, zi in enumerate(z):
         ind = monomials[i].indices
         if ind.shape[0] == 0:
@@ -224,9 +228,15 @@ def threeFreq(z, source_z, monomials, e):
         exs = monomials[i].exponents
         ec = e ** ((np.sum(np.abs(exs), axis=1)-1.0)/2.0)  # -1 instead of -2 bc. d is already d-1 from resonances.threeFreqMonomials
         zm = np.reshape(Z[ind.T.flatten()], ind.T.shape).T
+
+        # get c_ij1 * c_ij2
+        cij1 = conn_matrix[ind[:,2]-2*Lsource, ind[:,0]]
+        cij2 = conn_matrix[ind[:,2]-2*Lsource, ind[:,0]-Lsource]
+        cij = cij1 * cij2
+
         zm[exs<0] = np.conj(zm[exs<0])  # conjugate where there is a negative exponent
         zm[:,2] = np.conj(zm[:,2])      # also conjugate the last column (z_i)
-        x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1))
+        x[i] = np.sum(ec * cij * np.prod(zm ** np.abs(exs), axis=1))
         # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1)) / ind.shape[0]
         # x[i] = np.sum(ec * np.prod(zm ** np.abs(exs), axis=1) / np.max(np.abs(exs)))
     return x
@@ -307,7 +317,8 @@ def compute_input(layer, z, connections, x_stim=0):
         elif conn_type == '3freq':
             coupling += conn.weights * threeFreq(z, source_z,
                                                 conn.monomials,
-                                                layer.zparams.e)
+                                                layer.zparams.e,
+                                                matrix)
 
         elif conn_type == 'allfreq':
             coupling += conn.weights * \
