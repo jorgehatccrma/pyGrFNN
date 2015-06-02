@@ -49,10 +49,12 @@ def check_display(fun):
             warnings.warn("Couldn't import matplotlib, so visualizations are disabled")
             # logging.info("Couldn't import matplotlib, so visualizations are disabled")
         except Exception as e:
-            warnings.warn("Something went wrong when trying to plot. "
+            logging.error(str(e))
+            warnings.warn(str(e))
+            # warnings.warn("Something went wrong when trying to plot. "
+            #               "Are you sure there's a display available?")
+            logging.error("Something went wrong when trying to plot. "
                           "Are you sure there's a display available?")
-            logging.info("Something went wrong when trying to plot. "
-                         "Are you sure there's a display available?")
     return display_wrapper
 
 
