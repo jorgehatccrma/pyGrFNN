@@ -44,17 +44,15 @@ def check_display(fun):
         try:
             import matplotlib as mpl
             import os
-            if "DISPLAY" in os.environ:
-                return fun(*args, **kwargs)
-            else:
-                warnings.warn("Couldn't find a DISPLAY, so visualizations are disabled")
-                # logging.info("Couldn't find a DISPLAY, so visualizations are disabled")
-                # FIXME: we could use Agg backend and save to file
-                # (see http://stackoverflow.com/questions/8257385/automatic-detection-of-display-availability-with-matplotlib)
+            return fun(*args, **kwargs)
         except ImportError:
-            warnings.warn("Couldn't find a DISPLAY, so visualizations are disabled")
+            warnings.warn("Couldn't import matplotlib, so visualizations are disabled")
             # logging.info("Couldn't import matplotlib, so visualizations are disabled")
-
+        except Exception as e:
+            warnings.info("Something went wrong when trying to plot. "
+                          "Are you sure there's a display available?")
+            # logging.info("Something went wrong when trying to plot. "
+            #              "Are you sure there's a display available?")
     return display_wrapper
 
 
