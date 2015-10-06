@@ -19,13 +19,6 @@ time-frequency representation (TFR) of an input signal (e.g. audio or an onset
 signal). Unlike other TFRs, GrFNNs can generate energy at frequencies not
 present in the input signal via mode-locking.
 
-If you need to cite this package, please use the following reference:
-
-   Jorge Herrera, Ge Wang and Edward Large. *GrFNNs as a Framework For Nonlinear
-   Audio Signal Processing.* **Proceedings of the 16th International Society for
-   Music Information Retrieval Conference (ISMIR 2015)**, Malaga, Spain.
-
-
 .. Contents:
 
 
