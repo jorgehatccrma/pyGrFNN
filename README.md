@@ -5,12 +5,28 @@ Gradient Frequency Neural Networks in Python
  - Date    : May, 2014
 
 
-A python implementation of Gradient Frequency Neural Networks or GrFNNs (pronounced Griffins), introduced by [Large et. al.](http://www.ccs.fau.edu/~large/Publications/LargeAlmonteVelasco2010.pdf). Dr. Large release a Matlab toolbox with an implementation (see [here](https://github.com/MusicDynamicsLab/GrFNNToolbox)). pyGrFNN was developed in parallel, so there are while there are lots of similarities, there are are some differences. 
+A python implementation of Gradient Frequency Neural Networks or GrFNNs (pronounced Griffins), introduced by [Large et. al.](http://www.ccs.fau.edu/~large/Publications/LargeAlmonteVelasco2010.pdf). Dr. Large released a Matlab toolbox with his implementation (see [here](https://github.com/MusicDynamicsLab/GrFNNToolbox)). pyGrFNN was developed in parallel but in close collaboration with Dr. Large, so while there are similarities, there are are some differences as well. 
+
+**NOTE** This package is in development, so things may or may not change in the future.
+
 
 Requirements
 ------------
 
-This package has been developed and tested exclusively on Python 2.7. Other than that, you will need [`setuptools`]() and [`pip`]()
+This package has been developed and tested exclusively on Python 2.7. Other that that, you will need:
+
+ * [`numpy`](http://www.numpy.org/)
+ * [`scipy`](http://www.scipy.org/)
+ * [`PyDispatcher`](https://pypi.python.org/pypi/PyDispatcher/)
+
+Optional dependencies:
+
+ * [`matplotlib`](http://matplotlib.org/)
+ * [`nose`](https://nose.readthedocs.org/en/latest/)
+ * [`sphinx`](http://sphinx-doc.org/)
+ * [`sphinxcontrib-napoleon`](https://pypi.python.org/pypi/sphinxcontrib-napoleon)
+ * [`sphinx_rtd_theme`](http://read-the-docs.readthedocs.org/en/latest/theme.html)
+
 
 
 Installation
