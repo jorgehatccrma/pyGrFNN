@@ -25,7 +25,7 @@ setup(name='pygrfnn',
       extras_require = {
         'mpl':  ["matplotlib",],
         'tests':  ["nose",],
-        'docs':  ["sphinx==1.2.2", "sphinxcontrib-napoleon==0.3.9", "sphinx_rtd_theme",],
+        'docs':  ["sphinx", "sphinxcontrib-napoleon", "sphinx_rtd_theme",],
       },
       # setup_requires=...,
       # dependency_links=...,
