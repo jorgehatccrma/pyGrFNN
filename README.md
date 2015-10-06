@@ -1,8 +1,11 @@
 Gradient Frequency Neural Networks in Python
 ============================================
 
-Author  : Jorge Herrera (jorgeh@ccrma.stanford.edu)
-Date    : May, 2014
+ - Author  : Jorge Herrera (jorgeh@ccrma.stanford.edu)
+ - Date    : May, 2014
+
+
+A python implementation of Gradient Frequency Neural Networks or GrFNNs (pronounced Griffins), introduced by [Large et. al.](http://www.ccs.fau.edu/~large/Publications/LargeAlmonteVelasco2010.pdf). Dr. Large release a Matlab toolbox with an implementation (see [here](https://github.com/MusicDynamicsLab/GrFNNToolbox)). pyGrFNN was developed in parallel, so there are while there are lots of similarities, there are are some differences. 
 
 Requirements
 ------------
