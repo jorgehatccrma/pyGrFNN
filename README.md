@@ -9,23 +9,9 @@ A python implementation of Gradient Frequency Neural Networks or GrFNNs (pronoun
 
 **NOTE** This package is in development, so things may or may not change in the future.
 
+## Documentation
 
-Requirements
-------------
-
-This package has been developed and tested exclusively on Python 2.7. Other that that, you will need:
-
- * [`numpy`](http://www.numpy.org/)
- * [`scipy`](http://www.scipy.org/)
- * [`PyDispatcher`](https://pypi.python.org/pypi/PyDispatcher/)
-
-Optional dependencies:
-
- * [`matplotlib`](http://matplotlib.org/)
- * [`nose`](https://nose.readthedocs.org/en/latest/)
- * [`sphinx`](http://sphinx-doc.org/)
- * [`sphinxcontrib-napoleon`](https://pypi.python.org/pypi/sphinxcontrib-napoleon)
- * [`sphinx_rtd_theme`](http://read-the-docs.readthedocs.org/en/latest/theme.html)
+You can find the [documentation here](http://pygrfnn.readthedocs.org/en/latest/). It includes some examples.
 
 
 
@@ -50,20 +36,27 @@ In either case, if all goes well, all dependencies should be installed.
 Dependencies
 ------------
 
- - NumPy
- - SciPy
- - Matplotlib
- - dispatcher
- - Nose (for testing)
- - Sphinx (to build docs)
- - sphinxcontrib-napoleon (to build docs)
- - sphinx_rtd_theme (to build docs)
+This package has been developed and tested exclusively on Python 2.7. Other that that, you will need:
+
+ * [`numpy`](http://www.numpy.org/)
+ * [`scipy`](http://www.scipy.org/)
+ * [`PyDispatcher`](https://pypi.python.org/pypi/PyDispatcher/)
+
+Optional dependencies:
+
+ * [`matplotlib`](http://matplotlib.org/) (to enable custom visualizations)
+ * [`nose`](https://nose.readthedocs.org/en/latest/) (for testing)
+ * [`sphinx`](http://sphinx-doc.org/) (to build docs)
+ * [`sphinxcontrib-napoleon`](https://pypi.python.org/pypi/sphinxcontrib-napoleon) (to build docs)
+ * [`sphinx_rtd_theme`](http://read-the-docs.readthedocs.org/en/latest/theme. html) (to build docs)
  
 (all dependencies are available via `pip`)
 
 
 Documentation
 -------------
+
+You can find the [documentation here](http://pygrfnn.readthedocs.org/en/latest/).
 
 Documentation is generated with [Sphinx](http://sphinx-doc.org/) directly from the docstrings in the code. The theme is the *ReadTheDocs* theme, that can be found [here](https://github.com/snide/sphinx_rtd_theme) (it includes instructions on how to install and use it)
 
